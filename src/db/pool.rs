@@ -4,7 +4,7 @@ use sqlx::{migrate::MigrateDatabase, sqlite::SqlitePool, Sqlite};
 
 pub type DbPool = SqlitePool;
 
-fn db_path() -> String {
+pub fn db_path() -> String {
   // TODO: user id
   let user_data_path = user_data_path(0);
   format!(
@@ -13,18 +13,18 @@ fn db_path() -> String {
   )
 }
 
-pub async fn init_setup_db() -> Result<(), DbError> {
-  Sqlite::create_database(&db_path()).await?;
+pub async fn init_setup_db(db_path: &str) -> Result<(), DbError> {
+  Sqlite::create_database(db_path).await?;
   log::info!("Init user database success!");
-  let pool = db_pool().await?;
+  let pool = db_pool(db_path).await?;
   // Migrate the database
   let res = sqlx::migrate!("src/db/migrations").run(&pool).await;
   log::info!("Migrate database result: {:?}", res);
   Ok(())
 }
 
-pub async fn db_pool() -> Result<DbPool, DbError> {
-  let pool = SqlitePool::connect(&db_path()).await?;
+pub async fn db_pool(db_path: &str) -> Result<DbPool, DbError> {
+  let pool = SqlitePool::connect(db_path).await?;
   log::info!("Get user database connect success!");
   Ok(pool)
 }

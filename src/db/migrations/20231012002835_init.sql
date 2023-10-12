@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS msg (
   id BLOB PRIMARY KEY CHECK(length(id) = 16) NOT NULL,
   channel_id BLOB CHECK(length(id) = 16),
   role TEXT NOT NULL,
-  ac_idx INTEGER NOT NULL,
+  cur_idx INTEGER NOT NULL,
   cont_list TEXT NOT NULL,
   meta TEXT NOT NULL,
   created_at TIMESTAMP NOT NULL DEFAULT (STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW')),

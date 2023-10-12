@@ -11,14 +11,14 @@ pub async fn add_msg(pool: &DbPool, channel_id: &Uuid, msg: &Msg) -> Result<(), 
   let meta = serde_json::to_string(msg.meta())?;
   let res = sqlx::query(
     r#"
-    INSERT INTO msg (id, channel_id, role, ac_idx, cont_list, meta)
+    INSERT INTO msg (id, channel_id, role, cur_idx, cont_list, meta)
     VALUES (?1, ?2, ?3, ?4, ?5, ?6)
     "#,
   )
   .bind(msg.id())
   .bind(channel_id)
   .bind(role)
-  .bind(msg.ac_idx() as i32)
+  .bind(msg.cur_idx() as i32)
   .bind(cont_list)
   .bind(meta)
   .execute(pool)
@@ -32,7 +32,7 @@ pub async fn add_msg(pool: &DbPool, channel_id: &Uuid, msg: &Msg) -> Result<(), 
 pub async fn query_msg_by_id(pool: &DbPool, id: &Uuid) -> Result<Msg, DbError> {
   let msg = sqlx::query_as::<_, Msg>(
     r#"
-    SELECT id, role, cont_list, meta
+    SELECT id, role, cur_idx, cont_list, meta
     FROM msg
     WHERE id = ?1
     "#,
@@ -53,11 +53,11 @@ pub async fn update_msg(pool: &DbPool, msg: &Msg) -> Result<(), DbError> {
   let res = sqlx::query(
     r#"
     UPDATE msg
-    SET ac_idx = ?1, cont_list = ?2, meta = ?3
+    SET cur_idx = ?1, cont_list = ?2, meta = ?3
     WHERE id = ?4
     "#,
   )
-  .bind(msg.ac_idx() as i32)
+  .bind(msg.cur_idx() as i32)
   .bind(cont_list)
   .bind(meta)
   .bind(msg.id())
@@ -75,7 +75,7 @@ pub async fn query_msgs_by_channel_id(
 ) -> Result<Vec<Msg>, DbError> {
   let msgs = sqlx::query_as::<_, Msg>(
     r#"
-    SELECT id, role, cont_list, meta
+    SELECT id, role, cur_idx, cont_list, meta
     FROM msg
     WHERE channel_id = ?1
     "#,

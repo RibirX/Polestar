@@ -10,7 +10,7 @@ pub async fn add_channel(pool: &DbPool, channel: &Channel) -> Result<(), DbError
   let res = sqlx::query(
     r#"
     INSERT INTO channel (id, name, desc, cfg)
-    VALUES (?1, ?2, ?3, ?4, ?5, ?6)
+    VALUES (?1, ?2, ?3, ?4)
     "#,
   )
   .bind(channel.id())

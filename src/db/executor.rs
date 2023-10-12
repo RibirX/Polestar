@@ -1,2 +1,2 @@
-mod channel;
-mod msg;
+pub mod channel;
+pub mod msg;

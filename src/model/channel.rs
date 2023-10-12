@@ -25,7 +25,11 @@ impl Channel {
 
   pub fn name(&self) -> &str { &self.name }
 
+  pub fn set_name(&mut self, name: String) { self.name = name; }
+
   pub fn desc(&self) -> Option<&str> { self.desc.as_deref() }
+
+  pub fn set_desc(&mut self, desc: Option<String>) { self.desc = desc; }
 
   pub fn cfg_ref(&self) -> &ChannelCfg { &self.cfg }
 

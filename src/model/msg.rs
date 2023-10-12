@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-use sqlx::Sqlite;
 use uuid::Uuid;
 
 /// `Message` is the message struct.
@@ -10,9 +9,9 @@ pub struct Msg {
   // role is the sender of the message.
   #[sqlx(json)]
   role: MsgRole,
-  // `ac_idx` is the index of the current message content show which one.
-  #[sqlx(json)]
-  ac_idx: usize,
+  // TODO: sqlx not support `usize` type, so use `i32` replace it. but I want use `usize`.
+  // `cur_idx` is the index of the current message content show which one.
+  cur_idx: i32,
   // `cont` is the message content list.
   #[sqlx(json)]
   cont_list: Vec<MsgCont>,
@@ -26,16 +25,16 @@ impl Msg {
   pub fn id(&self) -> &Uuid { &self.id }
 
   #[inline]
-  pub fn ac_idx(&self) -> usize { self.ac_idx }
+  pub fn cur_idx(&self) -> usize { self.cur_idx as _ }
 
   #[inline]
   pub fn role(&self) -> &MsgRole { &self.role }
 
   #[inline]
-  pub fn cur_cont_as_ref(&self) -> &MsgCont { &self.cont_list[self.ac_idx] }
+  pub fn cur_cont_as_ref(&self) -> &MsgCont { &self.cont_list[self.cur_idx as usize] }
 
   #[inline]
-  pub fn cur_cont_as_mut(&mut self) -> &mut MsgCont { &mut self.cont_list[self.ac_idx] }
+  pub fn cur_cont_as_mut(&mut self) -> &mut MsgCont { &mut self.cont_list[self.cur_idx as usize] }
 
   #[inline]
   pub fn meta(&self) -> &MsgMeta { &self.meta }
@@ -44,7 +43,7 @@ impl Msg {
   pub fn cont_list(&self) -> &Vec<MsgCont> { &self.cont_list }
 }
 
-#[derive(Debug, Serialize, Deserialize, Default)]
+#[derive(Debug, Serialize, Deserialize, Default, PartialEq, Eq)]
 pub struct MsgMeta {
   quote_id: Option<Uuid>,
   source_id: Option<Uuid>,
@@ -55,7 +54,7 @@ impl Msg {
     Self {
       id: Uuid::new_v4(),
       role,
-      ac_idx: 0,
+      cur_idx: 0,
       cont_list: vec![cont],
       meta,
     }
@@ -65,7 +64,7 @@ impl Msg {
   pub fn add_cont(&mut self, cont: MsgCont) {
     let last_idx = self.cont_list.len();
     self.cont_list.push(cont);
-    self.ac_idx = last_idx;
+    self.cur_idx = last_idx as _;
   }
 
   pub fn switch_cont(&mut self, idx: usize) {
@@ -78,7 +77,7 @@ impl Msg {
       );
       return;
     }
-    self.ac_idx = idx;
+    self.cur_idx = idx as _;
   }
 
   #[inline]
@@ -236,14 +235,14 @@ mod test {
     testing_logger::setup();
     let mut msg = Msg::new(MsgRole::User, MsgCont::text_init(), MsgMeta::default());
     msg.add_cont(MsgCont::text_init());
-    assert_eq!(msg.ac_idx(), 1);
+    assert_eq!(msg.cur_idx(), 1);
     assert_eq!(msg.cont_count(), 2);
 
     msg.switch_cont(0);
-    assert_eq!(msg.ac_idx(), 0);
+    assert_eq!(msg.cur_idx(), 0);
 
     msg.switch_cont(3);
-    assert_eq!(msg.ac_idx(), 0);
+    assert_eq!(msg.cur_idx(), 0);
 
     testing_logger::validate(|captured_logs| {
       assert_eq!(captured_logs.len(), 1);
