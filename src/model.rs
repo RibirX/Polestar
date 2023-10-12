@@ -1,4 +1,4 @@
-mod app_store;
-mod bot;
-mod channel;
-mod msg;
+pub mod app_store;
+pub mod bot;
+pub mod channel;
+pub mod msg;

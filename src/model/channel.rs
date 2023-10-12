@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 /// Polestar channel is a chat room, user can talk to bot in channel.
-#[derive(Debug, Builder, Default, Deserialize, Serialize)]
+#[derive(Debug, Builder, Default, Deserialize, Serialize, sqlx::FromRow)]
 #[builder(name = "ChannelBuilder")]
 #[builder(setter(into, strip_option), default)]
 #[builder(derive(Debug))]
@@ -16,6 +16,7 @@ pub struct Channel {
   // A description for channel, it's optional
   desc: Option<String>,
   // A configuration for channel
+  #[sqlx(json)]
   cfg: ChannelCfg,
 }
 
@@ -26,9 +27,9 @@ impl Channel {
 
   pub fn desc(&self) -> Option<&str> { self.desc.as_deref() }
 
-  pub fn cfg_as_ref(&self) -> &ChannelCfg { &self.cfg }
+  pub fn cfg_ref(&self) -> &ChannelCfg { &self.cfg }
 
-  pub fn cfg_as_mut(&mut self) -> &mut ChannelCfg { &mut self.cfg }
+  pub fn cfg_mut(&mut self) -> &mut ChannelCfg { &mut self.cfg }
 }
 
 /// ChannelMode is a enum type for channel's mode, it decided AI chat context
@@ -89,19 +90,19 @@ mod test {
 
     assert_eq!(channel.name(), "test");
     assert_eq!(channel.desc(), Some("test channel"));
-    assert_eq!(channel.cfg_as_ref().mode(), &ChannelMode::Balanced);
-    assert_eq!(channel.cfg_as_ref().kind(), &ChannelKind::Chat);
-    assert_eq!(channel.cfg_as_ref().def_bot_id(), None);
+    assert_eq!(channel.cfg_ref().mode(), &ChannelMode::Balanced);
+    assert_eq!(channel.cfg_ref().kind(), &ChannelKind::Chat);
+    assert_eq!(channel.cfg_ref().def_bot_id(), None);
 
-    channel.cfg_as_mut().set_mode(ChannelMode::Performance);
-    assert_eq!(channel.cfg_as_ref().mode(), &ChannelMode::Performance);
+    channel.cfg_mut().set_mode(ChannelMode::Performance);
+    assert_eq!(channel.cfg_ref().mode(), &ChannelMode::Performance);
 
-    channel.cfg_as_mut().set_kind(ChannelKind::Feedback);
-    assert_eq!(channel.cfg_as_ref().kind(), &ChannelKind::Feedback);
+    channel.cfg_mut().set_kind(ChannelKind::Feedback);
+    assert_eq!(channel.cfg_ref().kind(), &ChannelKind::Feedback);
 
     let id = Uuid::new_v4();
-    channel.cfg_as_mut().set_def_bot_id(id);
-    assert_eq!(channel.cfg_as_ref().def_bot_id(), Some(&id));
+    channel.cfg_mut().set_def_bot_id(id);
+    assert_eq!(channel.cfg_ref().def_bot_id(), Some(&id));
   }
 
   #[test]
@@ -112,8 +113,8 @@ mod test {
     assert_eq!(channel.id(), &Uuid::nil());
     assert_eq!(channel.name(), "test");
     assert_eq!(channel.desc(), Some("test channel"));
-    assert_eq!(channel.cfg_as_ref().mode(), &ChannelMode::Balanced);
-    assert_eq!(channel.cfg_as_ref().kind(), &ChannelKind::Chat);
+    assert_eq!(channel.cfg_ref().mode(), &ChannelMode::Balanced);
+    assert_eq!(channel.cfg_ref().kind(), &ChannelKind::Chat);
   }
 
   #[test]

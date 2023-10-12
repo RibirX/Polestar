@@ -102,7 +102,7 @@ impl AppCfg {
 mod test {
   use crate::model::{
     channel::ChannelBuilder,
-    msg::{MsgCont, MsgMeta, Role},
+    msg::{MsgCont, MsgMeta, MsgRole},
   };
 
   use super::*;
@@ -123,7 +123,7 @@ mod test {
     assert_eq!(app_store.bots().len(), 1);
 
     app_store.add_msg(Msg::new(
-      Role::User,
+      MsgRole::User,
       MsgCont::text_init(),
       MsgMeta::default(),
     ));

@@ -1,19 +1,47 @@
 use serde::{Deserialize, Serialize};
+use sqlx::Sqlite;
 use uuid::Uuid;
 
 /// `Message` is the message struct.
 /// It contains the message role, message active_index and message content list.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
 pub struct Msg {
   id: Uuid,
   // role is the sender of the message.
-  role: Role,
+  #[sqlx(json)]
+  role: MsgRole,
   // `ac_idx` is the index of the current message content show which one.
+  #[sqlx(json)]
   ac_idx: usize,
   // `cont` is the message content list.
+  #[sqlx(json)]
   cont_list: Vec<MsgCont>,
   // `meta` is the message meta data.
+  #[sqlx(json)]
   meta: MsgMeta,
+}
+
+impl Msg {
+  #[inline]
+  pub fn id(&self) -> &Uuid { &self.id }
+
+  #[inline]
+  pub fn ac_idx(&self) -> usize { self.ac_idx }
+
+  #[inline]
+  pub fn role(&self) -> &MsgRole { &self.role }
+
+  #[inline]
+  pub fn cur_cont_as_ref(&self) -> &MsgCont { &self.cont_list[self.ac_idx] }
+
+  #[inline]
+  pub fn cur_cont_as_mut(&mut self) -> &mut MsgCont { &mut self.cont_list[self.ac_idx] }
+
+  #[inline]
+  pub fn meta(&self) -> &MsgMeta { &self.meta }
+
+  #[inline]
+  pub fn cont_list(&self) -> &Vec<MsgCont> { &self.cont_list }
 }
 
 #[derive(Debug, Serialize, Deserialize, Default)]
@@ -23,7 +51,7 @@ pub struct MsgMeta {
 }
 
 impl Msg {
-  pub fn new(role: Role, cont: MsgCont, meta: MsgMeta) -> Self {
+  pub fn new(role: MsgRole, cont: MsgCont, meta: MsgMeta) -> Self {
     Self {
       id: Uuid::new_v4(),
       role,
@@ -52,18 +80,6 @@ impl Msg {
     }
     self.ac_idx = idx;
   }
-
-  #[inline]
-  pub fn ac_idx(&self) -> usize { self.ac_idx }
-
-  #[inline]
-  pub fn role(&self) -> &Role { &self.role }
-
-  #[inline]
-  pub fn cur_cont_as_ref(&self) -> &MsgCont { &self.cont_list[self.ac_idx] }
-
-  #[inline]
-  pub fn cur_cont_as_mut(&mut self) -> &mut MsgCont { &mut self.cont_list[self.ac_idx] }
 
   #[inline]
   pub fn cont_count(&self) -> usize { self.cont_list.len() }
@@ -204,7 +220,7 @@ pub enum MsgStatus {
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Serialize, Deserialize)]
-pub enum Role {
+pub enum MsgRole {
   User,
   Bot(Uuid),
 }
@@ -218,7 +234,7 @@ mod test {
   #[test]
   fn msg_update() {
     testing_logger::setup();
-    let mut msg = Msg::new(Role::User, MsgCont::text_init(), MsgMeta::default());
+    let mut msg = Msg::new(MsgRole::User, MsgCont::text_init(), MsgMeta::default());
     msg.add_cont(MsgCont::text_init());
     assert_eq!(msg.ac_idx(), 1);
     assert_eq!(msg.cont_count(), 2);
@@ -243,7 +259,7 @@ mod test {
     testing_logger::setup();
 
     let _fulfilled_msg = Msg::new(
-      Role::User,
+      MsgRole::User,
       MsgCont::text_init()
         .action(MsgAction::Receiving(MsgBody::Text(Some("123".to_owned()))))
         .action(MsgAction::Fulfilled),
@@ -251,21 +267,21 @@ mod test {
     );
 
     let _rejected_msg = Msg::new(
-      Role::User,
+      MsgRole::User,
       MsgCont::text_init().action(MsgAction::Rejected),
       MsgMeta::default(),
     );
 
-    let _pend_msg = Msg::new(Role::User, MsgCont::text_init(), MsgMeta::default());
+    let _pend_msg = Msg::new(MsgRole::User, MsgCont::text_init(), MsgMeta::default());
 
     let _wrong_fulfilled_msg = Msg::new(
-      Role::User,
+      MsgRole::User,
       MsgCont::text_init().action(MsgAction::Fulfilled),
       MsgMeta::default(),
     );
 
     let _wrong_rejected_msg = Msg::new(
-      Role::User,
+      MsgRole::User,
       MsgCont::text_init()
         .action(MsgAction::Receiving(MsgBody::Text(Some("123".to_owned()))))
         .action(MsgAction::Rejected),
@@ -273,7 +289,7 @@ mod test {
     );
 
     let _wrong_pend_msg = Msg::new(
-      Role::User,
+      MsgRole::User,
       MsgCont::text_init()
         .action(MsgAction::Receiving(MsgBody::Text(Some("123".to_owned()))))
         .action(MsgAction::Pending),
@@ -281,7 +297,7 @@ mod test {
     );
 
     let _wrong_receiving_msg = Msg::new(
-      Role::User,
+      MsgRole::User,
       MsgCont::text_init()
         .action(MsgAction::Rejected)
         .action(MsgAction::Receiving(MsgBody::Text(Some("123".to_owned())))),
