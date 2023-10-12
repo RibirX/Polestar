@@ -133,7 +133,7 @@ pub struct MsgCont {
   status: MsgStatus,
 }
 
-enum MsgAction {
+pub enum MsgAction {
   Pending,
   Fulfilled,
   Receiving(MsgBody),

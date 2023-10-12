@@ -1,11 +1,8 @@
 use uuid::Uuid;
 
-use crate::{
-  db::{error::DbError, pool::DbPool},
-  model::msg::Msg,
-};
+use crate::{db::pool::DbPool, error::PolestarError, model::msg::Msg};
 
-pub async fn add_msg(pool: &DbPool, channel_id: &Uuid, msg: &Msg) -> Result<(), DbError> {
+pub async fn add_msg(pool: &DbPool, channel_id: &Uuid, msg: &Msg) -> Result<(), PolestarError> {
   let role = serde_json::to_string(msg.role())?;
   let cont_list = serde_json::to_string(msg.cont_list())?;
   let meta = serde_json::to_string(msg.meta())?;
@@ -29,7 +26,7 @@ pub async fn add_msg(pool: &DbPool, channel_id: &Uuid, msg: &Msg) -> Result<(), 
   Ok(())
 }
 
-pub async fn query_msg_by_id(pool: &DbPool, id: &Uuid) -> Result<Msg, DbError> {
+pub async fn query_msg_by_id(pool: &DbPool, id: &Uuid) -> Result<Msg, PolestarError> {
   let msg = sqlx::query_as::<_, Msg>(
     r#"
     SELECT id, role, cur_idx, cont_list, meta
@@ -47,7 +44,7 @@ pub async fn query_msg_by_id(pool: &DbPool, id: &Uuid) -> Result<Msg, DbError> {
 }
 
 // TODO: update method need split? or use one method?
-pub async fn update_msg(pool: &DbPool, msg: &Msg) -> Result<(), DbError> {
+pub async fn update_msg(pool: &DbPool, msg: &Msg) -> Result<(), PolestarError> {
   let cont_list = serde_json::to_string(msg.cont_list())?;
   let meta = serde_json::to_string(msg.meta())?;
   let res = sqlx::query(
@@ -72,7 +69,7 @@ pub async fn update_msg(pool: &DbPool, msg: &Msg) -> Result<(), DbError> {
 pub async fn query_msgs_by_channel_id(
   pool: &DbPool,
   channel_id: &Uuid,
-) -> Result<Vec<Msg>, DbError> {
+) -> Result<Vec<Msg>, PolestarError> {
   let msgs = sqlx::query_as::<_, Msg>(
     r#"
     SELECT id, role, cur_idx, cont_list, meta
@@ -92,6 +89,6 @@ pub async fn query_msgs_by_channel_id(
 pub async fn query_latest_text_msgs_by_channel_id(
   pool: &DbPool,
   channel_id: &Uuid,
-) -> Result<Vec<Msg>, DbError> {
+) -> Result<Vec<Msg>, PolestarError> {
   todo!()
 }

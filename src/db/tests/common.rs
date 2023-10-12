@@ -1,7 +1,7 @@
-use crate::db::{error::DbError, pool::DbPool};
+use crate::{db::pool::DbPool, error::PolestarError};
 use sqlx::{migrate::MigrateDatabase, Sqlite};
 
-pub async fn init_setup_db() -> Result<DbPool, DbError> {
+pub async fn init_setup_db() -> Result<DbPool, PolestarError> {
   Sqlite::create_database("sqlite::memory:").await?;
   let pool = sqlx::pool::PoolOptions::<Sqlite>::new()
     .max_lifetime(None)

@@ -1,4 +1,4 @@
-use super::error::DbError;
+use crate::error::PolestarError;
 use crate::utils::fs::user_data_path;
 use sqlx::{migrate::MigrateDatabase, sqlite::SqlitePool, Sqlite};
 
@@ -13,7 +13,7 @@ pub fn db_path() -> String {
   )
 }
 
-pub async fn init_setup_db(db_path: &str) -> Result<(), DbError> {
+pub async fn init_setup_db(db_path: &str) -> Result<(), PolestarError> {
   Sqlite::create_database(db_path).await?;
   log::info!("Init user database success!");
   let pool = db_pool(db_path).await?;
@@ -23,7 +23,7 @@ pub async fn init_setup_db(db_path: &str) -> Result<(), DbError> {
   Ok(())
 }
 
-pub async fn db_pool(db_path: &str) -> Result<DbPool, DbError> {
+pub async fn db_pool(db_path: &str) -> Result<DbPool, PolestarError> {
   let pool = SqlitePool::connect(db_path).await?;
   log::info!("Get user database connect success!");
   Ok(pool)

@@ -24,7 +24,7 @@ impl AppStore {
   pub fn cfg(&self) -> &AppCfg { &self.cfg }
 
   pub fn switch_channel(&mut self, id: &Uuid) {
-    let idx = self.channels.iter().position(|chan| chan.id() == id);
+    let idx = self.channels.iter().position(|channel| channel.id() == id);
 
     if let Some(idx) = idx {
       self.cur_channel_id = *self.channels[idx].id();
@@ -52,7 +52,7 @@ impl AppStore {
   }
 
   pub fn remove_channel(&mut self, id: &Uuid) {
-    let idx = self.channels.iter().position(|chan| chan.id() == id);
+    let idx = self.channels.iter().position(|channel| channel.id() == id);
 
     if let Some(idx) = idx {
       self.channels.remove(idx);
