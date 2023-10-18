@@ -1,9 +1,9 @@
-use super::common::init_setup_db;
+use super::common::init_db;
 use sqlx::Row;
 
 #[tokio::test]
 async fn test_table_setup() {
-  let pool = init_setup_db().await.expect("Failed to init database");
+  let pool = init_db().await.expect("Failed to init database");
   let row = sqlx::query(
     r#"
       SELECT COUNT(*) as count

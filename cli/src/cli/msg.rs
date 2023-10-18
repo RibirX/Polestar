@@ -1,7 +1,7 @@
 use reedline_repl_rs::{clap::ArgMatches, Result as ReplResult};
 use reqwest::{header::HeaderMap, Method};
 
-use crate::service::req::{delta, req_stream};
+use polestar_chat_core::service::req::{delta, req_stream};
 
 pub async fn msg_handler<T>(args: ArgMatches, _context: &mut T) -> ReplResult<Option<String>> {
   match args.subcommand() {

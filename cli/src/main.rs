@@ -1,18 +1,13 @@
 use std::sync::Mutex;
 
-use model::{
+use once_cell::sync::Lazy;
+use polestar_chat_core::model::{
   app_store::{AppBuilder, AppStore},
   channel::ChannelBuilder,
 };
-use once_cell::sync::Lazy;
 use reedline_repl_rs::Result as ReplResult;
 
 mod cli;
-mod db;
-mod error;
-mod model;
-mod service;
-mod utils;
 
 pub static APP_STORE: Lazy<Mutex<AppStore>> = Lazy::new(|| {
   Mutex::new(

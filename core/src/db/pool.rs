@@ -13,7 +13,7 @@ pub fn db_path() -> String {
   )
 }
 
-pub async fn init_setup_db(db_path: &str) -> Result<(), PolestarError> {
+pub async fn init_db(db_path: &str) -> Result<(), PolestarError> {
   Sqlite::create_database(db_path).await?;
   log::info!("Init user database success!");
   let pool = db_pool(db_path).await?;

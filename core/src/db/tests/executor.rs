@@ -9,11 +9,11 @@ use crate::{
   },
 };
 
-use super::common::init_setup_db;
+use super::common::init_db;
 
 #[tokio::test]
 async fn test_add_channel() {
-  let pool = init_setup_db().await.expect("Failed to init database");
+  let pool = init_db().await.expect("Failed to init database");
   let channel = ChannelBuilder::default()
     .name("test")
     .desc("test channel")
@@ -35,7 +35,7 @@ async fn test_add_channel() {
 
 #[tokio::test]
 async fn test_remove_channel() {
-  let pool = init_setup_db().await.expect("Failed to init database");
+  let pool = init_db().await.expect("Failed to init database");
   let channel = ChannelBuilder::default()
     .name("test")
     .desc("test channel")
@@ -79,7 +79,7 @@ async fn test_remove_channel() {
 
 #[tokio::test]
 async fn test_update_channel() {
-  let pool = init_setup_db().await.expect("Failed to init database");
+  let pool = init_db().await.expect("Failed to init database");
   let mut channel = ChannelBuilder::default()
     .name("test")
     .desc("test channel")
@@ -119,7 +119,7 @@ async fn test_update_channel() {
 
 #[tokio::test]
 async fn test_add_msg() {
-  let pool = init_setup_db().await.expect("Failed to init database");
+  let pool = init_db().await.expect("Failed to init database");
   let channel = ChannelBuilder::default()
     .name("test")
     .desc("test channel")
@@ -143,7 +143,7 @@ async fn test_add_msg() {
 
 #[tokio::test]
 async fn test_update_msg() {
-  let pool = init_setup_db().await.expect("Failed to init database");
+  let pool = init_db().await.expect("Failed to init database");
   let channel = ChannelBuilder::default()
     .name("test")
     .desc("test channel")
@@ -173,7 +173,7 @@ async fn test_update_msg() {
 
 #[tokio::test]
 async fn test_query_msgs_by_channel_id() {
-  let pool = init_setup_db().await.expect("Failed to init database");
+  let pool = init_db().await.expect("Failed to init database");
   let channel = ChannelBuilder::default()
     .name("test")
     .desc("test channel")

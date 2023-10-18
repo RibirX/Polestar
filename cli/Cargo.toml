@@ -1,0 +1,23 @@
+[package]
+name = "polestar_chat_cli"
+version = "0.0.1"
+edition = "2021"
+description = "A CLI client for Polestar Chat"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+polestar_chat_core = { path = "../core" }
+tokio = { version = "1.20.0", features = ["macros", "rt-multi-thread"] }
+once_cell = "1.18.0"
+reedline-repl-rs = { version = "1.0.7", features = ["async"] }
+inquire = "0.6.2"
+reqwest = { version = "0.11.18", features = ["json"] }
+
+[dependencies.uuid]
+version = "1.3.3"
+features = [
+  "v4",       # Lets you generate random UUIDs
+  "fast-rng", # Use a faster (but still sufficiently random) RNG
+  "serde",
+]

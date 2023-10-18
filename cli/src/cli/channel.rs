@@ -4,7 +4,9 @@ use inquire::Select;
 use reedline_repl_rs::{clap::ArgMatches, Result as ReplResult};
 use uuid::Uuid;
 
-use crate::{model::channel::ChannelBuilder, APP_STORE};
+use polestar_chat_core::model::channel::ChannelBuilder;
+
+use crate::APP_STORE;
 
 pub async fn channel_handler<T>(args: ArgMatches, _context: &mut T) -> ReplResult<Option<String>> {
   match args.subcommand() {
@@ -19,7 +21,7 @@ pub async fn channel_handler<T>(args: ArgMatches, _context: &mut T) -> ReplResul
         });
       Ok(Some("".to_owned()))
     }
-    Some(("add", args))=> {
+    Some(("add", args)) => {
       let name = args.get_one::<String>("name").unwrap();
       let desc = args.get_one::<String>("desc");
       let mut channel_builder = ChannelBuilder::default();
