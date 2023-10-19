@@ -1,9 +1,11 @@
 use crate::{
   db::executor::{
+    attachment::{add_attachment, query_attachment_by_name},
     channel::{add_channel, query_channel_by_id, update_channel},
     msg::{add_msg, query_msg_by_id, query_msgs_by_channel_id, update_msg},
   },
   model::{
+    attachment::{Attachment, MIME},
     channel::ChannelBuilder,
     msg::{Msg, MsgCont, MsgMeta, MsgRole},
   },
@@ -199,4 +201,21 @@ async fn test_query_msgs_by_channel_id() {
   assert_eq!(query_msgs.len(), 2);
   assert_eq!(query_msgs[0].id(), msg1.id());
   assert_eq!(query_msgs[1].id(), msg2.id());
+}
+
+#[tokio::test]
+async fn test_add_attachment() {
+  let pool = init_db().await.expect("Failed to init database");
+  let attachment = Attachment::new(MIME::ImagePng, vec![1, 2, 3, 4]);
+  add_attachment(&pool, &attachment)
+    .await
+    .expect("Failed to add attachment");
+
+  let query_attachment = query_attachment_by_name(&pool, attachment.name())
+    .await
+    .expect("Failed to query attachment");
+
+  assert_eq!(attachment.name(), query_attachment.name());
+  assert_eq!(attachment.mime(), &MIME::ImagePng);
+  assert_eq!(attachment.data(), &[1, 2, 3, 4]);
 }

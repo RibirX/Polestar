@@ -12,4 +12,6 @@ pub enum PolestarError {
   Reqwest(#[from] reqwest::Error),
   #[error("eventsource error: {0}")]
   EventSource(#[from] reqwest_eventsource::Error),
+  #[error("Database not found")]
+  DbPoolNotFound,
 }

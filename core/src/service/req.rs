@@ -1,8 +1,8 @@
 use futures_util::StreamExt;
 use reqwest::{header::HeaderMap, Method, RequestBuilder};
-use reqwest_eventsource::{Event, EventSource};
+use reqwest_eventsource::EventSource;
 
-use crate::{error::PolestarError, service::open_ai::CreateChatCompletionStreamResponse};
+use crate::error::PolestarError;
 
 pub fn req_builder(
   url: &str,
@@ -32,37 +32,4 @@ pub async fn req_stream(
     return Err(PolestarError::EventSource(err));
   }
   Ok(stream)
-}
-
-pub async fn delta(stream: &mut EventSource) -> Result<Option<String>, PolestarError> {
-  let terminated = "[DONE]";
-  let chunk_size = 256;
-  let items = stream.ready_chunks(chunk_size).next().await;
-
-  let Some(items) = items else { return Ok(None) };
-
-  let mut delta = String::default();
-  for item in items {
-    match item {
-      Ok(event) => {
-        if let Event::Message(event) = event {
-          if event.data == terminated {
-            break;
-          }
-          let obj =
-            serde_json::from_str::<CreateChatCompletionStreamResponse>(&event.data).unwrap();
-          let choices = obj.choices;
-          assert!(choices.len() == 1);
-
-          if let Some(content) = &choices[0].delta.content {
-            delta.push_str(content);
-          }
-        }
-      }
-      Err(e) => {
-        return Err(PolestarError::EventSource(e));
-      }
-    }
-  }
-  Ok(Some(delta))
 }

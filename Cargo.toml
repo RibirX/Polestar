@@ -1,5 +1,4 @@
 [workspace.package]
-name = "polestar_chat"
 version = "0.0.1"
 edition = "2021"
 description = "An AI Q&A chat util written using Rust"
@@ -8,3 +7,4 @@ description = "An AI Q&A chat util written using Rust"
 
 [workspace]
 members = ["cli", "core"]
+resolver = "2"

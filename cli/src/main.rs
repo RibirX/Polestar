@@ -1,15 +1,18 @@
 use std::sync::Mutex;
 
 use once_cell::sync::Lazy;
-use polestar_chat_core::model::{
-  app_store::{AppBuilder, AppStore},
-  channel::ChannelBuilder,
+use polestar_chat_core::{
+  chat_data::DbBlockingClient,
+  model::{
+    app_data::{AppBuilder, AppData},
+    channel::ChannelBuilder,
+  },
 };
 use reedline_repl_rs::Result as ReplResult;
 
 mod cli;
 
-pub static APP_STORE: Lazy<Mutex<AppStore>> = Lazy::new(|| {
+pub static APP_DATA: Lazy<Mutex<AppData<DbBlockingClient>>> = Lazy::new(|| {
   Mutex::new(
     AppBuilder::default()
       .build()
@@ -17,16 +20,22 @@ pub static APP_STORE: Lazy<Mutex<AppStore>> = Lazy::new(|| {
   )
 });
 
-#[tokio::main]
-async fn main() -> ReplResult<()> {
-  // default add channel
-  APP_STORE.lock().unwrap().add_channel(
-    ChannelBuilder::default()
-      .name("default")
-      .desc("default channel")
-      .build()
-      .unwrap(),
-  );
+fn main() -> ReplResult<()> {
+  let _ = APP_DATA
+    .try_lock()
+    .expect("get app data lock failed")
+    .chat_data_mut()
+    .add_channel(
+      ChannelBuilder::default()
+        .name("default")
+        .desc("default channel")
+        .build()
+        .unwrap(),
+    );
 
-  cli::cli().await
+  tokio::runtime::Builder::new_multi_thread()
+    .enable_all()
+    .build()
+    .unwrap()
+    .block_on(async { cli::cli().await })
 }

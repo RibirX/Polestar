@@ -23,3 +23,13 @@ CREATE TABLE IF NOT EXISTS channel (
   updated_at TIMESTAMP NOT NULL DEFAULT (STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW')),
   UNIQUE(id)
 );
+
+
+-- Create attachment table
+CREATE TABLE IF NOT EXISTS attachment (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  mime TEXT NOT NULL,
+  data BLOB NOT NULL,
+  UNIQUE(name)
+);

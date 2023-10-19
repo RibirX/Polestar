@@ -67,6 +67,22 @@ impl Msg {
     self.cur_idx = last_idx as _;
   }
 
+  #[inline]
+  pub fn update_cur_cont(&mut self, cont: MsgCont) { self.cont_list[self.cur_idx as usize] = cont; }
+
+  pub fn update_cont(&mut self, idx: usize, cont: MsgCont) {
+    let len = self.cont_list.len();
+    if idx >= len {
+      log::warn!(
+        "[polestar] update message content error: index out of range: message's len is {}, but the index is {}",
+        len,
+        idx
+      );
+      return;
+    }
+    self.cont_list[idx] = cont;
+  }
+
   pub fn switch_cont(&mut self, idx: usize) {
     let len = self.cont_list.len();
     if idx >= len {

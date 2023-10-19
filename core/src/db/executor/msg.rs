@@ -87,8 +87,9 @@ pub async fn query_msgs_by_channel_id(
 }
 
 pub async fn query_latest_text_msgs_by_channel_id(
-  pool: &DbPool,
-  channel_id: &Uuid,
+  _pool: &DbPool,
+  _channel_id: &Uuid,
+  _limit: u32,
 ) -> Result<Vec<Msg>, PolestarError> {
   todo!()
 }
