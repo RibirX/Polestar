@@ -1,0 +1,10 @@
+[workspace.package]
+version = "0.0.1"
+edition = "2021"
+description = "An AI Q&A chat util written using Rust"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[workspace]
+members = ["core", "cli"]
+resolver = "2"

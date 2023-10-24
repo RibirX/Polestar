@@ -1,0 +1,27 @@
+{
+  "tokens": {
+    "OpenAI": "sk-1234567890"
+  },
+  "bots": [
+    {
+      "id": "87cc7e88-fd55-4c01-9a34-d0f1397b1c73",
+      "name": "Polestar Assistant",
+      "desc": "Polestar Assistant is a AI assistant powered by OpenAI",
+      "cat": "Assistant",
+      "tags": [
+        "AI"
+      ],
+      "lang": [
+        "en"
+      ],
+      "url": "https://api.openai.com/v1/chat/completions",
+      "headers": {
+        "Authorization": "{OpenAI}"
+      },
+      "params": {
+        "model": "gpt-3.5-turbo",
+        "prompt": ""
+      }
+    }
+  ]
+}
