@@ -1,7 +1,5 @@
-use std::time::Duration;
+use std::{pin::Pin, ptr::NonNull, time::Duration};
 
-use futures_util::lock::Mutex;
-use once_cell::sync::Lazy;
 use uuid::Uuid;
 
 use crate::db::{
@@ -14,31 +12,26 @@ use super::{
   channel::{Channel, ChannelCfg},
 };
 
-pub static PERSISTENCE_DB: Lazy<Mutex<PersistenceDB>> = Lazy::new(|| {
-  let db = PersistenceDB::connect(init_db(&db_path()), Duration::from_secs(1))
-    .expect("Failed to connect db");
-  Mutex::new(db)
-});
-
 pub struct AppData {
   bots: Vec<Bot>,
   channels: Vec<Channel>,
   cur_channel_id: Uuid,
   cfg: AppCfg,
+  db: Pin<Box<PersistenceDB>>,
 }
 
 impl AppData {
   pub fn new(bots: Vec<Bot>) -> Self {
-    let channels = PERSISTENCE_DB
-      .try_lock()
-      .expect("Failed to lock db")
-      .query_channels()
-      .expect("Failed to query channels");
+    let db = PersistenceDB::connect(init_db(&db_path()), Duration::from_secs(1))
+      .expect("Failed to connect db");
+    let channels = db.query_channels().expect("Failed to query channels");
+
     Self {
       bots,
       channels,
       cur_channel_id: Uuid::default(),
       cfg: AppCfg::default(),
+      db: Box::pin(db),
     }
   }
 
@@ -54,7 +47,10 @@ impl AppData {
   pub fn switch_channel(&mut self, channel_id: &Uuid) { self.cur_channel_id = *channel_id; }
 
   pub fn cur_channel(&self) -> Option<&Channel> {
-    self.channels.iter().find(|channel| channel.id() == &self.cur_channel_id)
+    self
+      .channels
+      .iter()
+      .find(|channel| channel.id() == &self.cur_channel_id)
   }
 
   pub fn cur_channel_mut(&mut self) -> Option<&mut Channel> {
@@ -66,13 +62,19 @@ impl AppData {
 
   pub fn new_channel(&mut self, name: String, desc: Option<String>) -> Uuid {
     let id = Uuid::new_v4();
-    let channel = Channel::new(id, name, desc, ChannelCfg::default());
+    let channel = Channel::new(
+      id,
+      name,
+      desc,
+      ChannelCfg::default(),
+      Some(NonNull::from(&*self.db)),
+    );
 
-    // TODO: don't need global db
     let p_channel = channel.clone();
-    PERSISTENCE_DB
-      .try_lock()
-      .expect("Failed to lock db")
+
+    self
+      .db
+      .as_mut()
       .add_persist(ActionPersist::AddChannel { channel: p_channel });
 
     self.channels.push(channel);
@@ -82,11 +84,10 @@ impl AppData {
   }
 
   pub fn remove_channel(&mut self, channel_id: &Uuid) {
-    // TODO: don't need global db
     let p_channel_id = *channel_id;
-    PERSISTENCE_DB
-      .try_lock()
-      .expect("Failed to lock db")
+    self
+      .db
+      .as_mut()
       .add_persist(ActionPersist::RemoveChannel { channel_id: p_channel_id });
 
     self.channels.retain(|channel| channel.id() != channel_id);

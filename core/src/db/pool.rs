@@ -1,3 +1,5 @@
+use std::marker::PhantomPinned;
+use std::pin::Pin;
 use std::time::Duration;
 
 use crate::utils::fs::user_data_path;
@@ -40,6 +42,7 @@ pub struct PersistenceDB {
   list: Vec<ActionPersist>,
   status: PersistStatus,
   timeout: Duration,
+  _marker: PhantomPinned,
 }
 
 impl PersistenceDB {
@@ -61,6 +64,7 @@ impl PersistenceDB {
       list: vec![],
       status: PersistStatus::Done,
       timeout,
+      _marker: PhantomPinned,
     })
   }
 
@@ -78,10 +82,11 @@ impl PersistenceDB {
     })
   }
 
-  pub fn add_persist(&mut self, persist: ActionPersist) {
-    self.list.push(persist);
-    if self.status == PersistStatus::Done {
-      self.run_batch_timeout(self.timeout);
+  pub fn add_persist(self: Pin<&mut Self>, persist: ActionPersist) {
+    let self_ = unsafe { self.get_unchecked_mut() };
+    self_.list.push(persist);
+    if self_.status == PersistStatus::Done {
+      self_.run_batch_timeout(self_.timeout);
     }
   }
 

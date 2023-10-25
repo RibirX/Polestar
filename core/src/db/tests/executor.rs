@@ -1,4 +1,4 @@
-use std::{thread::sleep, time::Duration};
+use std::{ptr::NonNull, thread::sleep, time::Duration};
 
 use uuid::Uuid;
 
@@ -15,8 +15,10 @@ fn log_init() { let _ = env_logger::builder().is_test(true).try_init(); }
 fn add_channel_test() {
   log_init();
 
-  let mut persistence_db =
+  let persistence_db =
     PersistenceDB::connect(init_db(), Duration::from_millis(100)).expect("Failed to connect db");
+
+  let mut persistence_db = Box::pin(persistence_db);
 
   let id_1 = Uuid::new_v4();
   let channel_1 = Channel::new(
@@ -24,16 +26,22 @@ fn add_channel_test() {
     "test".to_owned(),
     Some("test channel".to_owned()),
     ChannelCfg::default(),
+    Some(NonNull::from(&*persistence_db)),
   );
-  persistence_db.add_persist(ActionPersist::AddChannel { channel: channel_1 });
+  persistence_db
+    .as_mut()
+    .add_persist(ActionPersist::AddChannel { channel: channel_1 });
   let id_2 = Uuid::new_v4();
   let channel_2 = Channel::new(
     id_2,
     "test 2".to_owned(),
     Some("test channel 2".to_owned()),
     ChannelCfg::default(),
+    Some(NonNull::from(&*persistence_db)),
   );
-  persistence_db.add_persist(ActionPersist::AddChannel { channel: channel_2 });
+  persistence_db
+    .as_mut()
+    .add_persist(ActionPersist::AddChannel { channel: channel_2 });
 
   sleep(Duration::from_millis(100));
 
@@ -47,8 +55,10 @@ fn add_channel_test() {
 fn remove_channel_test() {
   log_init();
 
-  let mut persistence_db =
+  let persistence_db =
     PersistenceDB::connect(init_db(), Duration::from_millis(100)).expect("Failed to connect db");
+
+  let mut persistence_db = Box::pin(persistence_db);
 
   let id_1 = Uuid::new_v4();
   let channel_1 = Channel::new(
@@ -56,16 +66,22 @@ fn remove_channel_test() {
     "test".to_owned(),
     Some("test channel".to_owned()),
     ChannelCfg::default(),
+    Some(NonNull::from(&*persistence_db)),
   );
-  persistence_db.add_persist(ActionPersist::AddChannel { channel: channel_1 });
+  persistence_db
+    .as_mut()
+    .add_persist(ActionPersist::AddChannel { channel: channel_1 });
   let id_2 = Uuid::new_v4();
   let channel_2 = Channel::new(
     id_2,
     "test 2".to_owned(),
     Some("test channel 2".to_owned()),
     ChannelCfg::default(),
+    Some(NonNull::from(&*persistence_db)),
   );
-  persistence_db.add_persist(ActionPersist::AddChannel { channel: channel_2 });
+  persistence_db
+    .as_mut()
+    .add_persist(ActionPersist::AddChannel { channel: channel_2 });
 
   sleep(Duration::from_millis(100));
 
@@ -74,7 +90,9 @@ fn remove_channel_test() {
     .expect("Failed to query channels");
   assert_eq!(channels.len(), 2);
 
-  persistence_db.add_persist(ActionPersist::RemoveChannel { channel_id: id_1 });
+  persistence_db
+    .as_mut()
+    .add_persist(ActionPersist::RemoveChannel { channel_id: id_1 });
 
   sleep(Duration::from_millis(100));
 
@@ -88,8 +106,10 @@ fn remove_channel_test() {
 fn update_channel_test() {
   log_init();
 
-  let mut persistence_db =
+  let persistence_db =
     PersistenceDB::connect(init_db(), Duration::from_millis(100)).expect("Failed to connect db");
+
+  let mut persistence_db = Box::pin(persistence_db);
 
   let id_1 = Uuid::new_v4();
   let channel_1 = Channel::new(
@@ -97,8 +117,11 @@ fn update_channel_test() {
     "test".to_owned(),
     Some("test channel".to_owned()),
     ChannelCfg::default(),
+    Some(NonNull::from(&*persistence_db)),
   );
-  persistence_db.add_persist(ActionPersist::AddChannel { channel: channel_1 });
+  persistence_db
+    .as_mut()
+    .add_persist(ActionPersist::AddChannel { channel: channel_1 });
 
   sleep(Duration::from_millis(100));
 
@@ -109,7 +132,9 @@ fn update_channel_test() {
 
   let mut channel_1 = channels[0].clone();
   channel_1.update_name("test 2".to_owned());
-  persistence_db.add_persist(ActionPersist::UpdateChannel { channel: channel_1 });
+  persistence_db
+    .as_mut()
+    .add_persist(ActionPersist::UpdateChannel { channel: channel_1 });
 
   sleep(Duration::from_millis(100));
 
@@ -121,7 +146,9 @@ fn update_channel_test() {
 
   let mut channel_1 = channels[0].clone();
   channel_1.update_desc(Some("test channel 2".to_owned()));
-  persistence_db.add_persist(ActionPersist::UpdateChannel { channel: channel_1 });
+  persistence_db
+    .as_mut()
+    .add_persist(ActionPersist::UpdateChannel { channel: channel_1 });
 
   sleep(Duration::from_millis(100));
 
@@ -136,8 +163,9 @@ fn update_channel_test() {
 fn add_msg_test() {
   log_init();
 
-  let mut persistence_db =
+  let persistence_db =
     PersistenceDB::connect(init_db(), Duration::from_millis(100)).expect("Failed to connect db");
+  let mut persistence_db = Box::pin(persistence_db);
 
   let channel_id = Uuid::new_v4();
   let channel = Channel::new(
@@ -145,8 +173,11 @@ fn add_msg_test() {
     "test".to_owned(),
     Some("test channel".to_owned()),
     ChannelCfg::default(),
+    Some(NonNull::from(&*persistence_db)),
   );
-  persistence_db.add_persist(ActionPersist::AddChannel { channel });
+  persistence_db
+    .as_mut()
+    .add_persist(ActionPersist::AddChannel { channel });
 
   sleep(Duration::from_millis(100));
 
@@ -162,7 +193,9 @@ fn add_msg_test() {
     vec![MsgCont::text_init()],
     MsgMeta::default(),
   );
-  persistence_db.add_persist(ActionPersist::AddMsg { channel_id, msg });
+  persistence_db
+    .as_mut()
+    .add_persist(ActionPersist::AddMsg { channel_id, msg });
 
   sleep(Duration::from_millis(100));
 
@@ -176,8 +209,10 @@ fn add_msg_test() {
 fn update_msg_test() {
   log_init();
 
-  let mut persistence_db =
+  let persistence_db =
     PersistenceDB::connect(init_db(), Duration::from_millis(100)).expect("Failed to connect db");
+
+  let mut persistence_db = Box::pin(persistence_db);
 
   let channel_id = Uuid::new_v4();
   let channel = Channel::new(
@@ -185,8 +220,11 @@ fn update_msg_test() {
     "test".to_owned(),
     Some("test channel".to_owned()),
     ChannelCfg::default(),
+    Some(NonNull::from(&*persistence_db)),
   );
-  persistence_db.add_persist(ActionPersist::AddChannel { channel });
+  persistence_db
+    .as_mut()
+    .add_persist(ActionPersist::AddChannel { channel });
 
   sleep(Duration::from_millis(100));
 
@@ -202,7 +240,9 @@ fn update_msg_test() {
     vec![MsgCont::text_init()],
     MsgMeta::default(),
   );
-  persistence_db.add_persist(ActionPersist::AddMsg { channel_id, msg });
+  persistence_db
+    .as_mut()
+    .add_persist(ActionPersist::AddMsg { channel_id, msg });
 
   sleep(Duration::from_millis(100));
 
@@ -213,7 +253,9 @@ fn update_msg_test() {
 
   let mut msg = msgs[0].clone();
   msg.add_cont(MsgCont::text_init());
-  persistence_db.add_persist(ActionPersist::UpdateMsg { msg });
+  persistence_db
+    .as_mut()
+    .add_persist(ActionPersist::UpdateMsg { msg });
 
   sleep(Duration::from_millis(100));
 
@@ -229,8 +271,9 @@ fn update_msg_test() {
 fn query_msgs_by_channel_id_test() {
   log_init();
 
-  let mut persistence_db =
+  let persistence_db =
     PersistenceDB::connect(init_db(), Duration::from_millis(100)).expect("Failed to connect db");
+  let mut persistence_db = Box::pin(persistence_db);
 
   let channel_id = Uuid::new_v4();
   let channel = Channel::new(
@@ -238,8 +281,11 @@ fn query_msgs_by_channel_id_test() {
     "test".to_owned(),
     Some("test channel".to_owned()),
     ChannelCfg::default(),
+    Some(NonNull::from(&*persistence_db)),
   );
-  persistence_db.add_persist(ActionPersist::AddChannel { channel });
+  persistence_db
+    .as_mut()
+    .add_persist(ActionPersist::AddChannel { channel });
 
   sleep(Duration::from_millis(100));
 
@@ -255,7 +301,9 @@ fn query_msgs_by_channel_id_test() {
     vec![MsgCont::text_init()],
     MsgMeta::default(),
   );
-  persistence_db.add_persist(ActionPersist::AddMsg { channel_id, msg });
+  persistence_db
+    .as_mut()
+    .add_persist(ActionPersist::AddMsg { channel_id, msg });
 
   sleep(Duration::from_millis(100));
 
@@ -269,12 +317,15 @@ fn query_msgs_by_channel_id_test() {
 fn add_attachment_test() {
   log_init();
 
-  let mut persistence_db =
+  let persistence_db =
     PersistenceDB::connect(init_db(), Duration::from_millis(100)).expect("Failed to connect db");
+  let mut persistence_db = Box::pin(persistence_db);
 
   let attachment = Attachment::new(MIME::ImagePng, vec![1, 2, 3, 4]);
   let attachment_clone = attachment.clone();
-  persistence_db.add_persist(ActionPersist::AddAttachment { attachment });
+  persistence_db
+    .as_mut()
+    .add_persist(ActionPersist::AddAttachment { attachment });
 
   sleep(Duration::from_millis(100));
 

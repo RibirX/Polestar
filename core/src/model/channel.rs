@@ -1,5 +1,9 @@
+use std::ptr::NonNull;
+
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+
+use crate::db::pool::PersistenceDB;
 
 use super::msg::Msg;
 
@@ -10,6 +14,7 @@ pub struct Channel {
   desc: Option<String>,
   cfg: ChannelCfg,
   msgs_coll: MsgColl,
+  db: Option<NonNull<PersistenceDB>>,
 }
 
 #[derive(Debug, Default, Clone)]
@@ -34,15 +39,19 @@ pub enum MsgsCollStatus {
 }
 
 impl Channel {
-  pub fn new(id: Uuid, name: String, desc: Option<String>, cfg: ChannelCfg) -> Self {
+  pub fn new(id: Uuid, name: String, desc: Option<String>, cfg: ChannelCfg, db: Option<NonNull<PersistenceDB>>) -> Self {
     Self {
       id,
       name,
       desc,
       cfg,
       msgs_coll: MsgColl::default(),
+      db,
     }
   }
+
+  #[inline]
+  pub fn set_db(&mut self, db: NonNull<PersistenceDB>) { self.db = Some(db); }
 
   #[inline]
   pub fn id(&self) -> &Uuid { &self.id }
