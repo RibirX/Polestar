@@ -56,7 +56,7 @@ pub async fn stream_string(content: &str) -> String {
     format!("PoleStarChat/{}", version).parse().unwrap(),
   );
   headers.insert("Content-Type", "application/json".parse().unwrap());
-  headers.insert("Authorization", "v1.eyJ1c2VyX2lkIjoxMDAxMDIsImV4cCI6MTY5ODEzMzYxMCwidmVyIjoidjEifQ.CwB5-cvArO_UJVIPSZgb1GMKJ-tFpXOqhJNLg-rPxTY".parse().unwrap());
+  headers.insert("Authorization", "v1.eyJ1c2VyX2lkIjoxMDAxMDIsImV4cCI6MTY5ODgzMDgxMywidmVyIjoidjEifQ.5IVhn_pV_B4MjocnDZAXsRk7mq2-Uj7_EG4n08Emf8Y".parse().unwrap());
   headers.insert("Version", version.parse().unwrap());
   let body =
     r#"{"model":"gpt-3.5-turbo","messages":[{"role":"user","content":"123"}],"stream":true}"#;
