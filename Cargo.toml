@@ -6,5 +6,5 @@ description = "An AI Q&A chat util written using Rust"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [workspace]
-members = ["core", "cli"]
+members = ["core", "cli", "gui"]
 resolver = "2"
