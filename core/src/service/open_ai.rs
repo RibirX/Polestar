@@ -56,6 +56,7 @@ pub async fn stream_string(content: &str) -> String {
     format!("PoleStarChat/{}", version).parse().unwrap(),
   );
   headers.insert("Content-Type", "application/json".parse().unwrap());
+  // TODO: this token it test token, need to change to real token
   headers.insert("Authorization", "v1.eyJ1c2VyX2lkIjoxMDAxMDIsImV4cCI6MTY5ODgzMDgxMywidmVyIjoidjEifQ.5IVhn_pV_B4MjocnDZAXsRk7mq2-Uj7_EG4n08Emf8Y".parse().unwrap());
   headers.insert("Version", version.parse().unwrap());
   let body =
