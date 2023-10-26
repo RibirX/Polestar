@@ -1,0 +1,22 @@
+[package]
+name = "polestar-cli"
+version.workspace = true
+edition.workspace = true
+description.workspace = true
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+polestar-core = { path = "../core" }
+tokio = { version = "1.20.0", features = ["macros", "rt-multi-thread"] }
+reedline-repl-rs = { version = "1.0.7", features = ["async"] }
+inquire = "0.6.2"
+reqwest = { version = "0.11.18", features = ["json"] }
+
+[dependencies.uuid]
+version = "1.3.3"
+features = [
+  "v4",       # Lets you generate random UUIDs
+  "fast-rng", # Use a faster (but still sufficiently random) RNG
+  "serde",
+]
