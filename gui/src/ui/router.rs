@@ -25,7 +25,7 @@ impl ComposeChild for Router {
         @ {
           child.into_iter().map(|p| {
             let (route, child) = p.unzip();
-            let  path = $route.path.clone();
+            let path = $route.path.clone();
             @Visibility {
               visible: pipe!(path == $this.cur_path),
               @ { child }

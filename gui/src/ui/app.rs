@@ -16,7 +16,7 @@ impl Compose for AppGUI {
   fn compose(this: impl StateWriter<Value = Self>) -> impl WidgetBuilder {
     fn_widget! {
       @Router {
-        cur_path: $this.cur_path.clone(),
+        cur_path: pipe!($this.cur_path.clone()),
         @Route {
           path: "/hello".to_owned(),
           @Row {
