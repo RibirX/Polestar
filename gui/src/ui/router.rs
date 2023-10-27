@@ -1,13 +1,16 @@
 use ribir::prelude::*;
 
-#[derive(Template)]
+#[derive(Declare)]
 pub struct Route {
   path: String,
-  component: WidgetOf<RouteItem>,
 }
 
-#[derive(Declare, PairChild)]
-pub struct RouteItem;
+impl ComposeChild for Route {
+  type Child = Widget;
+  fn compose_child(_: impl StateWriter<Value = Self>, child: Self::Child) -> impl WidgetBuilder {
+    fn_widget! { child }
+  }
+}
 
 #[derive(Declare)]
 pub struct Router {
@@ -15,14 +18,18 @@ pub struct Router {
 }
 
 impl ComposeChild for Router {
-  type Child = Vec<Route>;
+  type Child = Vec<Pair<State<Route>, Widget>>;
   fn compose_child(this: impl StateWriter<Value = Self>, child: Self::Child) -> impl WidgetBuilder {
     fn_widget! {
       @Stack {
         @ {
-          child.into_iter().map(|route| @Visibility {
-            visible: route.path == $this.cur_path,
-            @ { route.component.child() }
+          child.into_iter().map(|p| {
+            let (route, child) = p.unzip();
+            let  path = $route.path.clone();
+            @Visibility {
+              visible: pipe!(path == $this.cur_path),
+              @ { child }
+            }
           })
         }
       }
