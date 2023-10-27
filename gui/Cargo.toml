@@ -9,3 +9,7 @@ description.workspace = true
 [dependencies]
 polestar-core = { path = "../core" }
 ribir = { path = "../../Ribir/ribir", features = ["png"] }
+
+serde.workspace = true
+serde_json.workspace = true
+uuid.workspace = true

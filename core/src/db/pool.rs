@@ -54,13 +54,10 @@ impl PersistenceDB {
       .worker_threads(2)
       .enable_all()
       .build()?;
-    let inner = rt.block_on(async {
-      let pool = init_db.await;
-      pool
-    })?;
+    let inner = rt.block_on(init_db)?;
     Ok(Self {
       rt,
-      inner: inner,
+      inner,
       list: vec![],
       status: PersistStatus::Done,
       timeout,
