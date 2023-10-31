@@ -1,6 +1,6 @@
 use ribir::prelude::*;
 
-use crate::style::GRAY_F4;
+use crate::{component::common::IconButton, style::GRAY_F4};
 
 pub fn editor() -> impl WidgetBuilder {
   fn_widget! {
@@ -45,21 +45,8 @@ fn editor_textarea() -> impl WidgetBuilder {
         flex: 1.,
         @ { textarea }
       }
-      @ { SendButton }
-    }
-  }
-}
-
-#[derive(Declare)]
-struct SendButton;
-
-impl Compose for SendButton {
-  fn compose(_: impl StateWriter<Value = Self>) -> impl WidgetBuilder {
-    fn_widget! {
-      @Icon {
-        cursor: CursorIcon::Hand,
-        size: Size::splat(24.),
-        @ { ShareResource::new(include_svg!("../../../static/send.svg")) }
+      @IconButton {
+        icon: ShareResource::new(include_svg!("../../../static/send.svg"))
       }
     }
   }

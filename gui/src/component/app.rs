@@ -1,4 +1,4 @@
-use polestar_core::model::AppData;
+use polestar_core::{load_bot_cfg_file, model::AppData};
 use ribir::prelude::*;
 
 use super::{home::home_page, login::login_page, permission::permission_page, router::*};
@@ -36,11 +36,13 @@ impl Compose for AppGUI {
         path: PartialPath::new("/home", 0),
         @ { this.home_page() }
       };
-      @Router {
-        cur_path: pipe!($this.cur_router_path().to_owned()),
-        @ { login_page }
-        @ { permission_page }
-        @ { home_page }
+      @Stack {
+        @Router {
+          cur_path: pipe!($this.cur_router_path().to_owned()),
+          @ { login_page }
+          @ { permission_page }
+          @ { home_page }
+        }
       }
     }
   }
@@ -57,6 +59,8 @@ trait AppExtraWidgets: StateWriter<Value = AppGUI> + Sized {
 }
 
 pub fn app_gui() -> impl WidgetBuilder {
-  let app_data = AppData::new(vec![]);
+  let bots = load_bot_cfg_file();
+  let mut app_data = AppData::new(bots);
+  app_data.new_channel("quick start".to_owned(), None);
   fn_widget! { AppGUI::new(app_data) }
 }

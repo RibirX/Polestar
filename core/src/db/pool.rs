@@ -2,8 +2,7 @@ use std::marker::PhantomPinned;
 use std::pin::Pin;
 use std::time::Duration;
 
-use crate::utils::fs::user_data_path;
-use crate::{error::PolestarResult, model::Channel};
+use crate::{error::PolestarResult, model::Channel, utils::user_data_path};
 use sqlx::{migrate::MigrateDatabase, sqlite::SqlitePool, Sqlite};
 use uuid::Uuid;
 

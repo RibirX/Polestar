@@ -70,7 +70,7 @@ mod test {
 
   // load bot.json file
   #[test]
-  fn load_bot_cfg_file() {
+  fn load_bot_cfg_file_test() {
     let preset_bot_cfg = serde_json::from_str::<serde_json::Value>(include_str!(concat!(
       env!("CARGO_MANIFEST_DIR"),
       "/..",

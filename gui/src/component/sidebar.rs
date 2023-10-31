@@ -1,7 +1,7 @@
 use ribir::prelude::*;
 
 use crate::{
-  component::{channel::channel, common::InteractList},
+  component::{channel::channel, common::InteractiveList},
   style::{APP_SIDEBAR_HEADER_HEIGHT, GRAY},
   APP_NAME,
 };
@@ -21,7 +21,7 @@ pub fn sidebar(app: impl StateWriter<Value = AppGUI>) -> impl WidgetBuilder {
   }
 }
 
-fn header(app: impl StateWriter<Value = AppGUI>) -> impl WidgetBuilder {
+fn header(_app: impl StateWriter<Value = AppGUI>) -> impl WidgetBuilder {
   fn_widget! {
     @ConstrainedBox {
       clamp: BoxClamp::fixed_height(APP_SIDEBAR_HEADER_HEIGHT),
@@ -43,10 +43,10 @@ fn header(app: impl StateWriter<Value = AppGUI>) -> impl WidgetBuilder {
   }
 }
 
-fn others(app: impl StateWriter<Value = AppGUI>) -> impl WidgetBuilder {
+fn others(_app: impl StateWriter<Value = AppGUI>) -> impl WidgetBuilder {
   fn_widget! {
-    @InteractList {
-      need_highlight: false,
+    @InteractiveList {
+      highlight_visible: false,
       @ListItem {
         @HeadlineText(Label::new("BotStore"))
       }
