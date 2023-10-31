@@ -1,17 +1,16 @@
 use ribir::prelude::*;
 
 #[derive(Declare)]
-pub struct IconButton {
-  icon: ShareResource<Svg>,
-}
+pub struct IconButton;
 
-impl Compose for IconButton {
-  fn compose(this: impl StateWriter<Value = Self>) -> impl WidgetBuilder {
+impl ComposeChild for IconButton {
+  type Child = Widget;
+  fn compose_child(_: impl StateWriter<Value = Self>, child: Self::Child) -> impl WidgetBuilder {
     fn_widget! {
       @Icon {
         cursor: CursorIcon::Hand,
         size: Size::splat(24.),
-        @ { $this.icon.clone() }
+        @ { child }
       }
     }
   }

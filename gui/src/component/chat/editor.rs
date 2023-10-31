@@ -1,6 +1,6 @@
 use ribir::prelude::*;
 
-use crate::{component::common::IconButton, style::GRAY_F4};
+use crate::{component::common::IconButton, style::GRAY_F4, theme::polestar_svgs};
 
 pub fn editor() -> impl WidgetBuilder {
   fn_widget! {
@@ -46,7 +46,7 @@ fn editor_textarea() -> impl WidgetBuilder {
         @ { textarea }
       }
       @IconButton {
-        icon: ShareResource::new(include_svg!("../../../static/send.svg"))
+        @ { polestar_svgs::SEND }
       }
     }
   }

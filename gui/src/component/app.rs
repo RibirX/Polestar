@@ -1,7 +1,9 @@
 use polestar_core::{load_bot_cfg_file, model::AppData};
 use ribir::prelude::*;
+use ribir_algo::Sc;
 
 use super::{home::home_page, login::login_page, permission::permission_page, router::*};
+use crate::theme::theme;
 
 pub struct AppGUI {
   cur_router_path: String,
@@ -24,24 +26,31 @@ impl AppGUI {
 impl Compose for AppGUI {
   fn compose(this: impl StateWriter<Value = Self>) -> impl WidgetBuilder {
     fn_widget! {
-      let login_page = @Route {
-        path: PartialPath::new("/login", 0),
-        @ { this.login_page() }
-      };
-      let permission_page = @Route {
-        path: PartialPath::new("/permission", 0),
-        @ { this.permission_page() }
-      };
-      let home_page = @Route {
-        path: PartialPath::new("/home", 0),
-        @ { this.home_page() }
-      };
-      @Stack {
-        @Router {
-          cur_path: pipe!($this.cur_router_path().to_owned()),
-          @ { login_page }
-          @ { permission_page }
-          @ { home_page }
+      @ThemeWidget {
+        theme: Sc::new(Theme::Inherit(theme())),
+        @ {
+          Box::new(fn_widget! {
+            let login_page = @Route {
+              path: PartialPath::new("/login", 0),
+              @ { this.login_page() }
+            };
+            let permission_page = @Route {
+              path: PartialPath::new("/permission", 0),
+              @ { this.permission_page() }
+            };
+            let home_page = @Route {
+              path: PartialPath::new("/home", 0),
+              @ { this.home_page() }
+            };
+            @Stack {
+              @Router {
+                cur_path: pipe!($this.cur_router_path().to_owned()),
+                @ { login_page }
+                @ { permission_page }
+                @ { home_page }
+              }
+            }
+          })
         }
       }
     }

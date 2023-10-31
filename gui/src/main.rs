@@ -5,6 +5,7 @@ use serde::Deserialize;
 
 mod component;
 mod style;
+mod theme;
 
 #[derive(Deserialize)]
 pub struct UISettings {

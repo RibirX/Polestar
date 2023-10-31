@@ -1,6 +1,8 @@
+use crate::theme::polestar_svgs;
+
 use super::app::AppGUI;
 use super::common::{IconButton, InteractiveList};
-use polestar_core::model::{Channel, BotAvatar};
+use polestar_core::model::Channel;
 use ribir::prelude::*;
 
 pub fn channel(app: impl StateWriter<Value = AppGUI>) -> impl WidgetBuilder {
@@ -23,31 +25,8 @@ pub fn channel(app: impl StateWriter<Value = AppGUI>) -> impl WidgetBuilder {
 }
 
 #[derive(Declare)]
-struct ChannelAvatar {
-  avatar: BotAvatar,
-}
-
-impl Compose for ChannelAvatar {
-  fn compose(this: impl StateWriter<Value = Self>) -> impl WidgetBuilder {
-    fn_widget! {
-      @ {
-        match &$this.avatar {
-          BotAvatar::Text { name, color } => {
-            @Void {}
-          },
-          BotAvatar::Image { url } => {
-            @Void {}
-          },
-        }
-      }
-    }
-  }
-}
-
-#[derive(Declare)]
 struct ChannelView {
   data: Channel,
-  avatar: BotAvatar,
 }
 
 impl Compose for ChannelView {
@@ -68,10 +47,10 @@ impl Compose for ChannelView {
               align_items: Align::Center,
               item_gap: 8.,
               @IconButton {
-                icon: ShareResource::new(include_svg!("../../static/send.svg")),
+                @ { polestar_svgs::EDIT }
               }
               @IconButton {
-                icon: ShareResource::new(include_svg!("../../static/send.svg")),
+                @ { polestar_svgs::TRASH }
               }
             };
             CustomEdgeWidget(channel_operator.widget_build(ctx!()))
