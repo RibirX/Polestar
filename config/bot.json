@@ -7,6 +7,10 @@
       "id": "87cc7e88-fd55-4c01-9a34-d0f1397b1c73",
       "name": "Polestar Assistant",
       "desc": "Polestar Assistant is a AI assistant powered by OpenAI",
+      "avatar": {
+        "name": "🌉",
+        "color": "#EDF7FBFF"
+      },
       "cat": "Assistant",
       "tags": [
         "AI"

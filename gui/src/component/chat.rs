@@ -1,16 +1,18 @@
+use polestar_core::model::Channel;
 use ribir::prelude::*;
 
-use super::app::AppGUI;
+mod chat_list;
+mod editor;
 
-pub fn chat(app: impl StateWriter<Value = AppGUI>) -> impl WidgetBuilder {
+pub fn chat(channel: impl StateWriter<Value = Channel>) -> impl WidgetBuilder {
   fn_widget! {
-    @Column {
-      @Text { text: "chat" }
-      @FilledButton {
-        on_tap: move |_| {
-          $app.write().navigate_to("/home/setting");
-        },
-        @ { Label::new("switch setting") }
+    @Stack {
+      @Column {
+        @Expanded {
+          flex: 1.,
+          @ { chat_list::chat_list() }
+        }
+        @ { editor::editor() }
       }
     }
   }

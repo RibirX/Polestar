@@ -4,8 +4,8 @@ use ribir::prelude::*;
 use super::{home::home_page, login::login_page, permission::permission_page, router::*};
 
 pub struct AppGUI {
-  data: AppData,
   cur_router_path: String,
+  pub data: AppData,
 }
 
 impl AppGUI {
@@ -58,5 +58,5 @@ trait AppExtraWidgets: StateWriter<Value = AppGUI> + Sized {
 
 pub fn app_gui() -> impl WidgetBuilder {
   let app_data = AppData::new(vec![]);
-  fn_widget! { @ { AppGUI::new(app_data) } }
+  fn_widget! { AppGUI::new(app_data) }
 }

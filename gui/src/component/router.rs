@@ -51,6 +51,7 @@ impl ComposeChild for Router {
   fn compose_child(this: impl StateWriter<Value = Self>, child: Self::Child) -> impl WidgetBuilder {
     fn_widget! {
       @Stack {
+        fit: StackFit::Expand,
         @ {
           child.into_iter().map(|p| {
             let (route, child) = p.unzip();

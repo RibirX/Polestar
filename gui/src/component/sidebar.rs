@@ -1,6 +1,7 @@
 use ribir::prelude::*;
 
 use crate::{
+  component::{channel::channel, common::InteractList},
   style::{APP_SIDEBAR_HEADER_HEIGHT, GRAY},
   APP_NAME,
 };
@@ -11,6 +12,11 @@ pub fn sidebar(app: impl StateWriter<Value = AppGUI>) -> impl WidgetBuilder {
   fn_widget! {
     @Column {
       @ { header(app.clone_writer()) }
+      @Expanded {
+        flex: 1.,
+        @ { channel(app.clone_writer()) }
+      }
+      @ { others(app.clone_writer()) }
     }
   }
 }
@@ -32,6 +38,23 @@ fn header(app: impl StateWriter<Value = AppGUI>) -> impl WidgetBuilder {
           color: Color::from_u32(GRAY),
           @ { svgs::ADD }
         }
+      }
+    }
+  }
+}
+
+fn others(app: impl StateWriter<Value = AppGUI>) -> impl WidgetBuilder {
+  fn_widget! {
+    @InteractList {
+      need_highlight: false,
+      @ListItem {
+        @HeadlineText(Label::new("BotStore"))
+      }
+      @ListItem {
+        @HeadlineText(Label::new("Setting"))
+      }
+      @ListItem {
+        @HeadlineText(Label::new("Feedback"))
       }
     }
   }

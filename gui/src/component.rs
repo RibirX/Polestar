@@ -1,6 +1,7 @@
 pub mod app;
 mod channel;
 mod chat;
+mod common;
 mod home;
 mod login;
 mod permission;
