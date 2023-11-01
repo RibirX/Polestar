@@ -6,3 +6,9 @@ pub use icon_button::*;
 
 mod avatar;
 pub use avatar::*;
+
+mod modal;
+pub use modal::*;
+
+mod tooltip;
+pub use tooltip::*;

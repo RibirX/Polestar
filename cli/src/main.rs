@@ -10,7 +10,7 @@ static APP_NAME: &str = env!("CARGO_PKG_NAME");
 static APP_DESC: &str = env!("CARGO_PKG_DESCRIPTION");
 
 fn main() -> ReplResult<()> {
-  let mut app_data = AppData::new(vec![]);
+  let mut app_data = AppData::new(vec![], uuid::Uuid::nil());
   app_data.new_channel("quick launcher".to_owned(), None);
   let mut repl = Repl::new(app_data)
     .with_name(APP_NAME)

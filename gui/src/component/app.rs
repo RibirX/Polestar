@@ -2,7 +2,9 @@ use polestar_core::{load_bot_cfg_file, model::AppData};
 use ribir::prelude::*;
 use ribir_algo::Sc;
 
-use super::{home::home_page, login::login_page, permission::permission_page, router::*};
+use super::{
+  common::Tooltip, home::home_page, login::login_page, permission::permission_page, router::*,
+};
 use crate::theme::theme;
 
 pub struct AppGUI {
@@ -49,6 +51,9 @@ impl Compose for AppGUI {
                 @ { permission_page }
                 @ { home_page }
               }
+              @Tooltip {
+                content: "hello world".to_owned(),
+              }
             }
           })
         }
@@ -69,7 +74,8 @@ trait AppExtraWidgets: StateWriter<Value = AppGUI> + Sized {
 
 pub fn app_gui() -> impl WidgetBuilder {
   let bots = load_bot_cfg_file();
-  let mut app_data = AppData::new(bots);
+  let first_bot_id = *bots.first().unwrap().id();
+  let mut app_data = AppData::new(bots, first_bot_id);
   app_data.new_channel("quick start".to_owned(), None);
   fn_widget! { AppGUI::new(app_data) }
 }

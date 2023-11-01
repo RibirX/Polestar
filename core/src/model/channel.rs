@@ -107,6 +107,26 @@ pub struct ChannelCfg {
   def_bot_id: Option<Uuid>,
 }
 
+impl ChannelCfg {
+  #[inline]
+  pub fn mode(&self) -> ChannelMode { self.mode }
+
+  #[inline]
+  pub fn kind(&self) -> ChannelKind { self.kind }
+
+  #[inline]
+  pub fn def_bot_id(&self) -> Option<&Uuid> { self.def_bot_id.as_ref() }
+
+  #[inline]
+  pub fn set_mode(&mut self, mode: ChannelMode) { self.mode = mode; }
+
+  #[inline]
+  pub fn set_kind(&mut self, kind: ChannelKind) { self.kind = kind; }
+
+  #[inline]
+  pub fn set_def_bot_id(&mut self, def_bot_id: Option<Uuid>) { self.def_bot_id = def_bot_id; }
+}
+
 #[derive(Debug, Deserialize, Serialize, PartialEq, Eq, Clone, Copy, Default)]
 pub enum ChannelMode {
   #[default]
