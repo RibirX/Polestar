@@ -103,8 +103,7 @@ impl Channel {
 pub struct ChannelCfg {
   mode: ChannelMode,
   kind: ChannelKind,
-  // if channel default bot id is none, it means this channel use global default bot id.
-  def_bot_id: Option<Uuid>,
+  def_bot_id: Uuid,
 }
 
 impl ChannelCfg {
@@ -115,7 +114,7 @@ impl ChannelCfg {
   pub fn kind(&self) -> ChannelKind { self.kind }
 
   #[inline]
-  pub fn def_bot_id(&self) -> Option<&Uuid> { self.def_bot_id.as_ref() }
+  pub fn def_bot_id(&self) -> &Uuid { &self.def_bot_id }
 
   #[inline]
   pub fn set_mode(&mut self, mode: ChannelMode) { self.mode = mode; }
@@ -124,7 +123,7 @@ impl ChannelCfg {
   pub fn set_kind(&mut self, kind: ChannelKind) { self.kind = kind; }
 
   #[inline]
-  pub fn set_def_bot_id(&mut self, def_bot_id: Option<Uuid>) { self.def_bot_id = def_bot_id; }
+  pub fn set_def_bot_id(&mut self, def_bot_id: Uuid) { self.def_bot_id = def_bot_id; }
 }
 
 #[derive(Debug, Deserialize, Serialize, PartialEq, Eq, Clone, Copy, Default)]

@@ -62,13 +62,9 @@ impl AppData {
 
   pub fn new_channel(&mut self, name: String, desc: Option<String>) -> Uuid {
     let id = Uuid::new_v4();
-    let channel = Channel::new(
-      id,
-      name,
-      desc,
-      ChannelCfg::default(),
-      Some(NonNull::from(&*self.db)),
-    );
+    let mut channel_cfg = ChannelCfg::default();
+    channel_cfg.set_def_bot_id(*self.cfg.def_bot_id());
+    let channel = Channel::new(id, name, desc, channel_cfg, Some(NonNull::from(&*self.db)));
 
     let p_channel = channel.clone();
 
