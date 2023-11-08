@@ -1,9 +1,6 @@
 use ribir::prelude::*;
 
-use crate::{
-  component::common::carousel,
-  style::{BLACK, LIGHT_SILVER_FF},
-};
+use crate::style::{BLACK, LIGHT_SILVER_FF};
 
 pub struct GraphicIntro {
   image: ShareResource<PixelImage>,
@@ -41,9 +38,7 @@ pub struct Carousel {
 impl Compose for Carousel {
   fn compose(this: impl StateWriter<Value = Self>) -> impl WidgetBuilder {
     fn_widget! {
-      let mut fitted_banner = @FittedBox {
-        box_fit: $this.banner_fit,
-      };
+
       let dots = w_dots(this.clone_writer());
       @Stack {
         fit: StackFit::Passthrough,
@@ -52,22 +47,7 @@ impl Compose for Carousel {
           @Column {
             @ { w_title(this.clone_reader()) }
             @ { w_intro(this.clone_reader()) }
-            @Container {
-              size: $this.banner_size,
-              @Clip {
-                v_align: VAlign::Center,
-                h_align: HAlign::Center,
-                clip: ClipType::Path(
-                  Path::rect_round(
-                    &Rect::new(Point::zero(), $fitted_banner.layout_size()),
-                    &Radius::all(10.),
-                  ),
-                ),
-                @$fitted_banner {
-                  @ { $this.contents.get($this.cur_idx).map(|intro| intro.image.clone()).unwrap() }
-                }
-              }
-            }
+            @ { w_cur_banner(this.clone_reader()) }
           }
           @$dots {
             margin: EdgeInsets::only_top(15.)
@@ -81,44 +61,59 @@ impl Compose for Carousel {
 fn w_cur_banner(carousel: impl StateReader<Value = Carousel>) -> Option<impl WidgetBuilder> {
   let carousel_ref = carousel.read();
   let cur_intro = carousel_ref.contents.get(carousel_ref.cur_idx);
+  let carousel_state = carousel.clone_reader();
   cur_intro.map(|intro| intro.image.clone()).map(|image| {
     fn_widget! {
-      @ { image }
+      let mut fitted_banner = @FittedBox {
+        box_fit: $carousel_state.banner_fit,
+      };
+      @Container {
+        size: $carousel_state.banner_size,
+        @Clip {
+          v_align: VAlign::Center,
+          h_align: HAlign::Center,
+          clip: ClipType::Path(
+            Path::rect_round(
+              &Rect::new(Point::zero(), $fitted_banner.layout_size()),
+              &Radius::all(10.),
+            ),
+          ),
+          @$fitted_banner {
+            @ { image }
+          }
+        }
+      }
     }
   })
 }
 
 fn w_title(carousel: impl StateReader<Value = Carousel>) -> Option<impl WidgetBuilder> {
   let carousel_ref = carousel.read();
-  carousel_ref.contents[carousel_ref.cur_idx]
-    .title
-    .clone()
-    .map(|text| {
-      fn_widget! {
-        @Text {
-          text,
-          text_style: TypographyTheme::of(ctx!()).title_large.text.clone(),
-          margin: EdgeInsets::only_bottom(10.),
-        }
+  let cur_intro = carousel_ref.contents.get(carousel_ref.cur_idx);
+  cur_intro.and_then(|intro| intro.title.clone()).map(|text| {
+    fn_widget! {
+      @Text {
+        text,
+        text_style: TypographyTheme::of(ctx!()).title_large.text.clone(),
+        margin: EdgeInsets::only_bottom(10.),
       }
-    })
+    }
+  })
 }
 
 fn w_intro(carousel: impl StateReader<Value = Carousel>) -> Option<impl WidgetBuilder> {
   let carousel_ref = carousel.read();
-  carousel_ref.contents[carousel_ref.cur_idx]
-    .desc
-    .clone()
-    .map(|text| {
-      fn_widget! {
-        @Text {
-          text,
-          text_style: TypographyTheme::of(ctx!()).title_medium.text.clone(),
-          overflow: Overflow::AutoWrap,
-          margin: EdgeInsets::only_bottom(10.),
-        }
+  let cur_intro = carousel_ref.contents.get(carousel_ref.cur_idx);
+  cur_intro.and_then(|intro| intro.desc.clone()).map(|text| {
+    fn_widget! {
+      @Text {
+        text,
+        text_style: TypographyTheme::of(ctx!()).title_medium.text.clone(),
+        overflow: Overflow::AutoWrap,
+        margin: EdgeInsets::only_bottom(10.),
       }
-    })
+    }
+  })
 }
 
 fn w_dots(carousel: impl StateWriter<Value = Carousel>) -> impl WidgetBuilder {
