@@ -25,9 +25,9 @@ impl GraphicIntro {
 #[derive(Declare)]
 pub struct Carousel {
   contents: Vec<GraphicIntro>,
-  #[declare(default = 0 as usize)]
+  #[declare(default = 0_usize)]
   cur_idx: usize,
-  #[declare(default = 5 as u64)]
+  #[declare(default = 5_u64)]
   interval: u64,
   #[declare(default = Size::new(560., 380.))]
   banner_size: Size,

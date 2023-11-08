@@ -54,10 +54,7 @@ impl PersistenceDB {
       .worker_threads(2)
       .enable_all()
       .build()?;
-    let inner = rt.block_on(async {
-      let pool = init_db.await;
-      pool
-    })?;
+    let inner = rt.block_on(async { init_db.await })?;
     Ok(Self {
       rt,
       inner: inner,
@@ -83,10 +80,10 @@ impl PersistenceDB {
   }
 
   pub fn add_persist(self: Pin<&mut Self>, persist: ActionPersist) {
-    let self_ = unsafe { self.get_unchecked_mut() };
-    self_.list.push(persist);
-    if self_.status == PersistStatus::Done {
-      self_.run_batch_timeout(self_.timeout);
+    let db = unsafe { self.get_unchecked_mut() };
+    db.list.push(persist);
+    if db.status == PersistStatus::Done {
+      db.run_batch_timeout(db.timeout);
     }
   }
 

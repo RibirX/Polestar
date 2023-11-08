@@ -47,6 +47,20 @@ impl AppData {
   #[inline]
   pub fn channels_mut(&mut self) -> &mut Vec<Channel> { &mut self.channels }
 
+  pub fn get_channel(&self, channel_id: &Uuid) -> Option<&Channel> {
+    self
+      .channels
+      .iter()
+      .find(|channel| channel.id() == channel_id)
+  }
+
+  pub fn get_channel_mut(&mut self, channel_id: &Uuid) -> Option<&mut Channel> {
+    self
+      .channels
+      .iter_mut()
+      .find(|channel| channel.id() == channel_id)
+  }
+
   pub fn switch_channel(&mut self, channel_id: &Uuid) { self.cur_channel_id = *channel_id; }
 
   pub fn cur_channel(&self) -> Option<&Channel> {
@@ -99,6 +113,16 @@ impl AppData {
   pub fn cfg(&self) -> &AppCfg { &self.cfg }
 
   pub fn cfg_mut(&mut self) -> &mut AppCfg { &mut self.cfg }
+
+  pub fn clear_channels(&mut self) {
+    self.channels.iter().for_each(|c| {
+      self
+        .db
+        .as_mut()
+        .add_persist(ActionPersist::RemoveChannel { channel_id: *c.id() });
+    });
+    self.channels.clear();
+  }
 }
 
 #[derive(Debug, Default)]

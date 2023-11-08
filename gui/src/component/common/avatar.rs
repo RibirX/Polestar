@@ -13,7 +13,7 @@ pub fn w_avatar(avatar: &impl StateReader<Value = BotAvatar>) -> impl WidgetBuil
         }
         BotAvatar::Text { name, color } => {
           @Avatar {
-            color: Color::from_u32(get_color_by_hex_str(&color)),
+            color: Color::from_u32(get_color_by_hex_str(color)),
             @ { Label::new(name.to_owned()) }
           }.widget_build(ctx!())
         }

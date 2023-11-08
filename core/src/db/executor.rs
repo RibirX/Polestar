@@ -15,6 +15,7 @@ pub mod msg;
 pub enum ActionPersist {
   AddMsg { channel_id: Uuid, msg: Msg },
   UpdateMsg { msg: Msg },
+  RemoveMsg { msg_id: Uuid },
   AddChannel { channel: Channel },
   RemoveChannel { channel_id: Uuid },
   UpdateChannel { channel: Channel },
@@ -33,6 +34,9 @@ impl Persist for ActionPersist {
       }
       ActionPersist::UpdateMsg { msg } => {
         msg::update_msg(pool, msg).await?;
+      }
+      ActionPersist::RemoveMsg { msg_id } => {
+        msg::remove_msg(pool, msg_id).await?;
       }
       ActionPersist::AddChannel { channel } => {
         channel::add_channel(pool, channel).await?;

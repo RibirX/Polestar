@@ -36,6 +36,18 @@ pub async fn remove_channel(pool: &DbPool, id: &Uuid) -> Result<(), PolestarErro
 
   log::info!("remove channel result: {:?}", res);
 
+  let res = sqlx::query(
+    r#"
+    DELETE FROM msg
+    WHERE channel_id = ?1
+    "#,
+  )
+  .bind(id)
+  .execute(pool)
+  .await?;
+
+  log::info!("remove channel msgs result: {:?}", res);
+
   Ok(())
 }
 

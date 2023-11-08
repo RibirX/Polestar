@@ -70,6 +70,10 @@ where
             align_items: Align::Center,
             item_gap: 8.,
             @IconButton {
+              on_tap: move |_| {
+                let id = *$channel.id();
+                $app.write().set_modify_channel_id(Some(id));
+              },
               @ { polestar_svg::EDIT }
             }
             @IconButton {

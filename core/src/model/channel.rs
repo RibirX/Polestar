@@ -106,6 +106,10 @@ impl Channel {
       .iter_mut()
       .find(|msg| msg.id() == msg_id)
   }
+
+  pub fn clear_msgs(&mut self) {
+    self.msgs_coll.msgs.clear();
+  }
 }
 
 #[derive(Debug, Deserialize, Serialize, Default, Clone)]

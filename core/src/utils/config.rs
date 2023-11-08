@@ -7,7 +7,5 @@ pub fn load_bot_cfg_file() -> Vec<Bot> {
     "/config/bot.json"
   )))
   .expect("Failed to parse bot.json");
-  let bots = serde_json::from_value::<Vec<Bot>>(preset_bot_cfg["bots"].clone())
-    .expect("Failed to parse bots");
-  bots
+  serde_json::from_value::<Vec<Bot>>(preset_bot_cfg["bots"].clone()).expect("Failed to parse bots")
 }

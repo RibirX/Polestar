@@ -36,7 +36,7 @@ pub fn channel_handler(args: ArgMatches, app_data: &mut AppData) -> ReplResult<O
         .expect("failed to prompt");
 
       if let Some(select) = rst {
-        let channel_id = select.split(":").next().expect("invalid channel id");
+        let channel_id = select.split(':').next().expect("invalid channel id");
         let channel_id = Uuid::parse_str(channel_id).expect("invalid channel id");
         app_data.remove_channel(&channel_id);
       }
@@ -63,7 +63,7 @@ pub fn channel_handler(args: ArgMatches, app_data: &mut AppData) -> ReplResult<O
         .expect("failed to prompt");
 
       if let Some(select) = rst {
-        let channel_id = select.split(":").next().expect("invalid channel id");
+        let channel_id = select.split(':').next().expect("invalid channel id");
         let channel_id = Uuid::parse_str(channel_id).expect("invalid channel id");
         app_data.switch_channel(&channel_id);
       }

@@ -8,7 +8,7 @@ pub struct InteractiveList {
   highlight_color: Color,
   #[declare(default = true)]
   highlight_visible: bool,
-  #[declare(default = 0 as usize)]
+  #[declare(default = 0_usize)]
   active: usize,
   #[declare(skip)]
   highlight_rect_list: Vec<Rect>,

@@ -1,6 +1,5 @@
 use polestar_core::model::{Channel, Msg, MsgRole};
 use ribir::prelude::*;
-use serde_json::Value;
 
 use crate::component::common::IconButton;
 use crate::style::decorator::channel::message_style;
@@ -198,7 +197,7 @@ where
 
 fn w_msg_multi_rst(msg: &impl StateWriter<Value = Msg>) -> impl WidgetBuilder {
   fn_widget! {
-    let mut scrollable_widget = @ScrollableWidget {
+    let scrollable_widget = @ScrollableWidget {
       scrollable: Scrollable::X,
     };
     @Row {
