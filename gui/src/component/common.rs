@@ -12,3 +12,5 @@ mod interactive_lists;
 pub use interactive_lists::*;
 mod modal;
 pub use modal::*;
+mod progress_bar;
+pub use progress_bar::*;
