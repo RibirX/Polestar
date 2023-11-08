@@ -13,6 +13,8 @@ pub struct Bot {
   lang: Vec<Lang>,
   // A description for bot, it's optional
   desc: Option<String>,
+  // A avatar for bot
+  avatar: BotAvatar,
   // A category for bot, it's optional
   cat: Option<String>,
   // A list of tags for bot, it can be empty list to indicate no tags
@@ -31,6 +33,8 @@ impl Bot {
   pub fn name(&self) -> &str { &self.name }
 
   pub fn desc(&self) -> Option<&str> { self.desc.as_deref() }
+
+  pub fn avatar(&self) -> &BotAvatar { &self.avatar }
 
   pub fn cat(&self) -> Option<&str> { self.cat.as_deref() }
 
@@ -53,13 +57,20 @@ pub enum Lang {
   ZhCN,
 }
 
+#[derive(Clone, Deserialize, Debug)]
+#[serde(untagged)]
+pub enum BotAvatar {
+  Text { name: String, color: String },
+  Image { url: String },
+}
+
 #[cfg(test)]
 mod test {
   use super::*;
 
   // load bot.json file
   #[test]
-  fn load_bot_cfg_file() {
+  fn load_bot_cfg_file_test() {
     let preset_bot_cfg = serde_json::from_str::<serde_json::Value>(include_str!(concat!(
       env!("CARGO_MANIFEST_DIR"),
       "/..",
