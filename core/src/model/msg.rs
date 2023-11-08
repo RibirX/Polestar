@@ -48,6 +48,14 @@ pub struct MsgMeta {
   source_id: Option<Uuid>,
 }
 
+impl MsgMeta {
+  #[inline]
+  pub fn quote_id(&self) -> Option<&Uuid> { self.quote_id.as_ref() }
+
+  #[inline]
+  pub fn source_id(&self) -> Option<&Uuid> { self.source_id.as_ref() }
+}
+
 impl Msg {
   pub fn new(role: MsgRole, cont_list: Vec<MsgCont>, meta: MsgMeta) -> Self {
     Self {
@@ -216,6 +224,20 @@ impl MsgCont {
   }
 
   pub fn body(&self) -> &MsgBody { &self.body }
+
+  pub fn text(&self) -> Option<&String> {
+    match &self.body {
+      MsgBody::Text(s) => s.as_ref(),
+      _ => None,
+    }
+  }
+
+  pub fn image(&self) -> Option<&Image> {
+    match &self.body {
+      MsgBody::Image(i) => i.as_ref(),
+      _ => None,
+    }
+  }
 
   pub fn status(&self) -> &MsgStatus { &self.status }
 }
