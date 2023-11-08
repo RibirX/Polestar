@@ -3,7 +3,7 @@ use ribir::prelude::*;
 use ribir_algo::Sc;
 
 use super::{
-  common::{PartialPath, Route, Router},
+  common::{PartialPath, Route, Router, Tooltip},
   home::w_home,
   login::w_login,
   permission::w_permission,
@@ -53,6 +53,9 @@ impl Compose for AppGUI {
                   path: PartialPath::new("/home", 0),
                   @ { w_home(this.clone_writer()) }
                 }
+              }
+              @Tooltip {
+                content: "hello world".to_owned(),
               }
             }
           })
