@@ -10,3 +10,5 @@ mod icon_button;
 pub use icon_button::*;
 mod interactive_lists;
 pub use interactive_lists::*;
+mod modal;
+pub use modal::*;
