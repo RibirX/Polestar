@@ -21,7 +21,7 @@ pub struct AppData {
 }
 
 impl AppData {
-  pub fn new(bots: Vec<Bot>) -> Self {
+  pub fn new(bots: Vec<Bot>, def_bot_id: Uuid) -> Self {
     let db = PersistenceDB::connect(init_db(&db_path()), Duration::from_secs(1))
       .expect("Failed to connect db");
     let channels = db.query_channels().expect("Failed to query channels");
@@ -30,7 +30,7 @@ impl AppData {
       bots,
       channels,
       cur_channel_id: Uuid::default(),
-      cfg: AppCfg::default(),
+      cfg: AppCfg::new(None, def_bot_id),
       db: Box::pin(db),
     }
   }
@@ -43,6 +43,9 @@ impl AppData {
 
   #[inline]
   pub fn channels(&self) -> &Vec<Channel> { &self.channels }
+
+  #[inline]
+  pub fn channels_mut(&mut self) -> &mut Vec<Channel> { &mut self.channels }
 
   pub fn switch_channel(&mut self, channel_id: &Uuid) { self.cur_channel_id = *channel_id; }
 
@@ -92,17 +95,27 @@ impl AppData {
 
     self.channels.retain(|channel| channel.id() != channel_id);
   }
+
+  pub fn cfg(&self) -> &AppCfg { &self.cfg }
+
+  pub fn cfg_mut(&mut self) -> &mut AppCfg { &mut self.cfg }
 }
 
 #[derive(Debug, Default)]
 pub struct AppCfg {
   proxy: Option<String>,
+  def_bot_id: Uuid,
 }
 
 impl AppCfg {
+  pub fn new(proxy: Option<String>, def_bot_id: Uuid) -> Self { Self { proxy, def_bot_id } }
+
   #[inline]
   pub fn proxy(&self) -> Option<&str> { self.proxy.as_deref() }
 
   #[inline]
   pub fn set_proxy(&mut self, proxy: Option<String>) { self.proxy = proxy; }
+
+  #[inline]
+  pub fn def_bot_id(&self) -> &Uuid { &self.def_bot_id }
 }

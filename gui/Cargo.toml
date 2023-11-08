@@ -1,0 +1,18 @@
+[package]
+name = "polestar-gui"
+version.workspace = true
+edition.workspace = true
+description.workspace = true
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+polestar-core = { path = "../core" }
+ribir = { path = "../../Ribir/ribir", features = ["png"] }
+ribir_algo = { path = "../../Ribir/algo" }
+
+serde.workspace = true
+serde_json.workspace = true
+uuid.workspace = true
+
+ahash = "0.8.3"
