@@ -39,7 +39,13 @@ pub enum MsgsCollStatus {
 }
 
 impl Channel {
-  pub fn new(id: Uuid, name: String, desc: Option<String>, cfg: ChannelCfg, db: Option<NonNull<PersistenceDB>>) -> Self {
+  pub fn new(
+    id: Uuid,
+    name: String,
+    desc: Option<String>,
+    cfg: ChannelCfg,
+    db: Option<NonNull<PersistenceDB>>,
+  ) -> Self {
     Self {
       id,
       name,
@@ -67,6 +73,9 @@ impl Channel {
 
   #[inline]
   pub fn msgs(&self) -> &Vec<Msg> { &self.msgs_coll.msgs }
+
+  #[inline]
+  pub fn msgs_mut(&mut self) -> &mut Vec<Msg> { &mut self.msgs_coll.msgs }
 
   #[inline]
   pub fn update_name(&mut self, name: String) { self.name = name; }
@@ -105,6 +114,26 @@ pub struct ChannelCfg {
   kind: ChannelKind,
   // if channel default bot id is none, it means this channel use global default bot id.
   def_bot_id: Option<Uuid>,
+}
+
+impl ChannelCfg {
+  #[inline]
+  pub fn mode(&self) -> ChannelMode { self.mode }
+
+  #[inline]
+  pub fn kind(&self) -> ChannelKind { self.kind }
+
+  #[inline]
+  pub fn def_bot_id(&self) -> Option<&Uuid> { self.def_bot_id.as_ref() }
+
+  #[inline]
+  pub fn set_mode(&mut self, mode: ChannelMode) { self.mode = mode; }
+
+  #[inline]
+  pub fn set_kind(&mut self, kind: ChannelKind) { self.kind = kind; }
+
+  #[inline]
+  pub fn set_def_bot_id(&mut self, def_bot_id: Option<Uuid>) { self.def_bot_id = def_bot_id; }
 }
 
 #[derive(Debug, Deserialize, Serialize, PartialEq, Eq, Clone, Copy, Default)]
