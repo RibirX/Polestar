@@ -9,7 +9,44 @@
       "def_bot_id": null
     },
     "msgs_coll": {
-      "msgs": [],
+      "msgs": [
+        {
+          "id": "02264598-d4d3-447e-bc4a-7dfae244425c",
+          "role": "user",
+          "cur_idx": 0,
+          "cont_list": [
+            {
+              "body": {
+                "text": "hi"
+              },
+              "status": "fulfilled"
+            }
+          ],
+          "meta": {
+            "quote_id": null,
+            "source_id": null
+          }
+        },
+        {
+          "id": "6c6e10fd-609b-4fff-8764-4ede9c184422",
+          "role": {
+            "bot": "87cc7e88-fd55-4c01-9a34-d0f1397b1c73"
+          },
+          "cur_idx": 0,
+          "cont_list": [
+            {
+              "body": {
+                "text": "hi, I'am bot hi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bot"
+              },
+              "status": "fulfilled"
+            }
+          ],
+          "meta": {
+            "quote_id": null,
+            "source_id": "02264598-d4d3-447e-bc4a-7dfae244425c"
+          }
+        }
+      ],
       "status": "fetched"
     }
   },

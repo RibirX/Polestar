@@ -104,69 +104,100 @@ where
 {
   // let channel = msg.origin_writer().clone_writer();
   fn_widget! {
+    let mut stack = @Stack {};
+
     let mut row = @Row {
-      h_align: pipe!(match $msg.role() {
-        MsgRole::Bot(_) => HAlign::Left,
-        MsgRole::User => HAlign::Right,
-      })
+      item_gap: 8.,
+      reverse: match $msg.role() {
+        MsgRole::Bot(_) => false,
+        MsgRole::User => true,
+      },
     };
-    @$row {
-      @Stack {
-        @ConstrainedBox {
-          clamp: BoxClamp {
-            min: Size::zero(),
-            max: Size::new(560., f32::INFINITY),
-          },
-          @ {
-            let default_txt = String::new();
-            // TODO: support Image Type.
-            let text = $msg
-              .cur_cont_ref()
-              .text()
-              .unwrap_or_else(|| &default_txt).to_owned();
-            let msg2 = msg.clone_writer();
-            message_style(
-              @Column {
-                @ { w_msg_quote(msg2) }
-                @ {
-                  let msg2 = msg.clone_writer();
-                  pipe! {
-                    ($msg.cont_list().len() > 1).then(|| {
-                      w_msg_multi_rst(&msg2)
-                    })
-                  }
-                }
-                @TextSelectable {
-                  @Text {
-                    text,
-                    text_style: TypographyTheme::of(ctx!()).body_large.text.clone()
-                  }
-                }
-              }.widget_build(ctx!()),
-              *$msg.role()
-            )
+
+    let msg_ops_anchor = {
+      match $msg.role() {
+        MsgRole::Bot(_) => @LeftAnchor {
+          left_anchor: pipe!($row.layout_width() + 4.)
+        },
+        MsgRole::User => @RightAnchor {
+          right_anchor: pipe!($row.layout_width() + 4.)
+        },
+      }
+    };
+
+    let msg_ops = @$msg_ops_anchor {
+      @MsgOps {
+        visible: pipe!($stack.mouse_hover()),
+
+        @MsgOp {
+          cb: Box::new(|| {
+            println!("add");
+          }) as Box<dyn Fn()>,
+          @IconButton {
+            @ { svgs::ADD }
           }
         }
-        @MsgOps {
-          visible: pipe!($row.mouse_hover()),
-          @MsgOp {
-            cb: Box::new(|| {
-              println!("add");
-            }) as Box<dyn Fn()>,
-            @IconButton {
-              @ { svgs::ADD }
-            }
+        @MsgOp {
+          cb: Box::new(|| {
+            println!("close");
+          }) as Box<dyn Fn()>,
+          @IconButton {
+            @ { svgs::CLOSE }
           }
-          @MsgOp {
-            cb: Box::new(|| {
-              println!("close");
-            }) as Box<dyn Fn()>,
-            @IconButton {
-              @ { svgs::CLOSE }
+        }
+      }
+    };
+
+    @$stack {
+      @Row {
+        h_align: match $msg.role() {
+          MsgRole::Bot(_) => HAlign::Left,
+          MsgRole::User => HAlign::Right,
+        },
+        @$row {
+          @Avatar {
+            // TODO: use bot avatar.
+            @ { Label::new("A") }
+          }
+          @ConstrainedBox {
+            clamp: BoxClamp {
+              min: Size::zero(),
+              max: Size::new(560., f32::INFINITY),
+            },
+            @ {
+              let default_txt = String::new();
+              // TODO: support Image Type.
+              let text = $msg
+                .cur_cont_ref()
+                .text()
+                .unwrap_or_else(|| &default_txt).to_owned();
+              let msg2 = msg.clone_writer();
+              message_style(
+                @Column {
+                  @ { w_msg_quote(msg2) }
+                  @ {
+                    let msg2 = msg.clone_writer();
+                    pipe! {
+                      ($msg.cont_list().len() > 1).then(|| {
+                        w_msg_multi_rst(&msg2)
+                      })
+                    }
+                  }
+                  @TextSelectable {
+                    @Text {
+                      text,
+                      overflow: Overflow::AutoWrap,
+                      text_style: TypographyTheme::of(ctx!()).body_large.text.clone()
+                    }
+                  }
+                }.widget_build(ctx!()),
+                *$msg.role()
+              )
             }
           }
         }
       }
+      @ { msg_ops }
     }
   }
 }
