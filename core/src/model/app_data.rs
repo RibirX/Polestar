@@ -1,11 +1,8 @@
-use std::{pin::Pin, ptr::NonNull, time::Duration};
+use std::{pin::Pin, ptr::NonNull};
 
 use uuid::Uuid;
 
-use crate::db::{
-  executor::ActionPersist,
-  pool::{db_path, init_db, PersistenceDB},
-};
+use crate::db::{executor::ActionPersist, pool::PersistenceDB};
 
 use super::{
   bot::Bot,
@@ -17,21 +14,24 @@ pub struct AppData {
   channels: Vec<Channel>,
   cur_channel_id: Uuid,
   cfg: AppCfg,
-  db: Pin<Box<PersistenceDB>>,
+  db: Option<Pin<Box<PersistenceDB>>>,
 }
 
 impl AppData {
-  pub fn new(bots: Vec<Bot>, def_bot_id: Uuid) -> Self {
-    let db = PersistenceDB::connect(init_db(&db_path()), Duration::from_secs(1))
-      .expect("Failed to connect db");
-    let channels = db.query_channels().expect("Failed to query channels");
-
+  pub fn new(
+    bots: Vec<Bot>,
+    channels: Vec<Channel>,
+    def_bot_id: Uuid,
+    db: Option<Pin<Box<PersistenceDB>>>,
+  ) -> Self {
+    // TODO: record User last current channel id in local file.
+    let cur_channel_id = channels.first().map(|c| *c.id()).unwrap_or(Uuid::nil());
     Self {
       bots,
       channels,
-      cur_channel_id: Uuid::default(),
+      cur_channel_id,
       cfg: AppCfg::new(None, def_bot_id),
-      db: Box::pin(db),
+      db,
     }
   }
 
@@ -79,20 +79,15 @@ impl AppData {
 
   pub fn new_channel(&mut self, name: String, desc: Option<String>) -> Uuid {
     let id = Uuid::new_v4();
-    let channel = Channel::new(
-      id,
-      name,
-      desc,
-      ChannelCfg::default(),
-      Some(NonNull::from(&*self.db)),
-    );
+    let db = self.db.as_mut().map(|db| NonNull::from(&**db));
+    let channel = Channel::new(id, name, desc, ChannelCfg::default(), db);
 
     let p_channel = channel.clone();
 
-    self
-      .db
-      .as_mut()
-      .add_persist(ActionPersist::AddChannel { channel: p_channel });
+    self.db.as_mut().map(|db| {
+      db.as_mut()
+        .add_persist(ActionPersist::AddChannel { channel: p_channel.clone() })
+    });
 
     self.channels.push(channel);
     self.cur_channel_id = id;
@@ -102,10 +97,11 @@ impl AppData {
 
   pub fn remove_channel(&mut self, channel_id: &Uuid) {
     let p_channel_id = *channel_id;
-    self
-      .db
-      .as_mut()
-      .add_persist(ActionPersist::RemoveChannel { channel_id: p_channel_id });
+
+    self.db.as_mut().map(|db| {
+      db.as_mut()
+        .add_persist(ActionPersist::RemoveChannel { channel_id: p_channel_id })
+    });
 
     self.channels.retain(|channel| channel.id() != channel_id);
   }
@@ -115,11 +111,12 @@ impl AppData {
   pub fn cfg_mut(&mut self) -> &mut AppCfg { &mut self.cfg }
 
   pub fn clear_channels(&mut self) {
-    self.channels.iter().for_each(|c| {
-      self
-        .db
-        .as_mut()
-        .add_persist(ActionPersist::RemoveChannel { channel_id: *c.id() });
+    let channel_ids: Vec<Uuid> = self.channels.iter().map(|c| *c.id()).collect();
+    channel_ids.iter().for_each(|id| {
+      self.db.as_mut().map(|db| {
+        db.as_mut()
+          .add_persist(ActionPersist::RemoveChannel { channel_id: *id })
+      });
     });
     self.channels.clear();
   }

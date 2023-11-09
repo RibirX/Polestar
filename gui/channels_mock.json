@@ -1,0 +1,30 @@
+[
+  {
+    "id": "8536a09d-b2d0-424b-add1-2948c6cdfdba",
+    "name": "channel test",
+    "desc": null,
+    "cfg": {
+      "mode": "balanced",
+      "kind": "chat",
+      "def_bot_id": null
+    },
+    "msgs_coll": {
+      "msgs": [],
+      "status": "fetched"
+    }
+  },
+  {
+    "id": "ec6f8177-86c3-4f51-ba6e-795280a0e2aa",
+    "name": "channel test 2",
+    "desc": null,
+    "cfg": {
+      "mode": "performance",
+      "kind": "chat",
+      "def_bot_id": null
+    },
+    "msgs_coll": {
+      "msgs": [],
+      "status": "fetched"
+    }
+  }
+]

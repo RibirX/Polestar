@@ -57,7 +57,7 @@ impl PersistenceDB {
     let inner = rt.block_on(async { init_db.await })?;
     Ok(Self {
       rt,
-      inner: inner,
+      inner,
       list: vec![],
       status: PersistStatus::Done,
       timeout,

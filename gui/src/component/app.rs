@@ -1,6 +1,6 @@
 use polestar_core::{
   load_bot_cfg_file,
-  model::{AppData, Channel},
+  model::{AppData, Channel, ChannelMode},
 };
 use ribir::prelude::*;
 use ribir_algo::Sc;
@@ -62,9 +62,6 @@ impl Compose for AppGUI {
         @ {
           Box::new(fn_widget! {
             @Stack {
-              on_mounted: move |_| {
-                $this.write().set_tooltip(Some("hello world"));
-              },
               @Router {
                 cur_path: pipe!($this.cur_router_path().to_owned()),
                 @Route {
@@ -111,7 +108,7 @@ fn w_tooltip(tooltip: &Option<String>) -> Option<impl WidgetBuilder> {
   })
 }
 
-fn w_mode_options<S>(channel: S) -> impl WidgetBuilder
+fn w_mode_options<S>(channel: S, channel_mode: ChannelMode) -> impl WidgetBuilder
 where
   S: StateReader<Value = Channel>,
 {
@@ -131,13 +128,16 @@ where
       @Row {
         align_items: Align::Center,
         @Checkbox {
-          checked: false,
+          checked: pipe!($channel.cfg().mode() == channel_mode),
         }
         @Column {
           margin: EdgeInsets::only_left(6.),
           @Text {
             margin: EdgeInsets::only_bottom(4.),
-            text: "Balanced",
+            text: match channel_mode {
+              ChannelMode::Balanced => "Balanced",
+              ChannelMode::Performance => "Performance",
+            },
             text_style: TypographyTheme::of(ctx!()).title_small.text.clone(),
           }
           @Text {
@@ -171,8 +171,8 @@ fn w_modify_channel_modal(
 
   fn_widget! {
     let channel_rename = @Input {};
-    let balanced_mode = w_mode_options(channel.clone_reader());
-    let performance_mode = w_mode_options(channel.clone_reader());
+    let balanced_mode = w_mode_options(channel.clone_reader(), ChannelMode::Balanced);
+    let performance_mode = w_mode_options(channel.clone_reader(), ChannelMode::Performance);
 
     $channel_rename.write().set_text($channel.name().to_owned());
 
@@ -252,21 +252,37 @@ trait AppExtraWidgets: StateWriter<Value = AppGUI> + Sized {
 //    launch.
 // 4. [ ] load local db data.
 pub fn w_app() -> impl WidgetBuilder {
-  let app_data = mock_init_app_data();
-
-  // XXX: how to build `AppGUI` global state?
-  // 1. If I create global state `Stateful<AppGUI>`, `fn_widget!` need capture
-  //    this global state ownership. Like this global state is pointless.
-  // 2. If I create global state `AppGUI`, `Stateful<&mut AppGUI>` can't compiler.
-
+  let app_data = init_app_data();
   fn_widget! { AppGUI::new(app_data) }
 }
 
-fn mock_init_app_data() -> AppData {
+#[cfg(not(feature = "persistence"))]
+fn init_app_data() -> AppData {
+  println!("not feature persistence");
   let bots = load_bot_cfg_file();
   let first_bot_id = *bots.first().unwrap().id();
-  let mut app_data = AppData::new(bots, first_bot_id);
-  app_data.clear_channels();
-  app_data.new_channel("quick start".to_owned(), None);
-  app_data
+  let channels = serde_json::from_str::<Vec<Channel>>(include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/..",
+    "/gui/channels_mock.json"
+  )))
+  .expect("Failed to load mock data");
+  AppData::new(bots, channels, first_bot_id, None)
+}
+
+#[cfg(feature = "persistence")]
+fn init_app_data() -> AppData {
+  use polestar_core::db::pool::{db_path, init_db, PersistenceDB};
+  use std::time::Duration;
+
+  println!("feature persistence");
+
+  let db = PersistenceDB::connect(init_db(&db_path()), Duration::from_secs(1))
+    .expect("Failed to connect db");
+
+  let channels = db.query_channels().expect("Failed to query channels");
+  let bots = load_bot_cfg_file();
+  let first_bot_id = *bots.first().unwrap().id();
+
+  AppData::new(bots, channels, first_bot_id, Some(Box::pin(db)))
 }

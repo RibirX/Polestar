@@ -7,17 +7,18 @@ use crate::db::pool::PersistenceDB;
 
 use super::msg::Msg;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct Channel {
   id: Uuid,
   name: String,
   desc: Option<String>,
   cfg: ChannelCfg,
   msgs_coll: MsgColl,
+  #[serde(skip)]
   db: Option<NonNull<PersistenceDB>>,
 }
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, Deserialize)]
 pub struct MsgColl {
   msgs: Vec<Msg>,
   status: MsgsCollStatus,
@@ -31,10 +32,12 @@ impl MsgColl {
   pub fn status(&self) -> MsgsCollStatus { self.status }
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy, Default)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Default, Deserialize)]
 pub enum MsgsCollStatus {
   #[default]
+  #[serde(rename = "non_fetched")]
   NonFetched,
+  #[serde(rename = "fetched")]
   Fetched,
 }
 
@@ -107,9 +110,7 @@ impl Channel {
       .find(|msg| msg.id() == msg_id)
   }
 
-  pub fn clear_msgs(&mut self) {
-    self.msgs_coll.msgs.clear();
-  }
+  pub fn clear_msgs(&mut self) { self.msgs_coll.msgs.clear(); }
 }
 
 #[derive(Debug, Deserialize, Serialize, Default, Clone)]
@@ -143,14 +144,19 @@ impl ChannelCfg {
 #[derive(Debug, Deserialize, Serialize, PartialEq, Eq, Clone, Copy, Default)]
 pub enum ChannelMode {
   #[default]
+  #[serde(rename = "balanced")]
   Balanced,
+  #[serde(rename = "performance")]
   Performance,
 }
 
 #[derive(Debug, Deserialize, Serialize, PartialEq, Eq, Clone, Copy, Default)]
 pub enum ChannelKind {
   #[default]
+  #[serde(rename = "chat")]
   Chat,
+  #[serde(rename = "quick_launcher")]
   QuickLauncher,
+  #[serde(rename = "feedback")]
   Feedback,
 }
