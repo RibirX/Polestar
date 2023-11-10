@@ -1,13 +1,16 @@
-use polestar_core::model::{Channel, Msg, MsgRole};
+use polestar_core::model::{Channel, Msg, MsgCont, MsgRole};
 use ribir::prelude::*;
 
 use crate::component::common::IconButton;
 use crate::style::decorator::channel::message_style;
-use crate::style::GAINSBORO;
+use crate::style::{GAINSBORO, WHITE};
 
 use super::onboarding::w_msg_onboarding;
 
-pub fn w_msg_list(channel: impl StateWriter<Value = Channel>) -> impl WidgetBuilder {
+pub fn w_msg_list<S>(channel: S) -> impl WidgetBuilder
+where
+  S: StateWriter<Value = Channel>,
+{
   fn_widget! {
     let scrollable_container = @VScrollBar {};
 
@@ -24,14 +27,21 @@ pub fn w_msg_list(channel: impl StateWriter<Value = Channel>) -> impl WidgetBuil
             item_gap: 16.,
             @ { w_msg_onboarding() }
             @ {
-              let channel2 = channel.clone_writer();
-              $channel.msgs().iter().enumerate().map(move |(idx, _)| {
-                let msg = channel2.split_writer(
-                  move |channel| { channel.msgs().get(idx).expect("msg must be existed") },
-                  move |channel| { channel.msgs_mut().get_mut(idx).expect("msg must be existed") },
-                );
-                @ { w_msg(msg.clone_writer()) }
-              }).collect::<Vec<_>>()
+              pipe! {
+                let _ = || $channel.write();
+                let channel2 = channel.clone_writer();
+                $channel.msgs().iter().enumerate().map(move |(idx, _)| {
+                  let msg = channel2.split_writer(
+                    move |channel| {
+                      channel.msgs().get(idx).expect("msg must be existed")
+                    },
+                    move |channel| {
+                      channel.msgs_mut().get_mut(idx).expect("msg must be existed")
+                    },
+                  );
+                  @ { w_msg(msg) }
+                }).collect::<Vec<_>>()
+              }
             }
           }
         }
@@ -179,7 +189,7 @@ where
                     let msg2 = msg.clone_writer();
                     pipe! {
                       ($msg.cont_list().len() > 1).then(|| {
-                        w_msg_multi_rst(&msg2)
+                        w_msg_multi_rst(msg2.clone_reader())
                       })
                     }
                   }
@@ -226,7 +236,7 @@ where
   })
 }
 
-fn w_msg_multi_rst(msg: &impl StateWriter<Value = Msg>) -> impl WidgetBuilder {
+fn w_msg_multi_rst(msg: impl StateReader<Value = Msg>) -> impl WidgetBuilder {
   fn_widget! {
     let scrollable_widget = @ScrollableWidget {
       scrollable: Scrollable::X,
@@ -239,7 +249,15 @@ fn w_msg_multi_rst(msg: &impl StateWriter<Value = Msg>) -> impl WidgetBuilder {
         flex: 1.,
         @$scrollable_widget {
           @Row {
-
+            item_gap: 8.,
+            @ {
+              $msg.cont_list().iter().map(|cont| {
+                let text = cont.text().map(|s| s.to_owned()).unwrap_or_else(|| String::new());
+                @ {
+                  w_msg_thumbnail(text)
+                }
+              }).collect::<Vec<_>>()
+            }
           }
         }
       }
@@ -250,8 +268,15 @@ fn w_msg_multi_rst(msg: &impl StateWriter<Value = Msg>) -> impl WidgetBuilder {
   }
 }
 
-fn w_msg_thumbnail() -> impl WidgetBuilder {
+fn w_msg_thumbnail(text: String) -> impl WidgetBuilder {
   fn_widget! {
-    @Void {}
+    @SizedBox {
+      size: Size::new(150., 60.),
+      background: Color::from_u32(WHITE),
+      @Text {
+        text,
+        text_style: TypographyTheme::of(ctx!()).body_large.text.clone()
+      }
+    }
   }
 }

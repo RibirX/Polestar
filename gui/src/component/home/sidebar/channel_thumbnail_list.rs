@@ -23,7 +23,8 @@ pub fn w_channel_thumbnail_list(app: impl StateWriter<Value = AppGUI>) -> impl W
 
             @PointerListener {
               on_tap: move |_| {
-                println!("channel: {}", channel2.read().name());
+                let id = *$channel2.id();
+                $app.write().data.switch_channel(&id);
               },
               @ { w_channel_thumbnail(channel) }
             }

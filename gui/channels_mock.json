@@ -39,6 +39,12 @@
                 "text": "hi, I'am bot hi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bothi, I'am bot"
               },
               "status": "fulfilled"
+            },
+            {
+              "body": {
+                "text": "hi"
+              },
+              "status": "fulfilled"
             }
           ],
           "meta": {
@@ -60,7 +66,42 @@
       "def_bot_id": null
     },
     "msgs_coll": {
-      "msgs": [],
+      "msgs": [
+        {
+          "id": "66bc0c19-93ef-437f-92cb-1001f6ffe1bd",
+          "role": "user",
+          "cur_idx": 0,
+          "cont_list": [
+            {
+              "body": {
+                "text": "hi 2"
+              },
+              "status": "fulfilled"
+            }
+          ],
+          "meta": {
+            "quote_id": null,
+            "source_id": null
+          }
+        },
+        {
+          "id": "cf0670ec-54b2-4865-bd74-e8cf7f4623da",
+          "role": "user",
+          "cur_idx": 0,
+          "cont_list": [
+            {
+              "body": {
+                "text": "hi 1"
+              },
+              "status": "fulfilled"
+            }
+          ],
+          "meta": {
+            "quote_id": null,
+            "source_id": null
+          }
+        }
+      ],
       "status": "fetched"
     }
   }
