@@ -11,7 +11,17 @@ pub fn w_channel_thumbnail_list(app: impl StateWriter<Value = AppGUI>) -> impl W
   fn_widget! {
     @VScrollBar {
       @InteractiveList {
-        highlight_visible: true,
+        on_tap: move |_| {
+          if $app.cur_router_path() != "/home/chat" {
+            $app.write().navigate_to("/home/chat");
+          }
+        },
+        highlight_visible: pipe! {
+          match $app.cur_router_path() {
+            "/home/chat" => true,
+            _ => false,
+          }
+        },
         @ {
           let app2 = app.clone_writer();
           $app.data.channels().iter().enumerate().map(move |(idx, _)| {

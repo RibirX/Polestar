@@ -12,3 +12,5 @@ pub static DARK_CHARCOAL: u32 = 0x333333FF;
 pub static CHINESE_WHITE: u32 = 0xE0E0DEFF;
 pub static ISABELLINE: u32 = 0xF1F1EFFF;
 pub static BLACK: u32 = 0x000000FF;
+pub static ANTI_FLASH_WHITE: u32 = 0xF2F3F5FF;
+pub static SPANISH_GRAY: u32 = 0x9A9A9AFF;

@@ -23,31 +23,31 @@ impl ComposeChild for InteractiveList {
   fn compose_child(this: impl StateWriter<Value = Self>, child: Self::Child) -> impl WidgetBuilder {
     let child_count = child.len();
     fn_widget! {
-      let block = @SizedBox {
-        size: pipe!($this.active).map(move |idx| {
-          if let Some(rect) = &$this.highlight_rect_list.get(idx) {
-            rect.size
-          } else {
-            Size::zero()
-          }
-        }).value_chain(|s| s.distinct_until_changed()),
-      };
-
-      let highlight = highlight_style(block.widget_build(ctx!()));
-
       @Stack {
         @ {
-          $this.highlight_visible.then(||
-            @$highlight {
-              top_anchor: pipe!($this.active).map(move |idx| {
+          pipe! {
+            let block = @SizedBox {
+              size: pipe!($this.active).map(move |idx| {
                 if let Some(rect) = &$this.highlight_rect_list.get(idx) {
-                  rect.origin.y
+                  rect.size
                 } else {
-                  0.
+                  Size::zero()
                 }
-              }).value_chain(|s| s.distinct_until_changed())
-            }
-          )
+              }).value_chain(|s| s.distinct_until_changed()),
+            };
+            let highlight = highlight_style(block.widget_build(ctx!()));
+            $this.highlight_visible.then(||
+              @$highlight {
+                top_anchor: pipe!($this.active).map(move |idx| {
+                  if let Some(rect) = &$this.highlight_rect_list.get(idx) {
+                    rect.origin.y
+                  } else {
+                    0.
+                  }
+                }).value_chain(|s| s.distinct_until_changed())
+              }
+            )
+          }
         }
         @Lists {
           on_performed_layout: move |_| {

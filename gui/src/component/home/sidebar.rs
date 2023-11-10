@@ -46,17 +46,32 @@ fn w_sidebar_header(_app: impl StateWriter<Value = AppGUI>) -> impl WidgetBuilde
   }
 }
 
-fn w_sidebar_others(_app: impl StateWriter<Value = AppGUI>) -> impl WidgetBuilder {
+fn w_sidebar_others(app: impl StateWriter<Value = AppGUI>) -> impl WidgetBuilder {
   fn_widget! {
     @InteractiveList {
-      highlight_visible: false,
+      highlight_visible: pipe! {
+        match $app.cur_router_path() {
+          "/home/bot_store" => true,
+          "/home/settings" => true,
+          _ => false,
+        }
+      },
       @ListItem {
+        on_tap: move |_| {
+          $app.write().navigate_to("/home/bot_store");
+        },
         @HeadlineText(Label::new("BotStore"))
       }
       @ListItem {
+        on_tap: move |_| {
+          $app.write().navigate_to("/home/settings");
+        },
         @HeadlineText(Label::new("Setting"))
       }
       @ListItem {
+        on_tap: move |_| {
+
+        },
         @HeadlineText(Label::new("Feedback"))
       }
     }

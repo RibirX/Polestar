@@ -1,10 +1,12 @@
 use ribir::prelude::*;
 
+use crate::component::home::bot_store::w_bot_store;
 use crate::style::{APP_SIDEBAR_WIDTH, CULTURED_F4F4F4_FF, WHITE};
 
 use super::app::AppGUI;
 use super::common::{PartialPath, Route, Router};
 
+mod bot_store;
 mod chat;
 mod settings;
 mod sidebar;
@@ -42,8 +44,12 @@ pub fn w_home(app: impl StateWriter<Value = AppGUI>) -> impl WidgetBuilder {
             }
           }
           @Route {
-            path: PartialPath::new("/setting", 1),
+            path: PartialPath::new("/settings", 1),
             @ { w_settings(app.clone_writer()) }
+          }
+          @Route {
+            path: PartialPath::new("/bot_store", 1),
+            @ { w_bot_store(app.clone_writer()) }
           }
         }
       }
