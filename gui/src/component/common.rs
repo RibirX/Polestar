@@ -16,3 +16,5 @@ mod progress_bar;
 pub use progress_bar::*;
 mod tooltip;
 pub use tooltip::*;
+mod bot_list;
+pub use bot_list::*;

@@ -7,7 +7,7 @@ use ribir_algo::Sc;
 use uuid::Uuid;
 
 use super::{
-  common::{Modal, PartialPath, Route, Router, Tooltip},
+  common::{BotList, Modal, PartialPath, Route, Router, Tooltip},
   home::w_home,
   login::w_login,
   permission::w_permission,
@@ -195,41 +195,49 @@ fn w_modify_channel_modal(
         app_writer_cancel_ref.write().set_modify_channel_id(None);
       }) as Box<dyn Fn()>,
       @Stack {
-        @Column {
-          @Text {
-            text: "Channel Name",
-            text_style: TypographyTheme::of(ctx!()).title_medium.text.clone(),
-          }
-          @$channel_rename {
-            cursor: CursorIcon::Text,
-            h_align: HAlign::Stretch,
-            margin: EdgeInsets::only_bottom(10.),
-            background: Color::from_u32(CULTURED_F7F7F5_FF),
-            padding: EdgeInsets::new(10., 5., 10., 5.),
-            border: Border::all(BorderSide {
-              width: 1.,
-              color: Color::from_u32(CHINESE_WHITE).into(),
-            }),
-            border_radius: Radius::all(6.),
-            @ { Placeholder::new("Type a channel name") }
-          }
-          @Text {
-            text: "Default AI Bot",
-            text_style: TypographyTheme::of(ctx!()).title_medium.text.clone(),
-          }
-          @Text {
-            text: "Optimize Performance",
-            text_style: TypographyTheme::of(ctx!()).title_medium.text.clone(),
-          }
+        @VScrollBar {
           @Column {
-            @$balanced_mode {
-              on_tap: move |_| {
-
+            @Text {
+              text: "Channel Name",
+              text_style: TypographyTheme::of(ctx!()).title_medium.text.clone(),
+            }
+            @$channel_rename {
+              cursor: CursorIcon::Text,
+              h_align: HAlign::Stretch,
+              margin: EdgeInsets::only_bottom(10.),
+              background: Color::from_u32(CULTURED_F7F7F5_FF),
+              padding: EdgeInsets::new(10., 5., 10., 5.),
+              border: Border::all(BorderSide {
+                width: 1.,
+                color: Color::from_u32(CHINESE_WHITE).into(),
+              }),
+              border_radius: Radius::all(6.),
+              @ { Placeholder::new("Type a channel name") }
+            }
+            @Text {
+              text: "Default AI Bot",
+              text_style: TypographyTheme::of(ctx!()).title_medium.text.clone(),
+            }
+            @ConstrainedBox {
+              clamp: BoxClamp::fixed_height(40.),
+              @BotList {
+                bots: $app.data.bots_rc(),
               }
             }
-            @$performance_mode {
-              on_tap: move |_| {
+            @Text {
+              text: "Optimize Performance",
+              text_style: TypographyTheme::of(ctx!()).title_medium.text.clone(),
+            }
+            @Column {
+              @$balanced_mode {
+                on_tap: move |_| {
 
+                }
+              }
+              @$performance_mode {
+                on_tap: move |_| {
+
+                }
               }
             }
           }

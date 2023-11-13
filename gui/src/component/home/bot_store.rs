@@ -51,8 +51,6 @@ fn w_bot_list(app: impl StateReader<Value = AppGUI>) -> impl WidgetBuilder {
               wrap: true,
               item_gap: 8.,
               line_gap: 8.,
-              // FIXME: `Row` can't no child.
-              @Void {}
               @ {
                 $app.data.bots().iter().filter(|bot| bot.cat() == Some(cat)).map(|bot| {
                   @Clip {

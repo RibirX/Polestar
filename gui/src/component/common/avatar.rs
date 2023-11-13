@@ -1,10 +1,10 @@
 use polestar_core::model::BotAvatar;
 use ribir::prelude::*;
 
-pub fn w_avatar(avatar: &impl StateReader<Value = BotAvatar>) -> impl WidgetBuilder + '_ {
+pub fn w_avatar(avatar: &BotAvatar) -> impl WidgetBuilder + '_ {
   fn_widget! {
     @ {
-      match &*$avatar {
+      match avatar {
         BotAvatar::Image { url: _ } => {
           let data = vec![0];
           @Avatar {

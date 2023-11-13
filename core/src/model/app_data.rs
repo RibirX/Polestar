@@ -1,4 +1,4 @@
-use std::{pin::Pin, ptr::NonNull};
+use std::{pin::Pin, ptr::NonNull, rc::Rc};
 
 use uuid::Uuid;
 
@@ -10,7 +10,7 @@ use super::{
 };
 
 pub struct AppData {
-  bots: Vec<Bot>,
+  bots: Rc<Vec<Bot>>,
   channels: Vec<Channel>,
   cur_channel_id: Uuid,
   cfg: AppCfg,
@@ -27,7 +27,7 @@ impl AppData {
     // TODO: record User last current channel id in local file.
     let cur_channel_id = channels.first().map(|c| *c.id()).unwrap_or(Uuid::nil());
     Self {
-      bots,
+      bots: Rc::new(bots),
       channels,
       cur_channel_id,
       cfg: AppCfg::new(None, def_bot_id),
@@ -40,6 +40,9 @@ impl AppData {
 
   #[inline]
   pub fn bots(&self) -> &Vec<Bot> { &self.bots }
+
+  #[inline]
+  pub fn bots_rc(&self) -> Rc<Vec<Bot>> { self.bots.clone() }
 
   #[inline]
   pub fn channels(&self) -> &Vec<Channel> { &self.channels }

@@ -9,37 +9,35 @@ use ribir::prelude::*;
 
 pub fn w_channel_thumbnail_list(app: impl StateWriter<Value = AppGUI>) -> impl WidgetBuilder {
   fn_widget! {
-    @VScrollBar {
-      @InteractiveList {
-        on_tap: move |_| {
-          if $app.cur_router_path() != "/home/chat" {
-            $app.write().navigate_to("/home/chat");
-          }
-        },
-        highlight_visible: pipe! {
-          match $app.cur_router_path() {
-            "/home/chat" => true,
-            _ => false,
-          }
-        },
-        @ {
-          let app2 = app.clone_writer();
-          $app.data.channels().iter().enumerate().map(move |(idx, _)| {
-            let channel = app2.split_writer(
-              move |app| { app.data.channels().get(idx).expect("channel must be existed") },
-              move |app| { app.data.channels_mut().get_mut(idx).expect("channel must be existed") },
-            );
-            let channel2 = channel.clone_writer();
-
-            @PointerListener {
-              on_tap: move |_| {
-                let id = *$channel2.id();
-                $app.write().data.switch_channel(&id);
-              },
-              @ { w_channel_thumbnail(channel) }
-            }
-          }).collect::<Vec<_>>()
+    @InteractiveList {
+      on_tap: move |_| {
+        if $app.cur_router_path() != "/home/chat" {
+          $app.write().navigate_to("/home/chat");
         }
+      },
+      highlight_visible: pipe! {
+        match $app.cur_router_path() {
+          "/home/chat" => true,
+          _ => false,
+        }
+      },
+      @ {
+        let app2 = app.clone_writer();
+        $app.data.channels().iter().enumerate().map(move |(idx, _)| {
+          let channel = app2.split_writer(
+            move |app| { app.data.channels().get(idx).expect("channel must be existed") },
+            move |app| { app.data.channels_mut().get_mut(idx).expect("channel must be existed") },
+          );
+          let channel2 = channel.clone_writer();
+
+          @PointerListener {
+            on_tap: move |_| {
+              let id = *$channel2.id();
+              $app.write().data.switch_channel(&id);
+            },
+            @ { w_channel_thumbnail(channel) }
+          }
+        }).collect::<Vec<_>>()
       }
     }
   }
@@ -64,9 +62,13 @@ where
           let app_state = $app;
           let channel_def_bot_id = channel_state.cfg().def_bot_id();
           let bot_id = *(channel_def_bot_id.unwrap_or_else(|| app_state.data.cfg().def_bot_id()));
-          let avatar = app.map_reader(move |app| {
-            app.data.bots().iter().find(|bot| *bot.id() == bot_id).expect("bot must be exist").avatar()
-          });
+          let avatar = app_state
+            .data
+            .bots()
+            .iter()
+            .find(|bot| *bot.id() == bot_id)
+            .expect("bot must be exist")
+            .avatar();
           CustomEdgeWidget(
             w_avatar(&avatar).widget_build(ctx!())
           )
