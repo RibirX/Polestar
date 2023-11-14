@@ -2,11 +2,11 @@
 
 ## About The Project
 
-Polestar CLI tool is a command line tool for Polestar. If you want to try Polestar but don't like to install Polestar App, you can try it.
+The Polestar CLI tool is a command-line interface tool for Polestar. You can use the CLI tool if you want to try Polestar without installing the Polestar app.
 
 ## Getting Started
 
-You can install Polestar CLI tool by cargo.
+You can install the Polestar CLI tool by cargo:
 
 ```sh
 cargo install polestar-cli
@@ -14,9 +14,9 @@ cargo install polestar-cli
 
 ## Usage
 
-> Notice `open_ai.rs` file has request Token, you can replace your own token.
+> Notice the `open_ai.rs` file has a request Token, you can replace your own token.
 
-Polestar-cli is a interactive command line tool. You can run it by:
+You can run it by:
 
 ```sh
 polestar-cli
@@ -24,7 +24,7 @@ polestar-cli
 
 ### `help` command
 
-And you can input `help` get all commands.
+And you can input `help` to get all commands:
 
 ```txt
 Welcome to Polestar!
@@ -46,7 +46,7 @@ Options:
 
 #### `channel all`
 
-You can use `channel all` command to get all channels. It will show channels list with channel id and channel name.
+You can use the `channel all` command to get all channels. It will show a channel list with channel ID and channel name.
 
 ```txt
 polestar-cli〉channel all
@@ -55,7 +55,7 @@ polestar-cli〉channel all
 
 #### `channel add <name> [desc]`
 
-You can use `channel add` command to add a new channel. Channel name must be exist, and channel description is optional.
+You can use the `channel add` command to add a new channel. Channel name must exist, and channel description is optional.
 
 ```txt
 polestar-cli〉channel add "name"
@@ -67,9 +67,9 @@ polestar-cli〉channel add "name" "description"
 
 #### `channel remove <id>`
 
-You can use `channel remove` command to remove a channel by channel id.
+You can use the `channel remove` command to remove a channel by channel ID.
 
-Channel id is uuid string, when you remove a channel, you can select a channel from channel list.
+When removing a channel, select a channel from the channel list. The channel ID is a unique UUID string that ensures accuracy and reliability.
 
 ```txt
 polestar-cli〉channel remove
@@ -81,9 +81,9 @@ polestar-cli〉channel remove
 
 #### `channel switch <id>`
 
-You can use `channel switch` command to switch current channel by channel id.
+You can use the `channel switch` command to switch the current channel by channel ID.
 
-Channel id is uuid string, when you switch a channel, you can select a channel from channel list.
+The channel ID is represented by a UUID string. You can switch channels by selecting one from the channel list.
 
 ```txt
 polestar-cli〉channel switch
@@ -95,7 +95,7 @@ polestar-cli〉channel switch
 
 #### `channel current`
 
-You can get current channel info by `channel current` command.
+You can get current channel info by the `channel current` command.
 
 ```txt
 polestar-cli〉channel current
@@ -106,7 +106,7 @@ polestar-cli〉channel current
 
 #### `msg send <content>`
 
-You can use `msg send` command to send a message to current channel.
+You can use the `msg send` command to send a message to the current channel.
 
 ```txt
 polestar-cli〉msg send "hello"
