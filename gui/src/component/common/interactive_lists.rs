@@ -19,9 +19,8 @@ impl InteractiveList {
 }
 
 impl ComposeChild for InteractiveList {
-  type Child = Vec<Widget>;
+  type Child = BoxPipe<Vec<Widget>>;
   fn compose_child(this: impl StateWriter<Value = Self>, child: Self::Child) -> impl WidgetBuilder {
-    let child_count = child.len();
     fn_widget! {
       let mut vscrollbar = @VScrollBar {};
 
@@ -65,33 +64,33 @@ impl ComposeChild for InteractiveList {
             }
           }
           @Lists {
-            on_performed_layout: move |_| {
-              $this.write().derain(child_count);
-            },
             @ {
-              child.into_iter().enumerate().map(move |(idx, item)| {
-                let mut item_box = @ $item {
-                  cursor: CursorIcon::Pointer,
-                };
-                @BoxDecoration {
-                  // TODO: here display has 4px offset in real case.
-                  margin: EdgeInsets::vertical(4.),
-                  on_performed_layout: move |ctx| {
-                    let rect = $item_box.layout_rect();
-                    let offset = ctx.map_to_parent(rect.origin);
-                    $this.write().highlight_rect_list.push(Rect::new(offset, rect.size));
-                  },
-                  // TODO: here depends on material theme, need split it.
-                  @InteractiveLayer {
-                    color: Palette::of(ctx!()).base_of(&$this.highlight_color),
-                    border_radii: Radius::all(8.),
-                    @$item_box {
-                      on_tap: move |_| {
-                        $this.write().active = idx;
-                      },
+              child.into_pipe().map(move |child| {
+                $this.silent().highlight_rect_list.clear();
+                child.into_iter().enumerate().map(move |(idx, item)| {
+                  let mut item_box = @ $item {
+                    cursor: CursorIcon::Pointer,
+                  };
+                  @BoxDecoration {
+                    // TODO: here display has 4px offset in real case.
+                    margin: EdgeInsets::vertical(4.),
+                    on_performed_layout: move |ctx| {
+                      let rect = $item_box.layout_rect();
+                      let offset = ctx.map_to_parent(rect.origin);
+                      $this.write().highlight_rect_list.push(Rect::new(offset, rect.size));
+                    },
+                    // TODO: here depends on material theme, need split it.
+                    @InteractiveLayer {
+                      color: Palette::of(ctx!()).base_of(&$this.highlight_color),
+                      border_radii: Radius::all(8.),
+                      @$item_box {
+                        on_tap: move |_| {
+                          $this.write().active = idx;
+                        },
+                      }
                     }
                   }
-                }
+                })
               })
             }
           }
