@@ -149,7 +149,7 @@ impl Compose for Dot {
     fn_widget! {
       @Container {
         size: Size::splat(12.),
-        cursor: CursorIcon::Hand,
+        cursor: CursorIcon::Pointer,
         border_radius: Radius::all(6.),
         background: Color::from_u32(LIGHT_SILVER_FF),
         @ {

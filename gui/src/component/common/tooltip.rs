@@ -14,7 +14,7 @@ impl Compose for Tooltip {
       let appear_animate = @Animate {
         state: map_writer!($text.transform),
         from: Transform::translation(0., -200.),
-        transition: Transition {
+        transition: EasingTransition {
           duration: Duration::from_millis(100),
           easing: easing::EASE_IN,
         }.delay(Duration::from_secs(1)).box_it(),
@@ -22,7 +22,7 @@ impl Compose for Tooltip {
       let disappear_animate = @Animate {
         state: map_writer!($text.opacity),
         from: 1.,
-        transition: Transition {
+        transition: EasingTransition {
           duration: Duration::from_millis(100),
           easing: easing::EASE_OUT,
         }.delay(Duration::from_secs(1)).box_it(),

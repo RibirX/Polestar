@@ -1,4 +1,4 @@
-use polestar_core::model::{Channel, Msg, MsgCont, MsgRole};
+use polestar_core::model::{Channel, Msg, MsgRole};
 use ribir::prelude::*;
 
 use crate::component::common::IconButton;
@@ -112,7 +112,7 @@ where
   R: StateReader<Value = Channel>,
   W: StateWriter<Value = Channel>,
 {
-  // let channel = msg.origin_writer().clone_writer();
+  let channel = msg.origin_writer().clone_writer();
   fn_widget! {
     let mut stack = @Stack {};
 

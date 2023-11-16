@@ -2,7 +2,6 @@ use ribir::{material::InteractiveLayer, prelude::*};
 
 use crate::style::DARK_CHARCOAL;
 
-
 #[derive(Declare)]
 pub struct IconButton {
   #[declare(default = IconSize::of(ctx!()).small)]
@@ -16,7 +15,7 @@ impl ComposeChild for IconButton {
       @InteractiveLayer {
         color: Color::from_u32(DARK_CHARCOAL),
         border_radii: Radius::all(4.),
-        cursor: CursorIcon::Hand,
+        cursor: CursorIcon::Pointer,
         @Icon {
           size: pipe!($this.size),
           @ { child }

@@ -1,11 +1,15 @@
-use std::marker::PhantomData;
+use std::{marker::PhantomData, sync::Mutex, time::Instant};
 
+use once_cell::sync::Lazy;
 use ribir::prelude::*;
 use serde::Deserialize;
+use window::WindowMgr;
 
 mod component;
+mod hotkey;
 mod style;
 mod theme;
+mod window;
 
 #[derive(Deserialize)]
 pub struct UISettings {
@@ -43,6 +47,9 @@ fn read_ui_settings() -> UISettings {
 static G_APP_NAME: &str = "Polestar";
 static G_VERSION: &str = env!("CARGO_PKG_VERSION");
 
+pub static WINDOW_MGR: Lazy<Mutex<WindowMgr>> = Lazy::new(|| Mutex::new(WindowMgr::new()));
+pub static TIMER: Lazy<Mutex<Instant>> = Lazy::new(|| Mutex::new(Instant::now()));
+
 fn main() {
   unsafe {
     AppCtx::set_app_theme(material::purple::light());
@@ -56,6 +63,9 @@ fn main() {
   wnd.set_icon(&PixelImage::from_png(include_bytes!(
     "../static/app_logo.png"
   )));
+
+  WINDOW_MGR.lock().unwrap().set_main_window(wnd.id());
+  *TIMER.lock().unwrap() = Instant::now();
 
   App::exec();
 }

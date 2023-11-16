@@ -16,6 +16,20 @@ serde_json.workspace = true
 uuid.workspace = true
 
 ahash = "0.8.3"
+once_cell = "1.18.0"
+bitflags = "2.4.0"
+
+[target."cfg(target_os = \"macos\")".dependencies]
+icrate = { version = "0.0.4", features = [
+  "AppKit",
+  "AppKit_NSEvent",
+  "AppKit_NSWindow",
+  "AppKit_NSBox",
+  "AppKit_NSColor",
+  "AppKit_NSView",
+  "AppKit_NSButton",
+] }
+macos-accessibility-client = { version = "0.0.1" }
 
 [features]
 persistence = []

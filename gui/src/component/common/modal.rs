@@ -48,14 +48,14 @@ impl ComposeChild for Modal {
               h_align: HAlign::Right,
               v_align: VAlign::Bottom,
               @OutlinedButton {
-                cursor: CursorIcon::Hand,
+                cursor: CursorIcon::Pointer,
                 on_tap: move |_| {
                   ($this.cancel_cb)();
                 },
                 @ { Label::new("Cancel") }
               }
               @FilledButton {
-                cursor: CursorIcon::Hand,
+                cursor: CursorIcon::Pointer,
                 on_tap: move |_| {
                   ($this.confirm_cb)();
                 },

@@ -36,11 +36,14 @@ pub fn w_home(app: impl StateWriter<Value = AppGUI>) -> impl WidgetBuilder {
           @Route {
             path: PartialPath::new("/chat", 1),
             @ {
-              let channel_writer = app.split_writer(
-                |app| { app.data.cur_channel().expect("current channel must be existed") },
-                |app| { app.data.cur_channel_mut().expect("current channel must be existed") },
-              );
-              w_chat(channel_writer.clone_writer())
+              pipe! {
+                let _ = $app.write();
+                let channel_writer = app.split_writer(
+                  |app| { app.data.cur_channel().expect("current channel must be existed") },
+                  |app| { app.data.cur_channel_mut().expect("current channel must be existed") },
+                );
+                w_chat(channel_writer.clone_writer())
+              }
             }
           }
           @Route {

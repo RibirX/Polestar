@@ -22,7 +22,7 @@ pub(super) fn w_network_settings() -> impl WidgetBuilder {
           }
           @Link {
             url: "https://statuesque-goal-eef.notion.site/103-How-to-use-de5e8f1687fb4afa9fcd1a6825eca5a2",
-            cursor: CursorIcon::Hand,
+            cursor: CursorIcon::Pointer,
             @Text {
               text: "here",
               foreground: Palette::of(ctx!()).primary(),
@@ -57,7 +57,7 @@ fn w_setting_input() -> impl WidgetBuilder {
         @ { input }
       }
       @Button {
-        cursor: CursorIcon::Hand,
+        cursor: CursorIcon::Pointer,
         color: Color::from_u32(BRIGHT_GRAY_EAE9E9_FF),
         margin: EdgeInsets::only_left(10.),
         on_tap: move |_| {

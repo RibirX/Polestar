@@ -11,6 +11,7 @@ use super::{
   home::w_home,
   login::w_login,
   permission::w_permission,
+  quick_launcher::QuickLauncher,
 };
 use crate::{
   style::{CHINESE_WHITE, COMMON_RADIUS, CULTURED_F7F7F5_FF},
@@ -18,8 +19,9 @@ use crate::{
 };
 
 pub struct AppGUI {
-  cur_router_path: String,
   pub data: AppData,
+  pub quick_launcher: Option<QuickLauncher>,
+  cur_router_path: String,
   modify_channel_id: Option<Uuid>,
   tooltip: Option<String>,
 }
@@ -28,6 +30,7 @@ impl AppGUI {
   pub fn new(data: AppData) -> Self {
     Self {
       data,
+      quick_launcher: None,
       // TODO: launch need confirm current router by user login status.
       // It can get by open app url, like this: PoleStarChat://ribir.org/home/chat
       cur_router_path: "/home/chat".to_owned(),
@@ -51,11 +54,21 @@ impl AppGUI {
   pub fn set_modify_channel_id(&mut self, modify_channel_id: Option<Uuid>) {
     self.modify_channel_id = modify_channel_id;
   }
+
+  pub fn has_quick_launcher_msg(&self) -> bool {
+    self
+      .quick_launcher
+      .as_ref()
+      .map(|quick_launcher| quick_launcher.msg.is_some())
+      .unwrap_or_default()
+  }
 }
 
 impl Compose for AppGUI {
   fn compose(this: impl StateWriter<Value = Self>) -> impl WidgetBuilder {
     fn_widget! {
+      App::events_stream().subscribe(gen_handler(this.clone_writer()));
+
       @ThemeWidget {
         // Polestar custom theme.
         theme: Sc::new(Theme::Inherit(polestar_theme())),
@@ -98,6 +111,23 @@ impl Compose for AppGUI {
   }
 }
 
+fn gen_handler(app: impl StateWriter<Value = AppGUI>) -> impl for<'a> FnMut(&'a mut AppEvent) {
+  move |event: &mut AppEvent| match event {
+    AppEvent::OpenUrl(url) => {
+      // TODO: user module need login
+    }
+    AppEvent::Hotkey(hotkey_event) => {
+      use crate::hotkey::handler::hotkey_handler;
+      hotkey_handler(hotkey_event, app.clone_writer());
+    }
+    AppEvent::WndFocusChanged(wnd_id, is_focus) => {
+      use crate::hotkey::handler::focus_handler;
+      focus_handler(app.clone_writer(), wnd_id, is_focus);
+    }
+    _ => {}
+  }
+}
+
 fn w_tooltip(tooltip: &Option<String>) -> Option<impl WidgetBuilder> {
   tooltip.to_owned().map(|tooltip| {
     fn_widget! {
@@ -118,7 +148,7 @@ where
         min: Size::new(500., 40.),
         max: Size::new(500., 65.),
       },
-      cursor: CursorIcon::Hand,
+      cursor: CursorIcon::Pointer,
       padding: EdgeInsets::all(10.),
       border: Border::all(BorderSide {
         width: 1.,
@@ -174,12 +204,12 @@ fn w_modify_channel_modal(
     let balanced_mode = w_mode_options(channel.clone_reader(), ChannelMode::Balanced);
     let performance_mode = w_mode_options(channel.clone_reader(), ChannelMode::Performance);
 
-    $channel_rename.write().set_text($channel.name().to_owned());
+    $channel_rename.write().set_text($channel.name());
 
     watch!($channel.name().to_owned())
       .distinct_until_changed()
       .subscribe(move |name| {
-        $channel_rename.write().set_text(name);
+        $channel_rename.write().set_text(&name);
       });
 
     let app_writer_cancel_ref = app.clone_writer();
@@ -261,7 +291,13 @@ trait AppExtraWidgets: StateWriter<Value = AppGUI> + Sized {
 // 4. [ ] load local db data.
 pub fn w_app() -> impl WidgetBuilder {
   let app_data = init_app_data();
-  fn_widget! { AppGUI::new(app_data) }
+  let first_channel = app_data.channels().first().unwrap();
+  let first_channel_id = *first_channel.id();
+  let mut quick_launcher = QuickLauncher::new(first_channel_id);
+  quick_launcher.msg = Some(first_channel.msgs().first().unwrap().clone());
+  let mut app_gui = AppGUI::new(app_data);
+  app_gui.quick_launcher = Some(quick_launcher);
+  fn_widget! { app_gui }
 }
 
 #[cfg(not(feature = "persistence"))]

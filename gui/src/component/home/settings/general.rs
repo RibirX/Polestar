@@ -21,7 +21,7 @@ pub(super) fn w_general_settings() -> impl WidgetBuilder {
         }
       }
       @FilledButton {
-        cursor: CursorIcon::Hand,
+        cursor: CursorIcon::Pointer,
         color: Color::from_u32(BLACK),
         @ { Label::new("Allow Permission") }
       }

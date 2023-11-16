@@ -48,7 +48,7 @@ impl ComposeChild for InteractiveList {
                   } else {
                     Size::zero()
                   }
-                }).value_chain(|s| s.distinct_until_changed()),
+                }).value_chain(|s| s.distinct_until_changed().box_it()),
               };
               let highlight = highlight_style(block.widget_build(ctx!()));
               $this.highlight_visible.then(||
@@ -59,7 +59,7 @@ impl ComposeChild for InteractiveList {
                     } else {
                       0.
                     }
-                  }).value_chain(|s| s.distinct_until_changed())
+                  }).value_chain(|s| s.distinct_until_changed().box_it())
                 }
               )
             }
@@ -71,7 +71,7 @@ impl ComposeChild for InteractiveList {
             @ {
               child.into_iter().enumerate().map(move |(idx, item)| {
                 let mut item_box = @ $item {
-                  cursor: CursorIcon::Hand,
+                  cursor: CursorIcon::Pointer,
                 };
                 @BoxDecoration {
                   // TODO: here display has 4px offset in real case.

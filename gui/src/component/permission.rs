@@ -47,7 +47,7 @@ fn w_steps() -> impl WidgetBuilder {
         @SizedBox {
           size: Size::new(300., 32.),
           @FilledButton {
-            cursor: CursorIcon::Hand,
+            cursor: CursorIcon::Pointer,
             color: Color::from_u32(BLACK),
             on_tap: move |_| {
 
@@ -60,7 +60,7 @@ fn w_steps() -> impl WidgetBuilder {
       @ { w_step_tip("Step 3") }
       @Button {
         h_align: HAlign::Right,
-        cursor: CursorIcon::Hand,
+        cursor: CursorIcon::Pointer,
         color: Color::from_u32(BLACK),
         on_tap: move |_| {
 

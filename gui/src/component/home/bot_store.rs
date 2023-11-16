@@ -56,7 +56,7 @@ fn w_bot_list(app: impl StateReader<Value = AppGUI>) -> impl WidgetBuilder {
                   @Clip {
                     @SizedBox {
                       size: Size::new(200., 110.),
-                      cursor: CursorIcon::Hand,
+                      cursor: CursorIcon::Pointer,
                       padding: EdgeInsets::all(12.),
                       background: Color::from_u32(ANTI_FLASH_WHITE),
                       border: Border::all(BorderSide {

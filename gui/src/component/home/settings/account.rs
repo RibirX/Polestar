@@ -44,7 +44,7 @@ pub(super) fn w_email() -> impl WidgetBuilder {
         }
       }
       @Button {
-        cursor: CursorIcon::Hand,
+        cursor: CursorIcon::Pointer,
         // TODO: check here UI design color.
         color: Color::RED,
         @ { Label::new("Logout") }
@@ -149,7 +149,7 @@ fn w_quota_over() -> impl WidgetBuilder {
       }
       @Link {
         url: "https://discord.gg/esyCEGhmq9",
-        cursor: CursorIcon::Hand,
+        cursor: CursorIcon::Pointer,
         @Text {
           text: "Polestar Discord",
           foreground: Color::from_u32(BLACK),
