@@ -72,7 +72,7 @@ impl Compose for BotList {
           } else {
             0
           }
-        }).value_chain(|s| s.distinct_until_changed()),
+        }).value_chain(|s| s.distinct_until_changed().box_it()),
       };
 
       @$list {

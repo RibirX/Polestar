@@ -376,6 +376,10 @@ pub mod launcher {
 
 #[cfg(target_os = "windows")]
 pub mod launcher {
+  use super::QuickLauncher;
+  use crate::component::app::AppGUI;
+  use ribir::prelude::*;
+
   pub fn create_wnd<S>(quick_launcher: S)
   where
     S: StateWriter<Value = QuickLauncher>,

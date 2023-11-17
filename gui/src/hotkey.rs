@@ -5,7 +5,7 @@ pub mod handler {
   use ribir::prelude::*;
 
   use crate::component::app::AppGUI;
-  use crate::component::{hide_quick_launcher, create_quick_launcher, QuickLauncher};
+  use crate::component::{create_quick_launcher, hide_quick_launcher, QuickLauncher};
   use crate::WINDOW_MGR;
 
   pub fn focus_handler(
@@ -42,15 +42,22 @@ pub mod handler {
       }
     }
   }
-
-  
 }
 
 #[cfg(target_os = "windows")]
 pub mod handler {
+  use crate::component::app::AppGUI;
+  use ribir::core::window::WindowId;
+  use ribir::prelude::*;
+
   #[allow(unused)]
   pub fn hotkey_handler(_hotkey: &HotkeyEvent, _app: impl StateWriter<Value = AppGUI>) {}
 
   #[allow(unused)]
-  pub fn focus_handler(app: impl StateWriter<Value = AppGUI>) {}
+  pub fn focus_handler(
+    app: impl StateWriter<Value = AppGUI>,
+    wnd_id: &mut WindowId,
+    focused: &mut bool,
+  ) {
+  }
 }
