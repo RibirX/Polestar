@@ -18,5 +18,5 @@ npm run start
 中文版本
 
 ```bash
-npm run start -- --locale zh-Hans
+npm run start -- --locale zh-CN
 ```
