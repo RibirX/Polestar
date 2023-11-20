@@ -1,11 +1,13 @@
-use std::{fs, io::ErrorKind, path::PathBuf};
+use std::path::PathBuf;
 
 use home::home_dir;
 
 const POLESTAR_FOLDER: &str = ".polestar_v1";
 const USERS_FOLDER: &str = "users";
+const CONFIG_FOLDER: &str = "config";
+const BOT_CONFIG_FILE: &str = "bot.json";
 
-pub fn project_home_path() -> PathBuf {
+fn project_home_path() -> PathBuf {
   home_dir()
     .map(|mut path| {
       path.push(POLESTAR_FOLDER);
@@ -20,21 +22,16 @@ pub fn user_data_path(user_id: &str) -> PathBuf {
   path
 }
 
-pub fn setup_user_dir(user_id: &str) {
-  let user_path = user_data_path(user_id);
-
-  if let Err(err) = fs::metadata(&user_path) {
-    if err.kind() == ErrorKind::NotFound {
-      fs::create_dir(&user_path).expect("Failed to create user data directory");
-    } else {
-      panic!("Init User Folder Error {}", err);
-    }
-  }
+fn project_config_path() -> PathBuf {
+  let mut path = project_home_path();
+  path.push(CONFIG_FOLDER);
+  path
 }
 
-pub fn setup_project() {
-  init_project_dir();
-  init_project_user_dir();
+pub(super) fn project_bot_config_path() -> PathBuf {
+  let mut path = project_config_path();
+  path.push(BOT_CONFIG_FILE);
+  path
 }
 
 fn project_user_path() -> PathBuf {
@@ -43,28 +40,42 @@ fn project_user_path() -> PathBuf {
   path
 }
 
-// Project directory initialization
-fn init_project_dir() {
-  let home_path = project_home_path();
+pub mod launch {
+  use std::{fs, io::Write, path::PathBuf};
 
-  if let Err(err) = fs::metadata(&home_path) {
-    if err.kind() == ErrorKind::NotFound {
-      fs::create_dir(&home_path).expect("Failed to create project home directory");
-    } else {
-      panic!("Init PoleStar Folder Error {}", err);
+  use super::{project_bot_config_path, project_config_path, project_home_path, project_user_path};
+
+  pub fn setup_project() {
+    create_if_not_exist_dir(project_home_path());
+    create_if_not_exist_dir(project_user_path());
+    create_if_not_exist_dir(project_config_path());
+    write_default_bot_config();
+  }
+
+  pub fn write_default_bot_config() {
+    let path = project_bot_config_path();
+
+    if fs::metadata(&path).is_err() {
+      let content = include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/..",
+        "/config/bot.json"
+      ));
+      let mut file = fs::File::create(path).expect("can't create bot.json");
+      file
+        .write_all(content.as_bytes())
+        .expect("can't write bot.json");
     }
   }
-}
 
-// User directory initialization
-fn init_project_user_dir() {
-  let user_path = project_user_path();
-
-  if let Err(err) = fs::metadata(&user_path) {
-    if err.kind() == ErrorKind::NotFound {
-      fs::create_dir(&user_path).expect("Failed to create user data directory");
-    } else {
-      panic!("Init User Folder Error {}", err);
+  fn create_if_not_exist_dir(path: PathBuf) {
+    if let Err(err) = std::fs::metadata(&path) {
+      if err.kind() == std::io::ErrorKind::NotFound {
+        std::fs::create_dir(&path).expect("Failed to create user data directory");
+      } else {
+        // TODO: need tip user.
+        panic!("Init User Folder {:?} Error {}", path, err);
+      }
     }
   }
 }

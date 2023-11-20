@@ -1,7 +1,4 @@
-use polestar_core::{
-  load_bot_cfg_file,
-  model::{AppData, Channel, ChannelMode},
-};
+use polestar_core::model::{init_app_data, AppData, Channel, ChannelMode};
 use ribir::prelude::*;
 use ribir_algo::Sc;
 use uuid::Uuid;
@@ -298,35 +295,4 @@ pub fn w_app() -> impl WidgetBuilder {
   let mut app_gui = AppGUI::new(app_data);
   app_gui.quick_launcher = Some(quick_launcher);
   fn_widget! { app_gui }
-}
-
-#[cfg(not(feature = "persistence"))]
-fn init_app_data() -> AppData {
-  println!("not feature persistence");
-  let bots = load_bot_cfg_file();
-  let first_bot_id = *bots.first().unwrap().id();
-  let channels = serde_json::from_str::<Vec<Channel>>(include_str!(concat!(
-    env!("CARGO_MANIFEST_DIR"),
-    "/..",
-    "/gui/channels_mock.json"
-  )))
-  .expect("Failed to load mock data");
-  AppData::new(bots, channels, first_bot_id, None)
-}
-
-#[cfg(feature = "persistence")]
-fn init_app_data() -> AppData {
-  use polestar_core::db::pool::{db_path, init_db, PersistenceDB};
-  use std::time::Duration;
-
-  println!("feature persistence");
-
-  let db = PersistenceDB::connect(init_db(&db_path()), Duration::from_secs(1))
-    .expect("Failed to connect db");
-
-  let channels = db.query_channels().expect("Failed to query channels");
-  let bots = load_bot_cfg_file();
-  let first_bot_id = *bots.first().unwrap().id();
-
-  AppData::new(bots, channels, first_bot_id, Some(Box::pin(db)))
 }

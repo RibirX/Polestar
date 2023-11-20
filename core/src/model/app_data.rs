@@ -1,36 +1,97 @@
-use std::{pin::Pin, ptr::NonNull, rc::Rc};
+use std::{collections::HashMap, pin::Pin, ptr::NonNull, rc::Rc};
 
 use uuid::Uuid;
 
-use crate::db::{executor::ActionPersist, pool::PersistenceDB};
+use crate::{
+  db::{executor::ActionPersist, pool::PersistenceDB},
+  utils::{self, BotCfg},
+};
 
 use super::{
   bot::Bot,
   channel::{Channel, ChannelCfg},
+  User,
 };
 
 pub struct AppData {
   bots: Rc<Vec<Bot>>,
+  tokens: Option<HashMap<String, String>>,
   channels: Vec<Channel>,
   cur_channel_id: Uuid,
   cfg: AppCfg,
+  user: Option<User>,
   db: Option<Pin<Box<PersistenceDB>>>,
+}
+
+#[cfg(not(feature = "persistence"))]
+pub fn init_app_data() -> AppData {
+  utils::launch::setup_project();
+  // 1. load bots config from local file.
+  let bot_cfg = utils::load_bot_cfg_file();
+  // 2. judge bot has official server.
+  let has_official_server = bot_cfg.has_official_server();
+  // 3. if has official server, load user info from local file.
+  // TODO: load user info
+
+  let BotCfg { bots, tokens } = bot_cfg;
+  let cfg = AppCfg::new(None, bots[0].id().clone(), has_official_server);
+  let channels = serde_json::from_str::<Vec<Channel>>(include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/..",
+    "/gui/channels_mock.json"
+  )))
+  .expect("Failed to load mock data");
+  let cur_channel_id = channels[0].id().clone();
+  AppData::new(bots, tokens, channels, cur_channel_id, None, cfg)
+}
+
+#[cfg(feature = "persistence")]
+pub fn init_app_data() -> AppData {
+  use crate::db::pool::{db_path, init_db};
+  use std::time::Duration;
+
+  utils::launch::setup_project();
+  // 1. load bots config from local file.
+  let bot_cfg = utils::load_bot_cfg_file();
+  // 2. judge bot has official server.
+  let has_official_server = bot_cfg.has_official_server();
+  // 3. if has official server, load user info from local file.
+  // TODO: load user info
+
+  let BotCfg { bots, tokens } = bot_cfg;
+  let cfg = AppCfg::new(None, bots[0].id().clone(), has_official_server);
+
+  let db = PersistenceDB::connect(init_db(&db_path()), Duration::from_secs(1))
+    .expect("Failed to connect db");
+  let channels = db.query_channels().expect("Failed to query channels");
+
+  let cur_channel_id = channels[0].id().clone();
+  AppData::new(
+    bots,
+    tokens,
+    channels,
+    cur_channel_id,
+    Some(Box::pin(db)),
+    cfg,
+  )
 }
 
 impl AppData {
   pub fn new(
     bots: Vec<Bot>,
+    tokens: Option<HashMap<String, String>>,
     channels: Vec<Channel>,
-    def_bot_id: Uuid,
+    cur_channel_id: Uuid,
     db: Option<Pin<Box<PersistenceDB>>>,
+    cfg: AppCfg,
   ) -> Self {
-    // TODO: record User last current channel id in local file.
-    let cur_channel_id = channels.first().map(|c| *c.id()).unwrap_or(Uuid::nil());
     Self {
       bots: Rc::new(bots),
+      tokens,
       channels,
       cur_channel_id,
-      cfg: AppCfg::new(None, def_bot_id),
+      cfg,
+      user: None,
       db,
     }
   }
@@ -129,10 +190,17 @@ impl AppData {
 pub struct AppCfg {
   proxy: Option<String>,
   def_bot_id: Uuid,
+  has_official_server: bool,
 }
 
 impl AppCfg {
-  pub fn new(proxy: Option<String>, def_bot_id: Uuid) -> Self { Self { proxy, def_bot_id } }
+  pub fn new(proxy: Option<String>, def_bot_id: Uuid, has_official_server: bool) -> Self {
+    Self {
+      proxy,
+      def_bot_id,
+      has_official_server,
+    }
+  }
 
   #[inline]
   pub fn proxy(&self) -> Option<&str> { self.proxy.as_deref() }

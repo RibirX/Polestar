@@ -7,7 +7,7 @@ description.workspace = true
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-polestar-core = { path = "../core" }
+polestar-core = { path = "../core", features = [] }
 ribir = { path = "../../Ribir/ribir", features = ["png"] }
 ribir_algo = { path = "../../Ribir/algo" }
 
@@ -30,6 +30,3 @@ icrate = { version = "0.0.4", features = [
   "AppKit_NSButton",
 ] }
 macos-accessibility-client = { version = "0.0.1" }
-
-[features]
-persistence = []

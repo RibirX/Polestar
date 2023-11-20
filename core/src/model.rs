@@ -12,3 +12,6 @@ pub use channel::*;
 
 mod msg;
 pub use msg::*;
+
+mod user;
+pub use user::*;

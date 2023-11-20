@@ -1,11 +1,7 @@
-use std::time::Duration;
-
 use handler::{channel_handler, msg_handler};
-use polestar_core::db::pool::{PersistenceDB, init_db, db_path};
-use polestar_core::model::AppData;
+use polestar_core::model::init_app_data;
 use reedline_repl_rs::clap::{Arg, Command};
 use reedline_repl_rs::{Repl, Result as ReplResult};
-use uuid::Uuid;
 
 mod handler;
 
@@ -14,10 +10,7 @@ static APP_NAME: &str = env!("CARGO_PKG_NAME");
 static APP_DESC: &str = env!("CARGO_PKG_DESCRIPTION");
 
 fn main() -> ReplResult<()> {
-  let db = PersistenceDB::connect(init_db(&db_path()), Duration::from_secs(1))
-    .expect("Failed to connect db");
-  let channels = db.query_channels().expect("Failed to query channels");
-  let mut app_data = AppData::new(vec![], channels, Uuid::nil(), Some(Box::pin(db)));
+  let mut app_data = init_app_data();
   app_data.new_channel("quick launcher".to_owned(), None);
   let mut repl = Repl::new(app_data)
     .with_name(APP_NAME)
