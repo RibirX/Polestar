@@ -15,7 +15,7 @@ use super::{
 
 pub struct AppData {
   bots: Rc<Vec<Bot>>,
-  tokens: Option<HashMap<String, String>>,
+  vars: Option<HashMap<String, String>>,
   channels: Vec<Channel>,
   cur_channel_id: Uuid,
   cfg: AppCfg,
@@ -33,7 +33,7 @@ pub fn init_app_data() -> AppData {
   // 3. if has official server, load user info from local file.
   // TODO: load user info
 
-  let BotCfg { bots, tokens } = bot_cfg;
+  let BotCfg { bots, vars } = bot_cfg;
   let cfg = AppCfg::new(None, bots[0].id().clone(), has_official_server);
   let channels = serde_json::from_str::<Vec<Channel>>(include_str!(concat!(
     env!("CARGO_MANIFEST_DIR"),
@@ -42,7 +42,7 @@ pub fn init_app_data() -> AppData {
   )))
   .expect("Failed to load mock data");
   let cur_channel_id = channels[0].id().clone();
-  AppData::new(bots, tokens, channels, cur_channel_id, None, cfg)
+  AppData::new(bots, vars, channels, cur_channel_id, None, cfg)
 }
 
 #[cfg(feature = "persistence")]
@@ -58,7 +58,7 @@ pub fn init_app_data() -> AppData {
   // 3. if has official server, load user info from local file.
   // TODO: load user info
 
-  let BotCfg { bots, tokens } = bot_cfg;
+  let BotCfg { bots, vars } = bot_cfg;
   let cfg = AppCfg::new(None, bots[0].id().clone(), has_official_server);
 
   let db = PersistenceDB::connect(init_db(&db_path()), Duration::from_secs(1))
@@ -68,7 +68,7 @@ pub fn init_app_data() -> AppData {
   let cur_channel_id = channels[0].id().clone();
   AppData::new(
     bots,
-    tokens,
+    vars,
     channels,
     cur_channel_id,
     Some(Box::pin(db)),
@@ -79,7 +79,7 @@ pub fn init_app_data() -> AppData {
 impl AppData {
   pub fn new(
     bots: Vec<Bot>,
-    tokens: Option<HashMap<String, String>>,
+    vars: Option<HashMap<String, String>>,
     channels: Vec<Channel>,
     cur_channel_id: Uuid,
     db: Option<Pin<Box<PersistenceDB>>>,
@@ -87,7 +87,7 @@ impl AppData {
   ) -> Self {
     Self {
       bots: Rc::new(bots),
-      tokens,
+      vars,
       channels,
       cur_channel_id,
       cfg,

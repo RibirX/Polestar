@@ -1,5 +1,5 @@
 {
-  "tokens": {
+  "vars": {
     "OpenAI": "sk-1234567890"
   },
   "bots": [
