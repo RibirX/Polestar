@@ -1,6 +1,6 @@
 {
   "vars": {
-    "OpenAI": "sk-1234567890"
+    "OpenAI": "v1.eyJ1c2VyX2lkIjoxMDAxMDIsImV4cCI6MTcwMTE0ODM5MywidmVyIjoidjEifQ.h0He4zJA8EnthH698wJF4uAwGFrk7gZN9JweeY_1hC0"
   },
   "bots": [
     {
@@ -19,9 +19,12 @@
         "en"
       ],
       "sp": "OpenAI",
-      "url": "https://api.openai.com/v1/chat/completions",
+      "url": "https://api.ribir.org/stream/open_ai/v1/chat/completions",
       "headers": {
-        "Authorization": "{OpenAI}"
+        "User-Agent": "PolestarChat/v1.0.0",
+        "Content-Type": "application/json",
+        "Authorization": "{OpenAI}",
+        "Version": "v1.0.0"
       },
       "params": {
         "model": "gpt-3.5-turbo",
@@ -30,8 +33,8 @@
     },
     {
       "id": "a7f965e5-b1d1-4e9b-89e4-975f8ef7cd80",
-      "name": "Stable-Diffusion XL",
-      "desc": "Stable-Diffusion XL is a AI assistant powered by OpenAI",
+      "name": "Polestar Assistant 1",
+      "desc": "Polestar Assistant is a AI assistant powered by OpenAI",
       "avatar": {
         "name": "🌉",
         "color": "#EDF7FBFF"
@@ -44,9 +47,12 @@
         "en"
       ],
       "sp": "OpenAI",
-      "url": "https://api.openai.com/v1/chat/completions",
+      "url": "https://api.ribir.org/stream/open_ai/v1/chat/completions",
       "headers": {
-        "Authorization": "{OpenAI}"
+        "User-Agent": "PolestarChat/v1.0.0",
+        "Content-Type": "application/json",
+        "Authorization": "{OpenAI}",
+        "Version": "v1.0.0"
       },
       "params": {
         "model": "gpt-3.5-turbo",
@@ -55,8 +61,8 @@
     },
     {
       "id": "e1297828-3348-41bc-b457-182db42c6616",
-      "name": "Stable-Diffusion 2",
-      "desc": "Stable-Diffusion 2 is a AI assistant powered by OpenAI",
+      "name": "Polestar Assistant 2",
+      "desc": "Polestar Assistant is a AI assistant powered by OpenAI",
       "avatar": {
         "name": "🌉",
         "color": "#EDF7FBFF"
@@ -69,9 +75,12 @@
         "en"
       ],
       "sp": "OpenAI",
-      "url": "https://api.openai.com/v1/chat/completions",
+      "url": "https://api.ribir.org/stream/open_ai/v1/chat/completions",
       "headers": {
-        "Authorization": "{OpenAI}"
+        "User-Agent": "PolestarChat/v1.0.0",
+        "Content-Type": "application/json",
+        "Authorization": "{OpenAI}",
+        "Version": "v1.0.0"
       },
       "params": {
         "model": "gpt-3.5-turbo",
