@@ -66,6 +66,22 @@ pub async fn update_msg(pool: &DbPool, msg: &Msg) -> Result<(), PolestarError> {
   Ok(())
 }
 
+pub async fn remove_msg(pool: &DbPool, id: &Uuid) -> Result<(), PolestarError> {
+  let res = sqlx::query(
+    r#"
+    DELETE FROM msg
+    WHERE id = ?1
+    "#,
+  )
+  .bind(id)
+  .execute(pool)
+  .await?;
+
+  log::info!("remove msg result: {:?}", res);
+
+  Ok(())
+}
+
 pub async fn query_msgs_by_channel_id(
   pool: &DbPool,
   channel_id: &Uuid,

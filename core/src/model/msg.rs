@@ -48,6 +48,14 @@ pub struct MsgMeta {
   source_id: Option<Uuid>,
 }
 
+impl MsgMeta {
+  #[inline]
+  pub fn quote_id(&self) -> Option<&Uuid> { self.quote_id.as_ref() }
+
+  #[inline]
+  pub fn source_id(&self) -> Option<&Uuid> { self.source_id.as_ref() }
+}
+
 impl Msg {
   pub fn new(role: MsgRole, cont_list: Vec<MsgCont>, meta: MsgMeta) -> Self {
     Self {
@@ -108,14 +116,19 @@ pub struct Image {
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
 enum ImagePath {
+  #[serde(rename = "url")]
   Url(String),
+  #[serde(rename = "file")]
   File(Uuid),
+  #[serde(rename = "static")]
   Static(String),
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
 pub enum MsgBody {
+  #[serde(rename = "text")]
   Text(Option<String>),
+  #[serde(rename = "image")]
   Image(Option<Image>),
 }
 
@@ -217,26 +230,46 @@ impl MsgCont {
 
   pub fn body(&self) -> &MsgBody { &self.body }
 
+  pub fn text(&self) -> Option<&String> {
+    match &self.body {
+      MsgBody::Text(s) => s.as_ref(),
+      _ => None,
+    }
+  }
+
+  pub fn image(&self) -> Option<&Image> {
+    match &self.body {
+      MsgBody::Image(i) => i.as_ref(),
+      _ => None,
+    }
+  }
+
   pub fn status(&self) -> &MsgStatus { &self.status }
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone, Copy)]
 pub enum MsgStatus {
   // Send message default status
+  #[serde(rename = "pending")]
   Pending,
   // Message has response, but not finish
+  #[serde(rename = "receiving")]
   Receiving,
   // Message don't have receive any response and trigger error(i.e timeout, invalid response)
+  #[serde(rename = "rejected")]
   Rejected,
   // Once message has receive response, it will be fulfilled status, and can't update to other
   // status
+  #[serde(rename = "fulfilled")]
   Fulfilled,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Serialize, Deserialize, Default)]
 pub enum MsgRole {
   #[default]
+  #[serde(rename = "user")]
   User,
+  #[serde(rename = "bot")]
   Bot(Uuid),
 }
 

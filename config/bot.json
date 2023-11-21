@@ -7,6 +7,10 @@
       "id": "87cc7e88-fd55-4c01-9a34-d0f1397b1c73",
       "name": "Polestar Assistant",
       "desc": "Polestar Assistant is a AI assistant powered by OpenAI",
+      "avatar": {
+        "name": "🌉",
+        "color": "#EDF7FBFF"
+      },
       "cat": "Assistant",
       "tags": [
         "AI"
@@ -14,6 +18,57 @@
       "lang": [
         "en"
       ],
+      "sp": "OpenAI",
+      "url": "https://api.openai.com/v1/chat/completions",
+      "headers": {
+        "Authorization": "{OpenAI}"
+      },
+      "params": {
+        "model": "gpt-3.5-turbo",
+        "prompt": ""
+      }
+    },
+    {
+      "id": "a7f965e5-b1d1-4e9b-89e4-975f8ef7cd80",
+      "name": "Stable-Diffusion XL",
+      "desc": "Stable-Diffusion XL is a AI assistant powered by OpenAI",
+      "avatar": {
+        "name": "🌉",
+        "color": "#EDF7FBFF"
+      },
+      "cat": "Assistant",
+      "tags": [
+        "AI"
+      ],
+      "lang": [
+        "en"
+      ],
+      "sp": "OpenAI",
+      "url": "https://api.openai.com/v1/chat/completions",
+      "headers": {
+        "Authorization": "{OpenAI}"
+      },
+      "params": {
+        "model": "gpt-3.5-turbo",
+        "prompt": ""
+      }
+    },
+    {
+      "id": "e1297828-3348-41bc-b457-182db42c6616",
+      "name": "Stable-Diffusion 2",
+      "desc": "Stable-Diffusion 2 is a AI assistant powered by OpenAI",
+      "avatar": {
+        "name": "🌉",
+        "color": "#EDF7FBFF"
+      },
+      "cat": "Assistant",
+      "tags": [
+        "AI"
+      ],
+      "lang": [
+        "en"
+      ],
+      "sp": "OpenAI",
       "url": "https://api.openai.com/v1/chat/completions",
       "headers": {
         "Authorization": "{OpenAI}"

@@ -2,6 +2,8 @@ use serde::Deserialize;
 use std::collections::HashMap;
 use uuid::Uuid;
 
+use crate::service::service_provider::{get_service, Service, ServiceModel};
+
 /// Bot is Polestar basic component, user need talk to bot to get AI response.
 #[derive(Deserialize, Debug)]
 pub struct Bot {
@@ -13,10 +15,13 @@ pub struct Bot {
   lang: Vec<Lang>,
   // A description for bot, it's optional
   desc: Option<String>,
+  // A avatar for bot
+  avatar: BotAvatar,
   // A category for bot, it's optional
   cat: Option<String>,
   // A list of tags for bot, it can be empty list to indicate no tags
   tags: Vec<String>,
+  sp: ServiceModel,
   // API url for bot's AI service
   url: String,
   // API url header for bot's AI service
@@ -32,11 +37,17 @@ impl Bot {
 
   pub fn desc(&self) -> Option<&str> { self.desc.as_deref() }
 
+  pub fn avatar(&self) -> &BotAvatar { &self.avatar }
+
   pub fn cat(&self) -> Option<&str> { self.cat.as_deref() }
 
   pub fn tags(&self) -> &[String] { &self.tags }
 
   pub fn headers(&self) -> &HashMap<String, String> { &self.headers }
+
+  pub fn sp(&self) -> &ServiceModel { &self.sp }
+
+  pub fn service(&self) -> Box<dyn Service> { get_service(*self.sp()) }
 
   pub fn url(&self) -> &str { &self.url }
 
@@ -53,22 +64,9 @@ pub enum Lang {
   ZhCN,
 }
 
-#[cfg(test)]
-mod test {
-  use super::*;
-
-  // load bot.json file
-  #[test]
-  fn load_bot_cfg_file() {
-    let preset_bot_cfg = serde_json::from_str::<serde_json::Value>(include_str!(concat!(
-      env!("CARGO_MANIFEST_DIR"),
-      "/..",
-      "/config/bot.json"
-    )))
-    .expect("Failed to parse bot.json");
-    let bots = serde_json::from_value::<Vec<Bot>>(preset_bot_cfg["bots"].clone())
-      .expect("Failed to parse bots");
-    let bot = bots.first();
-    println!("bot: {:?}", bot);
-  }
+#[derive(Clone, Deserialize, Debug)]
+#[serde(untagged)]
+pub enum BotAvatar {
+  Text { name: String, color: String },
+  Image { url: String },
 }
