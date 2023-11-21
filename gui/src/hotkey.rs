@@ -55,9 +55,9 @@ pub mod handler {
 
   #[allow(unused)]
   pub fn focus_handler(
-    app: impl StateWriter<Value = AppGUI>,
-    wnd_id: &mut WindowId,
-    focused: &mut bool,
+    _app: impl StateWriter<Value = AppGUI>,
+    _wnd_id: &mut WindowId,
+    _focused: &mut bool,
   ) {
   }
 }

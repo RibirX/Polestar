@@ -1,4 +1,6 @@
-use polestar_core::model::Channel;
+use std::rc::Rc;
+
+use polestar_core::model::{Bot, Channel};
 use ribir::prelude::*;
 
 mod editor;
@@ -8,7 +10,10 @@ mod onboarding;
 use editor::w_editor;
 use msg_list::w_msg_list;
 
-pub fn w_chat(channel: impl StateWriter<Value = Channel>) -> impl WidgetBuilder {
+pub fn w_chat(
+  channel: impl StateWriter<Value = Channel>,
+  bots: Rc<Vec<Bot>>,
+) -> impl WidgetBuilder {
   fn_widget! {
     @Stack {
       @Column {
@@ -16,7 +21,7 @@ pub fn w_chat(channel: impl StateWriter<Value = Channel>) -> impl WidgetBuilder 
           flex: 1.,
           @ { w_msg_list(channel.clone_writer()) }
         }
-        @ { w_editor(channel.clone_writer()) }
+        @ { w_editor(channel, bots) }
       }
     }
   }

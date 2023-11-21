@@ -15,46 +15,56 @@ pub struct BotList {
   filter: String,
 }
 
+type BotName = String;
 impl BotList {
   pub fn set_filter(&mut self, filter: String) { self.filter = filter; }
 
   pub fn confirm(&mut self) {}
 
   pub fn move_up(&mut self) {
-    if let Some(selected_id) = self.selected_id {
-      let idx = self.get_bots().position(|bot| bot.id() == &selected_id);
-
-      if let Some(idx) = idx {
-        if idx > 0 {
-          self.selected_id = self.bots.iter().nth(idx - 1).map(|bot| bot.id().clone());
-        } else {
-          self.selected_id = self.bots.last().map(|bot| bot.id().clone());
-        }
-      }
-    } else {
-      self.selected_id = self.bots.first().map(|bot| bot.id().clone());
-    }
+    let selected_id = self.next_selected(&self.selected_id, |this| this.get_bots().rev());
+    self.selected_id = selected_id;
   }
 
   pub fn move_down(&mut self) {
-    if let Some(selected_id) = self.selected_id {
-      let idx = self.get_bots().position(|bot| bot.id() == &selected_id);
+    let selected_id = self.next_selected(&self.selected_id, |this| this.get_bots());
+    self.selected_id = selected_id;
+  }
 
-      if let Some(idx) = idx {
-        if idx < self.bots.len() - 1 {
-          self.selected_id = self.bots.iter().nth(idx + 1).map(|bot| bot.id().clone());
-        } else {
-          self.selected_id = self.bots.first().map(|bot| bot.id().clone());
-        }
+  fn next_selected<'a, I>(
+    &'a self,
+    selected_id: &Option<Uuid>,
+    it_creator: impl Fn(&'a BotList) -> I,
+  ) -> Option<Uuid>
+  where
+    I: Iterator<Item = &'a Bot>,
+  {
+    let bot = {
+      if let Some(selected_id) = selected_id {
+        let mut it = it_creator(self).skip_while(|bot| bot.id() != selected_id);
+        assert!(it.next().is_some());
+        it.next().or_else(|| it_creator(self).next())
+      } else {
+        let mut it = it_creator(self);
+        it.next()
       }
-    } else {
-      self.selected_id = self.bots.first().map(|bot| bot.id().clone());
-    }
+    };
+    bot.map(|bot| *bot.id())
+  }
+
+  pub fn selected_bot(&self) -> Option<(Uuid, BotName)> {
+    self.selected_id.as_ref().and_then(|id| {
+      self
+        .bots
+        .iter()
+        .find(|bot| bot.id() == id)
+        .map(|bot| (*bot.id(), bot.name().to_string()))
+    })
   }
 
   fn select(&mut self, bot_id: Uuid) { self.selected_id = Some(bot_id); }
 
-  fn get_bots(&self) -> impl Iterator<Item = &Bot> {
+  pub fn get_bots(&self) -> impl DoubleEndedIterator<Item = &Bot> {
     self
       .bots
       .iter()
@@ -77,25 +87,29 @@ impl Compose for BotList {
 
       @$list {
         @ {
-          $this
-            .get_bots()
-            .map(|bot| {
-              let bot_id = *bot.id();
-              @ListItem {
-                on_tap: move |_| {
-                  $this.write().select(bot_id);
-                },
-                @Leading {
-                  @ {
-                    CustomEdgeWidget(
-                      w_avatar(bot.avatar()).widget_build(ctx!())
-                    )
+          pipe!($this.filter.clone())
+            .value_chain(|s| s.distinct_until_changed().box_it())
+            .map(move |_| {
+              let selected_id = { $this.get_bots().next().map(|bot| *bot.id()) };
+              $this.silent().selected_id = selected_id;
+              $this.get_bots().map(|bot| {
+                let bot_id = *bot.id();
+                @ListItem {
+                  on_tap: move |_| {
+                    $this.write().select(bot_id);
+                  },
+                  @Leading {
+                    @ {
+                      CustomEdgeWidget(
+                        w_avatar(bot.avatar()).widget_build(ctx!())
+                      )
+                    }
                   }
+                  @HeadlineText(Label::new(bot.name().to_owned()))
+                  @SupportingText(Label::new(bot.desc().map_or(String::new(), |s| s.to_owned())))
                 }
-                @HeadlineText(Label::new(bot.name().to_owned()))
-                @SupportingText(Label::new(bot.desc().map_or(String::new(), |s| s.to_owned())))
-              }
-            }).collect::<Vec<_>>()
+              }).collect::<Vec<_>>()
+            })
         }
       }
     }
