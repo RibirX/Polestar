@@ -1,5 +1,5 @@
 use crate::component::common::BotList;
-use polestar_core::model::{Bot, Channel};
+use polestar_core::model::{Bot, Channel, Msg, MsgAction, MsgBody, MsgCont, MsgMeta, MsgRole};
 use ribir::prelude::*;
 use std::ops::Range;
 use std::rc::Rc;
@@ -15,6 +15,13 @@ pub fn w_editor(
     let mut bots = @BotList { bots: bots, visible: false };
     let ignore_pointer = @IgnorePointer { ignore: false };
     let mut text_area = @MessageEditor {};
+    let channel2 = channel.clone_writer();
+    let send_icon = @IconButton {
+      on_tap: move |_| {
+        send_msg(&mut *$text_area.write(), channel.clone_writer());
+      },
+      @ { polestar_svg::SEND }
+    };
     watch!($text_area.bot_hint())
       .distinct_until_changed()
       .subscribe(move |hint| {
@@ -25,36 +32,39 @@ pub fn w_editor(
           $bots.write().visible = false;
         }
       });
-      @Column {
-        on_key_down_capture: move |e| {
-          if $bots.visible {
-            let mut stop_propagation = true;
-            match e.key() {
-              VirtualKey::Named(NamedKey::Escape) => $bots.write().visible = false,
-              VirtualKey::Named(NamedKey::ArrowUp) => $bots.write().move_up(),
-              VirtualKey::Named(NamedKey::ArrowDown) => $bots.write().move_down(),
-              _ => stop_propagation = false,
-            }
-            if stop_propagation {
-              e.stop_propagation();
-            }
+    @Column {
+      on_key_down_capture: move |e| {
+        if $bots.visible {
+          let mut stop_propagation = true;
+          match e.key() {
+            VirtualKey::Named(NamedKey::Escape) => $bots.write().visible = false,
+            VirtualKey::Named(NamedKey::ArrowUp) => $bots.write().move_up(),
+            VirtualKey::Named(NamedKey::ArrowDown) => $bots.write().move_down(),
+            _ => stop_propagation = false,
           }
-        },
-        on_chars_capture: move |e| {
-          if $bots.visible {
-            if e.chars == "\r" || e.chars == "\n"  {
-              select_bot(&mut *$text_area.write(), &$bots);
-              e.stop_propagation();
-            }
-          }
-        },
-        @$bots {
-          on_double_tap: move |_| {
-            select_bot(&mut $text_area.write(), &$bots);
-            $text_area.request_focus();
+          if stop_propagation {
+            e.stop_propagation();
           }
         }
-        @$ignore_pointer {
+      },
+      on_chars_capture: move |e| {
+        if e.chars == "\r" || e.chars == "\n" {
+          if $bots.visible {
+            select_bot(&mut *$text_area.write(), &$bots);
+            e.stop_propagation();
+          } else if !e.with_shift_key() {
+            send_msg(&mut *$text_area.write(), channel2.clone_writer());
+            e.stop_propagation();
+          }
+        }
+      },
+      @$bots {
+        on_tap: move |_| {
+          select_bot(&mut $text_area.write(), &$bots);
+          $text_area.request_focus();
+        }
+      }
+      @$ignore_pointer {
         @ConstrainedBox {
           clamp: BoxClamp {
             min: Size::new(f32::INFINITY, 48.),
@@ -62,21 +72,31 @@ pub fn w_editor(
           },
           padding: EdgeInsets::new(0., 11., 11., 11.),
           @Row {
+            padding: EdgeInsets::all(10.),
+            background: Color::from_u32(CULTURED_F4F4F4_FF),
+            border_radius: Radius::all(8.),
             @Expanded {
               flex: 1.,
               @ $text_area {
-                padding: EdgeInsets::all(10.),
-                background: Color::from_u32(CULTURED_F4F4F4_FF),
-                border_radius: Radius::all(8.),
                 @ { Placeholder::new("Type a message") }
               }
             }
-            @IconButton { @ { polestar_svg::SEND } }
+            @ { send_icon }
           }
         }
       }
     }
   }
+}
+
+fn send_msg(text_area: &mut MessageEditor, channel: impl StateWriter<Value = Channel>) {
+  let cont = MsgCont::text_init();
+  let cont = cont.action(MsgAction::Receiving(MsgBody::Text(Some(
+    text_area.display_text(),
+  ))));
+  let msg = Msg::new(MsgRole::User, vec![cont], MsgMeta::default());
+  channel.write().add_msg(msg);
+  text_area.reset();
 }
 
 fn select_bot(text_area: &mut MessageEditor, bots: &BotList) {
@@ -355,6 +375,11 @@ pub struct MessageEditor {
 }
 
 impl MessageEditor {
+  pub fn reset(&mut self) {
+    self.edit_message = EditedMessage::default();
+    self.caret = CaretState::default();
+  }
+
   pub fn display_text(&self) -> String { self.edit_message.display_message() }
 
   pub fn insert_bot(&mut self, uuid: Uuid, name: String) {

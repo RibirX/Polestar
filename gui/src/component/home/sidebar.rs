@@ -25,7 +25,7 @@ pub fn w_sidebar(app: impl StateWriter<Value = AppGUI>) -> impl WidgetBuilder {
   }
 }
 
-fn w_sidebar_header(_app: impl StateWriter<Value = AppGUI>) -> impl WidgetBuilder {
+fn w_sidebar_header(app: impl StateWriter<Value = AppGUI>) -> impl WidgetBuilder {
   fn_widget! {
     @ConstrainedBox {
       clamp: BoxClamp::fixed_height(APP_SIDEBAR_HEADER_HEIGHT),
@@ -39,6 +39,9 @@ fn w_sidebar_header(_app: impl StateWriter<Value = AppGUI>) -> impl WidgetBuilde
         }
         @IconButton {
           size: IconSize::of(ctx!()).medium,
+          on_tap: move |_| {
+            $app.write().data.new_channel("Untitled".to_owned(), None);
+          },
           @ { svgs::ADD }
         }
       }

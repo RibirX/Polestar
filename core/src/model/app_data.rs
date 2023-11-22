@@ -44,7 +44,6 @@ pub fn init_app_data() -> AppData {
         let user_data_path = utils::user_data_path(&uid.to_string());
         // TODO: get token from local file.
         let token = utils::token::decrypt_token(crate::KEY).ok();
-        println!("token: {:?}", token);
         let mut user_builder = UserBuilder::default();
         user_builder = user_builder.uid(uid);
         if let Some(token) = token {
@@ -76,7 +75,8 @@ pub fn init_app_data() -> AppData {
   let cur_channel_id = if cur_channel.is_some() {
     *cur_channel_id
   } else {
-    let cur_channel_id = channels.first().map(|channel| *channel.id());
+    // channels reverse display
+    let cur_channel_id = channels.last().map(|channel| *channel.id());
     local_state.set_cur_channel_id(cur_channel_id);
     cur_channel_id
   };
@@ -164,7 +164,10 @@ impl AppData {
       .find(|channel| channel.id() == channel_id)
   }
 
-  pub fn switch_channel(&mut self, channel_id: &Uuid) { self.cur_channel_id = Some(*channel_id); }
+  pub fn switch_channel(&mut self, channel_id: &Uuid) {
+    self.cur_channel_id = Some(*channel_id);
+    self.local_state.set_cur_channel_id(Some(*channel_id));
+  }
 
   pub fn cur_channel(&self) -> Option<&Channel> {
     self
@@ -199,12 +202,31 @@ impl AppData {
   }
 
   pub fn remove_channel(&mut self, channel_id: &Uuid) {
-    let p_channel_id = *channel_id;
-
     self.db.as_mut().map(|db| {
       db.as_mut()
-        .add_persist(ActionPersist::RemoveChannel { channel_id: p_channel_id })
+        .add_persist(ActionPersist::RemoveChannel { channel_id: *channel_id })
     });
+
+    // guard channels is empty after remove channel
+    if self.channels.len() == 1 {
+      self.new_channel("Untitled".to_owned(), None);
+    }
+
+    // if current channel is removed, switch to nearest channel.
+    if Some(*channel_id) == self.cur_channel_id {
+      let cur_channel_id = self
+        .channels
+        .iter()
+        .position(|channel| Some(channel.id()) == self.cur_channel_id.as_ref())
+        .map(|idx| {
+          if idx == 0 {
+            *self.channels[1].id()
+          } else {
+            *self.channels[idx - 1].id()
+          }
+        });
+      self.cur_channel_id = cur_channel_id;
+    }
 
     self.channels.retain(|channel| channel.id() != channel_id);
   }
@@ -212,17 +234,6 @@ impl AppData {
   pub fn cfg(&self) -> &AppCfg { &self.cfg }
 
   pub fn cfg_mut(&mut self) -> &mut AppCfg { &mut self.cfg }
-
-  pub fn clear_channels(&mut self) {
-    let channel_ids: Vec<Uuid> = self.channels.iter().map(|c| *c.id()).collect();
-    channel_ids.iter().for_each(|id| {
-      self.db.as_mut().map(|db| {
-        db.as_mut()
-          .add_persist(ActionPersist::RemoveChannel { channel_id: *id })
-      });
-    });
-    self.channels.clear();
-  }
 
   pub fn def_bot(&self) -> &Bot {
     self
