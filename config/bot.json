@@ -46,7 +46,7 @@
       "lang": [
         "en"
       ],
-      "sp": "OpenAI",
+      "sp": "Polestar",
       "url": "https://api.ribir.org/stream/open_ai/v1/chat/completions",
       "headers": {
         "User-Agent": "PolestarChat/v1.0.0",

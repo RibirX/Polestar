@@ -1,9 +1,8 @@
-use std::{collections::HashMap, fs, io::Read};
+use std::collections::HashMap;
 
 use regex::Regex;
 use serde::Deserialize;
 
-use super::{launch::write_default_bot_config, project_bot_config_path};
 use crate::{error::PolestarResult, model::Bot};
 
 #[derive(Deserialize, Debug)]
@@ -12,7 +11,11 @@ struct BotCfg {
   vars: Option<HashMap<String, String>>,
 }
 
+#[cfg(not(debug_assertions))]
 pub fn load_bot_cfg_file() -> PolestarResult<Vec<Bot>> {
+  use super::{launch::write_default_bot_config, project_bot_config_path};
+  use std::{fs, io::Read};
+
   let path = project_bot_config_path();
 
   fs::File::open(&path)
@@ -34,6 +37,16 @@ pub fn load_bot_cfg_file() -> PolestarResult<Vec<Bot>> {
       },
       |bots| bots,
     )
+}
+
+#[cfg(debug_assertions)]
+pub fn load_bot_cfg_file() -> PolestarResult<Vec<Bot>> {
+  let content = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/..",
+    "/config/bot.json"
+  ));
+  bot_vars_parser(content)
 }
 
 fn bot_vars_parser(file: &str) -> PolestarResult<Vec<Bot>> {

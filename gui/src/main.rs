@@ -7,6 +7,7 @@ use window::WindowMgr;
 
 mod component;
 mod hotkey;
+mod oauth;
 mod style;
 mod theme;
 mod window;
@@ -47,10 +48,19 @@ fn read_ui_settings() -> UISettings {
 static G_APP_NAME: &str = "Polestar";
 static G_VERSION: &str = env!("CARGO_PKG_VERSION");
 
+#[derive(Default)]
+pub struct GlobalConfig {
+  pub local_server_port: Option<u16>,
+}
+
+pub static GLOBAL_CONFIG: Lazy<Mutex<GlobalConfig>> =
+  Lazy::new(|| Mutex::new(GlobalConfig::default()));
+
 pub static WINDOW_MGR: Lazy<Mutex<WindowMgr>> = Lazy::new(|| Mutex::new(WindowMgr::new()));
 pub static TIMER: Lazy<Mutex<Instant>> = Lazy::new(|| Mutex::new(Instant::now()));
 
 fn main() {
+  local_server_listen();
   unsafe {
     AppCtx::set_app_theme(material::purple::light());
   }
@@ -68,4 +78,46 @@ fn main() {
   *TIMER.lock().unwrap() = Instant::now();
 
   App::exec();
+}
+
+fn local_server_listen() {
+  use base64::{engine::general_purpose, Engine as _};
+  use tiny_http::{Request, Response, Server};
+  use url::Url;
+  fn login_handle(url: Url, req: Request, event_sender: &EventSender) {
+    if let Some(pair) = url.query_pairs().find(|(key, _)| key == "url") {
+      if let Some(url) = general_purpose::STANDARD
+        .decode(pair.1.as_bytes())
+        .ok()
+        .and_then(|content| String::from_utf8(content).ok())
+      {
+        event_sender.send(AppEvent::OpenUrl(url));
+        let _ = req.respond(Response::from_string("Ok"));
+        return;
+      }
+    }
+    let _ = req.respond(Response::from_string("failed").with_status_code(400));
+  }
+
+  let event_sender = App::event_sender();
+  std::thread::spawn(move || {
+    let local_server_port = 56765;
+    GLOBAL_CONFIG.lock().unwrap().local_server_port = Some(local_server_port);
+    let server = Server::http(format!("127.0.0.1:{local_server_port}"));
+    let Ok(server) = server else {
+      println!("server launch failed {:?}", server.err());
+      return;
+    };
+
+    for request in server.incoming_requests() {
+      if let Ok(url) = url::Url::parse(&format!("http://127.0.0.1{}", request.url())) {
+        match url.path() {
+          "/login" => login_handle(url, request, &event_sender),
+          _ => {
+            let _ = request.respond(Response::from_string("not found").with_status_code(404));
+          }
+        }
+      }
+    }
+  });
 }
