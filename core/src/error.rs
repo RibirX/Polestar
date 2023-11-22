@@ -14,6 +14,8 @@ pub enum PolestarError {
   DatabaseNotFound,
   #[error("database error: {0}")]
   Database(#[from] sqlx::Error),
+  #[error("utf8 parser error: {0}")]
+  UTF8(#[from] std::string::FromUtf8Error),
 }
 
 pub type PolestarResult<T> = Result<T, PolestarError>;

@@ -3,6 +3,7 @@ use ribir::prelude::*;
 use super::app::AppGUI;
 use crate::{
   component::common::{Carousel, DoubleColumn, LeftColumn, RightColumn},
+  oauth::{apple_login_uri, google_login_uri, microsoft_login_uri},
   style::WHITE,
   theme::polestar_svg,
 };
@@ -44,17 +45,35 @@ pub(super) fn w_login(app: impl StateWriter<Value = AppGUI>) -> impl WidgetBuild
             margin: EdgeInsets::only_top(8.),
             item_gap: 8.,
             @LoginBtn {
-              url: "",
+              url: pipe! {
+                if $app.data.need_login() {
+                  microsoft_login_uri()
+                } else {
+                  String::new()
+                }
+              },
               label: "Log in with Microsoft",
               svg: polestar_svg::MICROSOFT_LOGIN,
             }
             @LoginBtn {
-              url: "",
+              url: pipe! {
+                if $app.data.need_login() {
+                  google_login_uri()
+                } else {
+                  String::new()
+                }
+              },
               label: "Log in with Google",
               svg: polestar_svg::GOOGLE_LOGIN,
             }
             @LoginBtn {
-              url: "",
+              url: pipe! {
+                if $app.data.need_login() {
+                  apple_login_uri()
+                } else {
+                  String::new()
+                }
+              },
               label: "Log in with Apple",
               svg: polestar_svg::APPLE_LOGIN,
             }

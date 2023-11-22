@@ -46,7 +46,7 @@ pub fn channel_handler(args: ArgMatches, app_data: &mut AppData) -> ReplResult<O
       let channel = app_data
         .channels()
         .iter()
-        .find(|c| c.id() == app_data.cur_channel_id())
+        .find(|c| Some(c.id()) == app_data.cur_channel_id())
         .expect("current channel not found");
       println!("{}: {}", channel.id(), channel.name());
       Ok(None)
