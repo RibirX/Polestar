@@ -3,6 +3,7 @@ use serde::Deserialize;
 
 #[derive(Builder, Debug, Default)]
 #[builder(name = "UserBuilder")]
+#[builder(pattern = "owned")]
 #[builder(setter(into, strip_option), default)]
 pub struct User {
   token: Option<String>,

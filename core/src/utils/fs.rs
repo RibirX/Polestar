@@ -62,16 +62,16 @@ pub fn write_current_user(uid: &str) -> PolestarResult<()> {
   Ok(())
 }
 
-pub fn read_local_state() -> PolestarResult<LocalState> {
-  let mut path = project_home_path();
+pub fn read_local_state(uid: &str) -> PolestarResult<LocalState> {
+  let mut path = user_data_path(uid);
   path.push(LOCAL_STATE);
   let content = std::fs::read_to_string(&path)?;
   let local_state = serde_json::from_str::<LocalState>(&content)?;
   Ok(local_state)
 }
 
-pub fn write_local_state(local_state: &LocalState) -> PolestarResult<()> {
-  let mut path = project_home_path();
+pub fn write_local_state(uid: &str, local_state: &LocalState) -> PolestarResult<()> {
+  let mut path = user_data_path(uid);
   path.push(LOCAL_STATE);
   let content = serde_json::to_string_pretty(local_state)?;
   std::fs::write(&path, content)?;

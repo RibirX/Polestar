@@ -32,29 +32,33 @@ pub fn init_app_data() -> AppData {
   let has_official_server = utils::has_official_server(&bots);
   // 3. if has official server, load user info from local file.
   // TODO: load user info from local file.
-  let mut local_state = utils::read_local_state().unwrap_or_default();
+  let cur_user = utils::read_current_user().unwrap_or_default();
+  let mut local_state = utils::read_local_state(&cur_user).unwrap_or_default();
   let (user_data_path, user) = if has_official_server {
     local_state.uid().map_or_else(
       || {
-        let anyousmous_data_path = utils::user_data_path("anyousmous");
-        (anyousmous_data_path, None)
+        let anonymous_data_path = utils::user_data_path("anonymous");
+        (anonymous_data_path, None)
       },
       |uid| {
         let user_data_path = utils::user_data_path(&uid.to_string());
+        // TODO: get token from local file.
+        let token = utils::token::decrypt_token(crate::KEY).ok();
+        println!("token: {:?}", token);
+        let mut user_builder = UserBuilder::default();
+        user_builder = user_builder.uid(uid);
+        if let Some(token) = token {
+          user_builder = user_builder.token(token);
+        }
         (
           user_data_path,
-          Some(
-            UserBuilder::default()
-              .uid(uid)
-              .build()
-              .expect("Failed to build user"),
-          ),
+          Some(user_builder.build().expect("Failed to build user")),
         )
       },
     )
   } else {
-    let anyousmous_data_path = utils::user_data_path("anyousmous");
-    (anyousmous_data_path, None)
+    let anonymous_data_path = utils::user_data_path("anonymous");
+    (anonymous_data_path, None)
   };
 
   utils::create_if_not_exist_dir(user_data_path);

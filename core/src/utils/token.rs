@@ -7,12 +7,12 @@ use crate::error::PolestarResult;
 
 use super::encrypt::{read_nonce, read_token, write_nonce, write_token};
 
-pub fn encrypt_token(original_token: &[u8], key: &[u8]) -> PolestarResult<()> {
+pub fn encrypt_token(original_token: &[u8]) -> PolestarResult<()> {
   let nonce = Aes256Gcm::generate_nonce(&mut OsRng);
-  write_nonce(&nonce);
+  let _ = write_nonce(&nonce);
 
   let nonce = GenericArray::from_slice(&nonce);
-  let cipher = Aes256Gcm::new_from_slice(key).expect("Invalid key length");
+  let cipher = Aes256Gcm::new_from_slice(crate::KEY).expect("Invalid key length");
   let mut buffer: Vec<u8> = Vec::new();
   buffer.extend_from_slice(original_token);
   let _ = cipher.encrypt_in_place(nonce, b"", &mut buffer);

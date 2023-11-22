@@ -58,7 +58,6 @@ pub static GLOBAL_CONFIG: Lazy<Mutex<GlobalConfig>> =
 
 pub static WINDOW_MGR: Lazy<Mutex<WindowMgr>> = Lazy::new(|| Mutex::new(WindowMgr::new()));
 pub static TIMER: Lazy<Mutex<Instant>> = Lazy::new(|| Mutex::new(Instant::now()));
-pub static KEY: &[u8] = include_bytes!("../../key");
 
 fn main() {
   local_server_listen();

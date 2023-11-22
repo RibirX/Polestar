@@ -34,7 +34,7 @@ impl AppGUI {
       .quick_launcher_id()
       .and_then(|id| data.get_channel(&id).map(|_| QuickLauncher::new(id)));
 
-    let cur_router_path = if data.cfg().has_official_server() {
+    let cur_router_path = if data.need_login() {
       "/login".to_owned()
     } else {
       "/home/chat".to_owned()
@@ -174,8 +174,7 @@ fn gen_handler(app: impl StateWriter<Value = AppGUI>) -> impl for<'a> FnMut(&'a 
         Some(AppRoute::Login { token, uid }) => {
           println!("token: {}, uid: {}", token, uid);
 
-          let key = crate::KEY;
-          let _ = polestar_core::token::encrypt_token(token.as_bytes(), key);
+          let _ = polestar_core::token::encrypt_token(token.as_bytes());
 
           // create uid user folder.
           let user_data_path = polestar_core::user_data_path(&uid.to_string());
