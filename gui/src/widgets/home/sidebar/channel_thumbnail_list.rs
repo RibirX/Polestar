@@ -1,6 +1,6 @@
 use crate::theme::polestar_svg;
 
-use crate::component::{
+use crate::widgets::{
   app::AppGUI,
   common::{w_avatar, IconButton, InteractiveList},
 };

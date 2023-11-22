@@ -1,11 +1,11 @@
 use ribir::prelude::*;
 
 use crate::{
-  component::{
+  style::APP_SIDEBAR_HEADER_HEIGHT,
+  widgets::{
     app::AppGUI,
     common::{IconButton, InteractiveList},
   },
-  style::APP_SIDEBAR_HEADER_HEIGHT,
   G_APP_NAME,
 };
 

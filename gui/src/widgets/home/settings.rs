@@ -1,8 +1,8 @@
 use ribir::prelude::*;
 
 use crate::{
-  component::app::AppGUI,
   style::{COMMON_RADIUS, WHITE},
+  widgets::app::AppGUI,
 };
 
 mod account;

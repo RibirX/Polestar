@@ -1,9 +1,9 @@
 use polestar_core::model::{Channel, Msg, MsgRole};
 use ribir::prelude::*;
 
-use crate::component::common::IconButton;
 use crate::style::decorator::channel::message_style;
 use crate::style::{GAINSBORO, WHITE};
+use crate::widgets::common::IconButton;
 
 use super::onboarding::w_msg_onboarding;
 

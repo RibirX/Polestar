@@ -3,8 +3,8 @@ use ribir::prelude::*;
 use super::app::AppGUI;
 
 use crate::{
-  component::common::{Carousel, DoubleColumn, LeftColumn, RightColumn},
   style::BLACK,
+  widgets::common::{Carousel, DoubleColumn, LeftColumn, RightColumn},
 };
 
 pub(super) fn w_permission(app: impl StateWriter<Value = AppGUI>) -> impl WidgetBuilder {

@@ -1,11 +1,11 @@
-use crate::component::common::BotList;
+use crate::widgets::common::BotList;
 use polestar_core::model::{Bot, Channel, Msg, MsgAction, MsgBody, MsgCont, MsgMeta, MsgRole};
 use ribir::prelude::*;
 use std::ops::Range;
 use std::rc::Rc;
 use uuid::Uuid;
 
-use crate::{component::common::IconButton, style::CULTURED_F4F4F4_FF, theme::polestar_svg};
+use crate::{style::CULTURED_F4F4F4_FF, theme::polestar_svg, widgets::common::IconButton};
 
 pub fn w_editor(
   channel: impl StateWriter<Value = Channel>,
@@ -587,7 +587,7 @@ mod tests {
   use ribir::widgets::input::{CaretPosition, CaretState};
   use uuid::Uuid;
 
-  use crate::component::home::chat::editor::{
+  use crate::widgets::home::chat::editor::{
     EditedMessage, MessageEditor, MessageFragment, MoveDirection,
   };
 

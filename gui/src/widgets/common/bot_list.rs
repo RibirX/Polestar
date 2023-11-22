@@ -4,7 +4,7 @@ use polestar_core::model::Bot;
 use ribir::prelude::*;
 use uuid::Uuid;
 
-use crate::component::common::{w_avatar, InteractiveList};
+use crate::widgets::common::{w_avatar, InteractiveList};
 
 #[derive(Declare)]
 pub struct BotList {

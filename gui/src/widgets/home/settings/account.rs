@@ -1,7 +1,7 @@
 use ribir::prelude::*;
 
-use crate::component::common::ProgressBar;
 use crate::style::{BLACK, CHINESE_WHITE, COMMON_RADIUS, ISABELLINE, WHITE};
+use crate::widgets::common::ProgressBar;
 
 #[derive(Declare)]
 pub(super) struct AccountItem {

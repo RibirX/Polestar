@@ -5,11 +5,11 @@ use ribir::prelude::*;
 use serde::Deserialize;
 use window::WindowMgr;
 
-mod component;
 mod hotkey;
 mod oauth;
 mod style;
 mod theme;
+mod widgets;
 mod window;
 
 #[derive(Deserialize)]
@@ -67,7 +67,7 @@ fn main() {
 
   let UISettings { window_size, language: _ } = read_ui_settings();
 
-  let wnd = App::new_window(component::app::w_app(), Some(window_size.normal));
+  let wnd = App::new_window(widgets::app::w_app(), Some(window_size.normal));
   wnd.set_min_size(window_size.min);
   wnd.set_title(&format!("{G_APP_NAME} v{G_VERSION}"));
   wnd.set_icon(&PixelImage::from_png(include_bytes!(

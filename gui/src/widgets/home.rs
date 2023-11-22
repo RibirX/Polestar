@@ -1,7 +1,7 @@
 use ribir::prelude::*;
 
-use crate::component::home::bot_store::w_bot_store;
 use crate::style::{APP_SIDEBAR_WIDTH, CULTURED_F4F4F4_FF, WHITE};
+use crate::widgets::home::bot_store::w_bot_store;
 
 use super::app::AppGUI;
 use super::common::{PartialPath, Route, Router};
