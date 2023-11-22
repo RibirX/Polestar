@@ -1,8 +1,8 @@
 use ribir::prelude::*;
 
 use crate::{
-  component::app::AppGUI,
   style::{ANTI_FLASH_WHITE, COMMON_RADIUS, LIGHT_SILVER_15, SPANISH_GRAY, WHITE},
+  widgets::app::AppGUI,
 };
 
 pub fn w_bot_store(app: impl StateReader<Value = AppGUI>) -> impl WidgetBuilder {

@@ -4,7 +4,7 @@ use uuid::Uuid;
 
 use crate::service::service_provider::{get_service, Service, ServiceModel};
 
-/// Bot is Polestar basic component, user need talk to bot to get AI response.
+/// Bot is Polestar basic widget, user need talk to bot to get AI response.
 #[derive(Deserialize, Debug)]
 pub struct Bot {
   // A unique id for bot

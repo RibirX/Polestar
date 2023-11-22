@@ -2,10 +2,10 @@ use ribir::prelude::*;
 
 use super::app::AppGUI;
 use crate::{
-  component::common::{Carousel, DoubleColumn, LeftColumn, RightColumn},
   oauth::{apple_login_uri, google_login_uri, microsoft_login_uri},
   style::WHITE,
   theme::polestar_svg,
+  widgets::common::{Carousel, DoubleColumn, LeftColumn, RightColumn},
 };
 
 pub(super) fn w_login(app: impl StateWriter<Value = AppGUI>) -> impl WidgetBuilder {

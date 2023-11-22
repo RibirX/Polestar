@@ -4,8 +4,8 @@ pub mod handler {
   use ribir::core::window::WindowId;
   use ribir::prelude::*;
 
-  use crate::component::app::AppGUI;
-  use crate::component::{create_quick_launcher, hide_quick_launcher, QuickLauncher};
+  use crate::widgets::app::AppGUI;
+  use crate::widgets::{create_quick_launcher, hide_quick_launcher, QuickLauncher};
   use crate::WINDOW_MGR;
 
   pub fn focus_handler(
@@ -46,7 +46,7 @@ pub mod handler {
 
 #[cfg(target_os = "windows")]
 pub mod handler {
-  use crate::component::app::AppGUI;
+  use crate::widgets::app::AppGUI;
   use ribir::core::window::WindowId;
   use ribir::prelude::*;
 

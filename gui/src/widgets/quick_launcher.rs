@@ -53,8 +53,8 @@ pub mod launcher {
   use std::time::Duration;
 
   use crate::{
-    component::common::BotList,
     style::{COMMON_RADIUS, GAINSBORO_DFDFDF_FF},
+    widgets::common::BotList,
     window::WindowInfo,
     WINDOW_MGR,
   };
@@ -63,7 +63,7 @@ pub mod launcher {
   use polestar_core::model::Msg;
   use ribir::prelude::*;
 
-  use crate::{component::app::AppGUI, style::BRIGHT_GRAY_EEEDED_FF};
+  use crate::{style::BRIGHT_GRAY_EEEDED_FF, widgets::app::AppGUI};
 
   use super::QuickLauncher;
 
@@ -377,7 +377,7 @@ pub mod launcher {
 #[cfg(target_os = "windows")]
 pub mod launcher {
   use super::QuickLauncher;
-  use crate::component::app::AppGUI;
+  use crate::widgets::app::AppGUI;
   use ribir::prelude::*;
 
   pub fn create_wnd<S>(quick_launcher: S)
