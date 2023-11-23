@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use regex::Regex;
 use serde::Deserialize;
 
-use crate::{error::PolestarResult, model::Bot};
+use crate::{error::PolestarResult, model::Bot, project_bot_config_path, project_config_path};
 
 #[derive(Deserialize, Debug)]
 struct BotCfg {
@@ -11,9 +11,8 @@ struct BotCfg {
   vars: Option<HashMap<String, String>>,
 }
 
-#[cfg(not(debug_assertions))]
 pub fn load_bot_cfg_file() -> PolestarResult<Vec<Bot>> {
-  use super::{launch::write_default_bot_config, project_bot_config_path};
+  use super::launch::write_default_bot_config;
   use std::{fs, io::Read};
 
   let path = project_bot_config_path();
@@ -39,14 +38,29 @@ pub fn load_bot_cfg_file() -> PolestarResult<Vec<Bot>> {
     )
 }
 
-#[cfg(debug_assertions)]
-pub fn load_bot_cfg_file() -> PolestarResult<Vec<Bot>> {
-  let content = include_str!(concat!(
-    env!("CARGO_MANIFEST_DIR"),
-    "/..",
-    "/config/bot.json"
-  ));
-  bot_vars_parser(content)
+pub fn open_user_config_folder() {
+  use std::process::Command;
+  #[cfg(target_os = "macos")]
+  {
+    Command::new("open")
+      .arg(project_config_path()) // <- Specify the directory you'd like to open.
+      .spawn()
+      .unwrap();
+  }
+  #[cfg(target_os = "windows")]
+  {
+    Command::new("explorer")
+      .arg(project_config_path()) // <- Specify the directory you'd like to open.
+      .spawn()
+      .unwrap();
+  }
+  #[cfg(target_os = "linux")]
+  {
+    Command::new("xdg-open")
+      .arg(project_config_path()) // <- Specify the directory you'd like to open.
+      .spawn()
+      .unwrap();
+  }
 }
 
 fn bot_vars_parser(file: &str) -> PolestarResult<Vec<Bot>> {

@@ -1,3 +1,4 @@
+use polestar_core::open_user_config_folder;
 use ribir::prelude::*;
 
 use crate::{
@@ -33,6 +34,9 @@ fn w_sidebar_header(app: impl StateWriter<Value = AppGUI>) -> impl WidgetBuilder
         padding: EdgeInsets::new(10., 5., 5., 15.),
         justify_content: JustifyContent::SpaceBetween,
         @Text {
+          on_tap: move |_| {
+            open_user_config_folder();
+          },
           margin: EdgeInsets::only_left(6.),
           text: G_APP_NAME,
           text_style: TypographyTheme::of(ctx!()).title_large.text.clone()

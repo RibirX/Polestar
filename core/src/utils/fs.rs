@@ -30,13 +30,13 @@ pub fn user_data_path(uid: &str) -> PathBuf {
   path
 }
 
-fn project_config_path() -> PathBuf {
+pub fn project_config_path() -> PathBuf {
   let mut path = project_home_path();
   path.push(CONFIG_FOLDER);
   path
 }
 
-pub(super) fn project_bot_config_path() -> PathBuf {
+pub fn project_bot_config_path() -> PathBuf {
   let mut path = project_config_path();
   path.push(BOT_CONFIG_FILE);
   path
