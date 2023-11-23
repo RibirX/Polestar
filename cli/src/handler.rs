@@ -81,8 +81,8 @@ pub fn msg_handler(args: ArgMatches, app_data: &mut AppData) -> ReplResult<Optio
         let cur_channel = app_data
           .cur_channel_mut()
           .expect("current channel not found");
-        let msg_cont = MsgCont::text_init();
-        let msg_cont = msg_cont.action(MsgAction::Receiving(MsgBody::Text(
+        let mut msg_cont = MsgCont::text_init();
+        msg_cont.action(MsgAction::Receiving(MsgBody::Text(
           content.map(|s| s.to_owned()),
         )));
         cur_channel.add_msg(Msg::new(MsgRole::User, vec![msg_cont], MsgMeta::default()));
@@ -104,8 +104,8 @@ pub fn msg_handler(args: ArgMatches, app_data: &mut AppData) -> ReplResult<Optio
         let cur_channel = app_data
           .cur_channel_mut()
           .expect("current channel not found");
-        let msg_cont = MsgCont::text_init();
-        let msg_cont = msg_cont.action(MsgAction::Receiving(MsgBody::Text(Some(ret_msg.clone()))));
+        let mut msg_cont = MsgCont::text_init();
+        msg_cont.action(MsgAction::Receiving(MsgBody::Text(Some(ret_msg.clone()))));
         cur_channel.add_msg(Msg::new(
           MsgRole::Bot(Uuid::nil()),
           vec![msg_cont],
