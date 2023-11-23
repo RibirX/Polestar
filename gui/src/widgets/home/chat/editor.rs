@@ -1,5 +1,8 @@
 use crate::widgets::common::BotList;
-use polestar_core::model::{Bot, Channel, Msg, MsgAction, MsgBody, MsgCont, MsgMeta, MsgRole};
+use polestar_core::{
+  model::{Bot, Channel, Msg, MsgAction, MsgBody, MsgCont, MsgMeta, MsgRole},
+  service::open_ai::mock_stream_string,
+};
 use ribir::prelude::*;
 use std::ops::Range;
 use std::rc::Rc;
@@ -10,15 +13,16 @@ use crate::{style::CULTURED_F4F4F4_FF, theme::polestar_svg, widgets::common::Ico
 pub fn w_editor(
   channel: impl StateWriter<Value = Channel>,
   bots: Rc<Vec<Bot>>,
+  def_bot_id: Uuid,
 ) -> impl WidgetBuilder {
   fn_widget! {
-    let mut bots = @BotList { bots: bots, visible: false };
+    let mut bots = @BotList { bots, visible: false };
     let ignore_pointer = @IgnorePointer { ignore: false };
     let mut text_area = @MessageEditor {};
     let channel2 = channel.clone_writer();
     let send_icon = @IconButton {
       on_tap: move |_| {
-        send_msg(&mut *$text_area.write(), channel.clone_writer());
+        send_msg(&mut *$text_area.write(), channel.clone_writer(), def_bot_id);
       },
       @ { polestar_svg::SEND }
     };
@@ -53,7 +57,7 @@ pub fn w_editor(
             select_bot(&mut *$text_area.write(), &$bots);
             e.stop_propagation();
           } else if !e.with_shift_key() {
-            send_msg(&mut *$text_area.write(), channel2.clone_writer());
+            send_msg(&mut *$text_area.write(), channel2.clone_writer(), def_bot_id);
             e.stop_propagation();
           }
         }
@@ -89,14 +93,33 @@ pub fn w_editor(
   }
 }
 
-fn send_msg(text_area: &mut MessageEditor, channel: impl StateWriter<Value = Channel>) {
-  let cont = MsgCont::text_init();
-  let cont = cont.action(MsgAction::Receiving(MsgBody::Text(Some(
-    text_area.display_text(),
-  ))));
+fn send_msg(
+  text_area: &mut MessageEditor,
+  channel: impl StateWriter<Value = Channel>,
+  def_bot_id: Uuid,
+) {
+  let text = text_area.display_text();
+  let mut cont = MsgCont::text_init();
+  cont.action(MsgAction::Receiving(MsgBody::Text(Some(text))));
   let msg = Msg::new(MsgRole::User, vec![cont], MsgMeta::default());
   channel.write().add_msg(msg);
   text_area.reset();
+  let bots = text_area.edit_message.related_bot();
+  let bot_id = bots.last().map_or(def_bot_id, |id| *id);
+  let mut cont = MsgCont::text_init();
+  cont.action(MsgAction::Receiving(MsgBody::Text(Some(
+    "Hello, I'm Ribir!".to_string(),
+  ))));
+  let msg = Msg::new(MsgRole::Bot(bot_id), vec![cont], MsgMeta::default());
+  let id = *msg.id();
+  channel.write().add_msg(msg);
+
+  if let Some(msg) = channel.write().msg_mut(&id) {
+    let cur_cont = msg.cur_cont_mut();
+    mock_stream_string("", |delta| {
+      cur_cont.action(MsgAction::Receiving(MsgBody::Text(Some(delta))));
+    });
+  }
 }
 
 fn select_bot(text_area: &mut MessageEditor, bots: &BotList) {

@@ -70,6 +70,25 @@ pub async fn stream_string(content: &str, bot: &Bot, mut delta_op: impl FnMut(St
   }
 }
 
+pub fn mock_stream_string(content: &str, mut delta_op: impl FnMut(String)) {
+  use rand::{distributions::Alphanumeric, Rng};
+
+  let mut count = 0;
+  let max = 10;
+  loop {
+    if count >= max {
+      break;
+    }
+    let s: String = rand::thread_rng()
+      .sample_iter(&Alphanumeric)
+      .take(7)
+      .map(char::from)
+      .collect();
+    count += 1;
+    delta_op(s);
+  }
+}
+
 async fn stream_event_source_handler(
   stream: &mut EventSource,
 ) -> Result<Option<String>, PolestarError> {

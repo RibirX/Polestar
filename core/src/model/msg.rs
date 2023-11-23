@@ -153,6 +153,21 @@ impl MsgBody {
       Self::Image(i) => *i = None,
     }
   }
+
+  pub fn receive_text(&mut self, text: Option<String>) {
+    match self {
+      Self::Text(s) => {
+        if let Some(text) = text {
+          if let Some(str) = s.as_mut() {
+            *s = Some(format!("{}{}", str, text));
+          } else {
+            *s = Some(text);
+          }
+        }
+      }
+      Self::Image(i) => *i = None,
+    }
+  }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -191,12 +206,11 @@ impl MsgCont {
     }
   }
 
-  pub fn action(mut self, action: MsgAction) -> Self {
+  pub fn action(&mut self, action: MsgAction) {
     match action {
       MsgAction::Pending => {
         if self.status != MsgStatus::Rejected {
           log::warn!("{}", Self::PENDING_WARN);
-          return self;
         }
         self.body.set_none();
         self.status = MsgStatus::Pending;
@@ -204,28 +218,26 @@ impl MsgCont {
       MsgAction::Fulfilled => {
         if self.status != MsgStatus::Receiving {
           log::warn!("{}", Self::FULFILLED_WARN);
-          return self;
         }
         self.status = MsgStatus::Fulfilled;
       }
       MsgAction::Receiving(body) => {
         if self.status != MsgStatus::Pending {
           log::warn!("{}", Self::RECEIVING_WARN);
-          return self;
         }
-        self.body = body;
+        if let MsgBody::Text(str) = body {
+          self.body.receive_text(str)
+        }
         self.status = MsgStatus::Receiving;
       }
       MsgAction::Rejected => {
         if self.status != MsgStatus::Pending {
           log::warn!("{}", Self::REJECTED_WARN);
-          return self;
         }
         self.body.set_none();
         self.status = MsgStatus::Rejected;
       }
-    };
-    self
+    }
   }
 
   pub fn body(&self) -> &MsgBody { &self.body }
@@ -312,21 +324,14 @@ mod test {
   fn msg_cont_action() {
     testing_logger::setup();
 
-    let _fulfilled_msg = Msg::new(
-      MsgRole::User,
-      vec![
-        MsgCont::text_init()
-          .action(MsgAction::Receiving(MsgBody::Text(Some("123".to_owned()))))
-          .action(MsgAction::Fulfilled),
-      ],
-      MsgMeta::default(),
-    );
+    let mut fulfilled_msg_cont = MsgCont::text_init();
+    fulfilled_msg_cont.action(MsgAction::Receiving(MsgBody::Text(Some("123".to_owned()))));
+    fulfilled_msg_cont.action(MsgAction::Fulfilled);
+    let _fulfilled_msg = Msg::new(MsgRole::User, vec![fulfilled_msg_cont], MsgMeta::default());
 
-    let _rejected_msg = Msg::new(
-      MsgRole::User,
-      vec![MsgCont::text_init().action(MsgAction::Rejected)],
-      MsgMeta::default(),
-    );
+    let mut rejected_msg_cont = MsgCont::text_init();
+    rejected_msg_cont.action(MsgAction::Rejected);
+    let _rejected_msg = Msg::new(MsgRole::User, vec![rejected_msg_cont], MsgMeta::default());
 
     let _pend_msg = Msg::new(
       MsgRole::User,
@@ -334,41 +339,26 @@ mod test {
       MsgMeta::default(),
     );
 
-    let _wrong_fulfilled_msg = Msg::new(
-      MsgRole::User,
-      vec![MsgCont::text_init().action(MsgAction::Fulfilled)],
-      MsgMeta::default(),
-    );
+    let mut fulfilled_msg_cont = MsgCont::text_init();
+    fulfilled_msg_cont.action(MsgAction::Fulfilled);
+    let _wrong_fulfilled_msg =
+      Msg::new(MsgRole::User, vec![fulfilled_msg_cont], MsgMeta::default());
 
-    let _wrong_rejected_msg = Msg::new(
-      MsgRole::User,
-      vec![
-        MsgCont::text_init()
-          .action(MsgAction::Receiving(MsgBody::Text(Some("123".to_owned()))))
-          .action(MsgAction::Rejected),
-      ],
-      MsgMeta::default(),
-    );
+    let mut rejected_msg_cont = MsgCont::text_init();
+    rejected_msg_cont.action(MsgAction::Receiving(MsgBody::Text(Some("123".to_owned()))));
+    rejected_msg_cont.action(MsgAction::Rejected);
+    let _wrong_rejected_msg = Msg::new(MsgRole::User, vec![rejected_msg_cont], MsgMeta::default());
 
-    let _wrong_pend_msg = Msg::new(
-      MsgRole::User,
-      vec![
-        MsgCont::text_init()
-          .action(MsgAction::Receiving(MsgBody::Text(Some("123".to_owned()))))
-          .action(MsgAction::Pending),
-      ],
-      MsgMeta::default(),
-    );
+    let mut pend_msg_cont = MsgCont::text_init();
+    pend_msg_cont.action(MsgAction::Receiving(MsgBody::Text(Some("123".to_owned()))));
+    pend_msg_cont.action(MsgAction::Pending);
+    let _wrong_pend_msg = Msg::new(MsgRole::User, vec![pend_msg_cont], MsgMeta::default());
 
-    let _wrong_receiving_msg = Msg::new(
-      MsgRole::User,
-      vec![
-        MsgCont::text_init()
-          .action(MsgAction::Rejected)
-          .action(MsgAction::Receiving(MsgBody::Text(Some("123".to_owned())))),
-      ],
-      MsgMeta::default(),
-    );
+    let mut receiving_msg_cont = MsgCont::text_init();
+    receiving_msg_cont.action(MsgAction::Rejected);
+    receiving_msg_cont.action(MsgAction::Receiving(MsgBody::Text(Some("123".to_owned()))));
+    let _wrong_receiving_msg =
+      Msg::new(MsgRole::User, vec![receiving_msg_cont], MsgMeta::default());
 
     testing_logger::validate(|captured_logs| {
       assert_eq!(captured_logs.len(), 4);
