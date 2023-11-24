@@ -3,7 +3,7 @@ use polestar_core::{
   model::{Bot, Channel, Msg, MsgAction, MsgBody, MsgCont, MsgMeta, MsgRole},
   service::open_ai::mock_stream_string,
 };
-use ribir::prelude::*;
+use ribir::{core::ticker::FrameMsg, prelude::*};
 use std::ops::Range;
 use std::rc::Rc;
 use uuid::Uuid;
@@ -494,11 +494,27 @@ impl ComposeChild for MessageEditor {
   fn compose_child(this: impl StateWriter<Value = Self>, child: Self::Child) -> impl WidgetBuilder {
     fn_widget! {
       let text_area = @TextArea { rows: None, cols: None };
+      let in_pre_edit = Stateful::new(false);
       $text_area.write().set_text_with_caret(&$this.edit_message.display_message(), $this.caret);
       watch!(($this.edit_message.display_message(), $this.caret))
         .distinct_until_changed()
         .subscribe(move |(txt, caret)| {
-          $text_area.write().set_text_with_caret(&txt, caret);
+          if !*$in_pre_edit {
+            $text_area.write().set_text_with_caret(&txt, caret);
+          }
+        });
+
+      let tick_of_new_frame = ctx!().window()
+        .frame_tick_stream()
+        .filter(|msg| matches!(msg, FrameMsg::NewFrame(_)));
+
+      watch!($text_area.caret())
+        .sample(tick_of_new_frame)
+        .distinct_until_changed()
+        .subscribe(move |caret| {
+          if !*$in_pre_edit {
+            $this.write().set_caret_with_check(caret);
+          }
         });
 
       @ $text_area  {
@@ -525,10 +541,13 @@ impl ComposeChild for MessageEditor {
             _ => $this.write().set_caret_with_check($text_area.caret()),
           }
         },
-        on_double_tap: move |_| $this.write().set_caret_with_check($text_area.caret()),
-        on_pointer_down: move |_| $this.write().set_caret_with_check($text_area.caret()),
-        on_pointer_move:move |_| $this.write().set_caret_with_check($text_area.caret()),
-        on_pointer_up: move |_| $this.write().set_caret_with_check($text_area.caret()),
+        on_ime_pre_edit_capture: move |e| {
+          match &e.pre_edit {
+            ImePreEdit::Begin => $this.write().insert_str(""),
+            ImePreEdit::PreEdit {..} => *$in_pre_edit.write() = true,
+            ImePreEdit::End => *$in_pre_edit.write() = false,
+          }
+        },
         on_chars_capture: move |e| {
           e.stop_propagation();
           if e.with_command_key() {
@@ -549,6 +568,9 @@ impl ComposeChild for MessageEditor {
 }
 
 fn deal_copy_paste(this: &impl StateWriter<Value = MessageEditor>, e: &KeyboardEvent) -> bool {
+  if !e.with_command_key() {
+    return false;
+  }
   let copy = |editor: &MessageEditor| {
     let rg = editor.caret.select_range();
     if rg.is_empty() {
