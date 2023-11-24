@@ -101,7 +101,7 @@ impl Compose for BotList {
                   @Leading {
                     @ {
                       CustomEdgeWidget(
-                        w_avatar(bot.avatar()).widget_build(ctx!())
+                        w_avatar(bot.avatar().clone()).widget_build(ctx!())
                       )
                     }
                   }

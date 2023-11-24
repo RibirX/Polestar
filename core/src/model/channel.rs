@@ -101,6 +101,10 @@ impl Channel {
     }
   }
 
+  pub fn msg(&self, msg_id: &Uuid) -> Option<&Msg> {
+    self.msgs_coll.msgs.iter().find(|msg| msg.id() == msg_id)
+  }
+
   // this method is used to get a message and update it.
   pub fn msg_mut(&mut self, msg_id: &Uuid) -> Option<&mut Msg> {
     self

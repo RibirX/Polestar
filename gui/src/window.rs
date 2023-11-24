@@ -11,12 +11,7 @@ pub struct WindowMgr {
 }
 
 impl WindowMgr {
-  pub fn new() -> Self {
-    Self {
-      main: None,
-      quick_launcher: None,
-    }
-  }
+  pub fn new() -> Self { Self { main: None, quick_launcher: None } }
 
   pub fn set_main_window(&mut self, id: WindowId) {
     self.main = Some(WindowInfo { id, focused: None });
@@ -26,6 +21,7 @@ impl WindowMgr {
 impl WindowMgr {
   pub fn dispose_quick_launcher(&mut self) {
     if let Some(window_info) = self.quick_launcher.take() {
+      println!("dispose quick launcher: {:?}", window_info.id);
       AppCtx::remove_wnd(window_info.id);
     }
   }

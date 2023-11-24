@@ -377,11 +377,5 @@ trait AppExtraWidgets: StateWriter<Value = AppGUI> + Sized {
 // 4. [ ] load local db data.
 pub fn w_app() -> impl WidgetBuilder {
   let app_data = init_app_data();
-  let first_channel = app_data.channels().first().unwrap();
-  let first_channel_id = *first_channel.id();
-  let mut quick_launcher = QuickLauncher::new(first_channel_id);
-  quick_launcher.msg = Some(first_channel.msgs().first().unwrap().clone());
-  let mut app_gui = AppGUI::new(app_data);
-  app_gui.quick_launcher = Some(quick_launcher);
-  fn_widget! { app_gui }
+  fn_widget! { AppGUI::new(app_data) }
 }

@@ -81,7 +81,7 @@ where
             .expect("bot must be exist")
             .avatar();
           CustomEdgeWidget(
-            w_avatar(&avatar).widget_build(ctx!())
+            w_avatar(avatar.clone()).widget_build(ctx!())
           )
         }
       }
