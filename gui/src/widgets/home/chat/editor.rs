@@ -99,14 +99,14 @@ fn send_msg(
   def_bot_id: Uuid,
 ) {
   let text = text_area.display_text();
-  let mut cont = MsgCont::text_init();
+  let mut cont = MsgCont::init_text();
   cont.action(MsgAction::Receiving(MsgBody::Text(Some(text))));
   let msg = Msg::new(MsgRole::User, vec![cont], MsgMeta::default());
   channel.write().add_msg(msg);
   text_area.reset();
   let bots = text_area.edit_message.related_bot();
   let bot_id = bots.last().map_or(def_bot_id, |id| *id);
-  let mut cont = MsgCont::text_init();
+  let mut cont = MsgCont::init_text();
   cont.action(MsgAction::Receiving(MsgBody::Text(Some(
     "Hello, I'm Ribir!".to_string(),
   ))));

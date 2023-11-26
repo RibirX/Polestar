@@ -3,7 +3,7 @@ use uuid::Uuid;
 
 use super::app::AppGUI;
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct QuickLauncher {
   pub channel_id: Uuid,
   pub msg: Option<Uuid>,
@@ -36,7 +36,10 @@ pub mod launcher {
   use crate::{
     style::{COMMON_RADIUS, GAINSBORO_DFDFDF_FF, WHITE},
     theme::polestar_svg,
-    widgets::common::{w_avatar, BotList, IconButton},
+    widgets::{
+      app::AppExtraWidgets,
+      common::{w_avatar, BotList, IconButton},
+    },
     window::WindowInfo,
     WINDOW_MGR,
   };
@@ -112,8 +115,7 @@ pub mod launcher {
 
   fn w_quick_launcher_editor(app: impl StateWriter<Value = AppGUI>) -> impl WidgetBuilder {
     fn_widget! {
-
-      let mut bot_list = @BotList {
+      let bot_list = @BotList {
         bots: $app.data.bots_rc(),
         visible: pipe! {
           $app.quick_launcher.as_ref().map(|quick_launcher| {
@@ -122,7 +124,7 @@ pub mod launcher {
         }
       };
 
-      let mut input = @Input {
+      let input = @Input {
         auto_focus: true,
       };
 
@@ -134,11 +136,7 @@ pub mod launcher {
       };
 
       let msg_visibility = @Visibility {
-        visible: pipe! {
-          $app.quick_launcher.as_ref().map(|quick_launcher| {
-            quick_launcher.msg.is_some()
-          }).unwrap_or_default()
-        }
+        visible: pipe!($app.has_quick_launcher_msg())
       };
 
       let quick_launcher_app = app.clone_writer();
@@ -157,15 +155,14 @@ pub mod launcher {
                     event.stop_propagation();
                   }
                 } else {
-                  let text = $input.text().to_string();
+                  let input = $input;
+                  let text = input.text();
                   // create msg to channel.
-                  let mut cont = MsgCont::text_init();
-                  cont.action(MsgAction::Receiving(MsgBody::Text(Some(text.to_owned()))));
-                  cont.action(MsgAction::Fulfilled);
-                  let msg = Msg::new(MsgRole::User, vec![cont], MsgMeta::default());
+                  let msg = Msg::new_user_text(text, MsgMeta::default());
+                  let id = *msg.id();
 
                   let mut app_write_ref = $app.write();
-                  let quick_launcher_id = app_write_ref.quick_launcher.as_ref().unwrap().channel_id;
+                  let quick_launcher_id = app_write_ref.quick_launcher_id().expect("quick launcher id is none");
                   let channel = app_write_ref.data.get_channel_mut(&quick_launcher_id).unwrap();
 
                   channel.add_msg(msg);
@@ -173,12 +170,8 @@ pub mod launcher {
 
                   // TODO: get bot id
                   let bot_id = Uuid::nil();
-                  let mut cont = MsgCont::text_init();
-                  cont.action(MsgAction::Receiving(MsgBody::Text(Some(
-                    "Hello, I'm Ribir!".to_string(),
-                  ))));
-
-                  let msg = Msg::new(MsgRole::Bot(bot_id), vec![cont], MsgMeta::default());
+                  let mut msg = Msg::new_bot_text(bot_id, MsgMeta::reply(id));
+                  msg.cur_cont_mut().action(MsgAction::Receiving(MsgBody::Text(Some("Hi".to_owned()))));
                   let id = *msg.id();
                   channel.add_msg(msg);
 

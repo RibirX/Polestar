@@ -119,26 +119,27 @@ where
     let mut row = @Row {
       item_gap: 8.,
       reverse: match $msg.role() {
-        MsgRole::Bot(_) => false,
         MsgRole::User => true,
+        _ => false,
       },
     };
 
     let msg_ops_anchor = {
       match $msg.role() {
-        MsgRole::Bot(_) => @LeftAnchor {
-          left_anchor: pipe!($row.layout_width() + 4.)
-        },
         MsgRole::User => @RightAnchor {
           right_anchor: pipe!($row.layout_width() + 4.)
+        },
+        _ => @LeftAnchor {
+          left_anchor: pipe!($row.layout_width() + 4.)
         },
       }
     };
 
     let msg_ops = @$msg_ops_anchor {
       @MsgOps {
-        visible: pipe!($stack.mouse_hover()),
-
+        visible: pipe! {
+          $stack.mouse_hover() && $msg.role().is_system()
+        },
         @MsgOp {
           cb: Box::new(|| {
             println!("add");
@@ -161,8 +162,8 @@ where
     @$stack {
       @Row {
         h_align: match $msg.role() {
-          MsgRole::Bot(_) => HAlign::Left,
           MsgRole::User => HAlign::Right,
+          _ => HAlign::Left,
         },
         @$row {
           @Avatar {

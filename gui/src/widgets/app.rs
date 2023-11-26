@@ -1,4 +1,4 @@
-use polestar_core::model::{init_app_data, AppData, Channel, ChannelMode};
+use polestar_core::model::{init_app_data, AppData, Channel, ChannelId, ChannelMode};
 use ribir::prelude::*;
 use ribir_algo::Sc;
 use std::collections::HashMap;
@@ -72,6 +72,20 @@ impl AppGUI {
       .as_ref()
       .map(|quick_launcher| quick_launcher.msg.is_some())
       .unwrap_or_default()
+  }
+
+  pub fn quick_launcher_id(&self) -> Option<ChannelId> {
+    self
+      .quick_launcher
+      .as_ref()
+      .map(|quick_launcher| quick_launcher.channel_id)
+  }
+
+  pub fn quick_launcher_channel(&self) -> Option<&Channel> {
+    self
+      .quick_launcher
+      .as_ref()
+      .and_then(|quick_launcher| self.data.get_channel(&quick_launcher.channel_id))
   }
 }
 
@@ -365,9 +379,7 @@ fn w_modify_channel_modal(
 
 impl<T: StateWriter<Value = AppGUI>> AppExtraWidgets for T {}
 
-trait AppExtraWidgets: StateWriter<Value = AppGUI> + Sized {
-  // TODO: others data operators.
-}
+pub trait AppExtraWidgets: StateWriter<Value = AppGUI> + Sized {}
 
 // launch App need to do some init work.
 // 1. [x] load bot config file.

@@ -7,9 +7,11 @@ use crate::db::pool::PersistenceDB;
 
 use super::msg::Msg;
 
+pub type ChannelId = Uuid;
+
 #[derive(Debug, Clone, Deserialize)]
 pub struct Channel {
-  id: Uuid,
+  id: ChannelId,
   name: String,
   desc: Option<String>,
   cfg: ChannelCfg,
@@ -43,7 +45,7 @@ pub enum MsgsCollStatus {
 
 impl Channel {
   pub fn new(
-    id: Uuid,
+    id: ChannelId,
     name: String,
     desc: Option<String>,
     cfg: ChannelCfg,
@@ -63,7 +65,7 @@ impl Channel {
   pub fn set_db(&mut self, db: NonNull<PersistenceDB>) { self.db = Some(db); }
 
   #[inline]
-  pub fn id(&self) -> &Uuid { &self.id }
+  pub fn id(&self) -> &ChannelId { &self.id }
 
   #[inline]
   pub fn name(&self) -> &str { &self.name }
@@ -75,31 +77,22 @@ impl Channel {
   pub fn cfg(&self) -> &ChannelCfg { &self.cfg }
 
   #[inline]
-  pub fn msgs(&self) -> &Vec<Msg> { &self.msgs_coll.msgs }
-
-  #[inline]
-  pub fn msgs_mut(&mut self) -> &mut Vec<Msg> { &mut self.msgs_coll.msgs }
-
-  #[inline]
-  pub fn update_name(&mut self, name: String) { self.name = name; }
-
-  #[inline]
-  pub fn update_desc(&mut self, desc: Option<String>) { self.desc = desc; }
-
-  #[inline]
   pub fn cfg_mut(&mut self) -> &mut ChannelCfg { &mut self.cfg }
+
+  #[inline]
+  pub fn set_name(&mut self, name: String) { self.name = name; }
+
+  #[inline]
+  pub fn set_desc(&mut self, desc: Option<String>) { self.desc = desc; }
 
   #[inline]
   pub fn add_msg(&mut self, msg: Msg) { self.msgs_coll.msgs.push(msg); }
 
-  pub fn loaded_msgs_from_db(&mut self, msgs: Vec<Msg>) {
-    if self.msgs_coll.status == MsgsCollStatus::NonFetched {
-      self.msgs_coll.msgs = msgs;
-      self.msgs_coll.status = MsgsCollStatus::Fetched;
-    } else {
-      // TODO: log warning.
-    }
-  }
+  #[inline]
+  pub fn msgs(&self) -> &Vec<Msg> { &self.msgs_coll.msgs }
+
+  #[inline]
+  pub fn msgs_mut(&mut self) -> &mut Vec<Msg> { &mut self.msgs_coll.msgs }
 
   pub fn msg(&self, msg_id: &Uuid) -> Option<&Msg> {
     self.msgs_coll.msgs.iter().find(|msg| msg.id() == msg_id)
@@ -113,14 +106,11 @@ impl Channel {
       .iter_mut()
       .find(|msg| msg.id() == msg_id)
   }
-
-  pub fn clear_msgs(&mut self) { self.msgs_coll.msgs.clear(); }
 }
 
 #[derive(Debug, Deserialize, Serialize, Default, Clone)]
 pub struct ChannelCfg {
   mode: ChannelMode,
-  kind: ChannelKind,
   // if channel default bot id is none, it means this channel use global default bot id.
   def_bot_id: Option<Uuid>,
 }
@@ -130,16 +120,10 @@ impl ChannelCfg {
   pub fn mode(&self) -> ChannelMode { self.mode }
 
   #[inline]
-  pub fn kind(&self) -> ChannelKind { self.kind }
-
-  #[inline]
   pub fn def_bot_id(&self) -> Option<&Uuid> { self.def_bot_id.as_ref() }
 
   #[inline]
   pub fn set_mode(&mut self, mode: ChannelMode) { self.mode = mode; }
-
-  #[inline]
-  pub fn set_kind(&mut self, kind: ChannelKind) { self.kind = kind; }
 
   #[inline]
   pub fn set_def_bot_id(&mut self, def_bot_id: Option<Uuid>) { self.def_bot_id = def_bot_id; }
@@ -152,15 +136,4 @@ pub enum ChannelMode {
   Balanced,
   #[serde(rename = "performance")]
   Performance,
-}
-
-#[derive(Debug, Deserialize, Serialize, PartialEq, Eq, Clone, Copy, Default)]
-pub enum ChannelKind {
-  #[default]
-  #[serde(rename = "chat")]
-  Chat,
-  #[serde(rename = "quick_launcher")]
-  QuickLauncher,
-  #[serde(rename = "feedback")]
-  Feedback,
 }
