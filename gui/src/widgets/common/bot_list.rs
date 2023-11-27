@@ -19,16 +19,14 @@ type BotName = String;
 impl BotList {
   pub fn set_filter(&mut self, filter: String) { self.filter = filter; }
 
-  pub fn confirm(&mut self) {}
-
   pub fn move_up(&mut self) {
     let selected_id = self.next_selected(&self.selected_id, |this| this.get_bots().rev());
-    self.selected_id = selected_id;
+    self.select(selected_id)
   }
 
   pub fn move_down(&mut self) {
     let selected_id = self.next_selected(&self.selected_id, |this| this.get_bots());
-    self.selected_id = selected_id;
+    self.select(selected_id)
   }
 
   fn next_selected<'a, I>(
@@ -62,7 +60,7 @@ impl BotList {
     })
   }
 
-  fn select(&mut self, bot_id: Uuid) { self.selected_id = Some(bot_id); }
+  fn select(&mut self, bot_id: Option<Uuid>) { self.selected_id = bot_id; }
 
   pub fn get_bots(&self) -> impl DoubleEndedIterator<Item = &Bot> {
     self
@@ -90,13 +88,14 @@ impl Compose for BotList {
           pipe!($this.filter.clone())
             .value_chain(|s| s.distinct_until_changed().box_it())
             .map(move |_| {
+              // TODO: here has bug, channel modify modal bot list will update twice.
               let selected_id = { $this.get_bots().next().map(|bot| *bot.id()) };
               $this.silent().selected_id = selected_id;
               $this.get_bots().map(|bot| {
                 let bot_id = *bot.id();
                 @ListItem {
                   on_tap: move |_| {
-                    $this.write().select(bot_id);
+                    $this.write().select(Some(bot_id));
                   },
                   @Leading {
                     @ {

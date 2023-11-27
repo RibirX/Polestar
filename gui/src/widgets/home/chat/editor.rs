@@ -68,24 +68,27 @@ pub fn w_editor(
           $text_area.request_focus();
         }
       }
-      @$ignore_pointer {
-        @ConstrainedBox {
-          clamp: BoxClamp {
-            min: Size::new(f32::INFINITY, 48.),
-            max: Size::new(f32::INFINITY, 114.),
-          },
-          padding: EdgeInsets::new(0., 11., 11., 11.),
-          @Row {
-            padding: EdgeInsets::all(10.),
-            background: Color::from_u32(CULTURED_F4F4F4_FF),
-            border_radius: Radius::all(8.),
-            @Expanded {
-              flex: 1.,
-              @ $text_area {
-                @ { Placeholder::new("Type a message") }
+      @Column {
+
+        @$ignore_pointer {
+          @ConstrainedBox {
+            clamp: BoxClamp {
+              min: Size::new(f32::INFINITY, 48.),
+              max: Size::new(f32::INFINITY, 114.),
+            },
+            padding: EdgeInsets::new(0., 11., 11., 11.),
+            @Row {
+              padding: EdgeInsets::all(10.),
+              background: Color::from_u32(CULTURED_F4F4F4_FF),
+              border_radius: Radius::all(8.),
+              @Expanded {
+                flex: 1.,
+                @ $text_area {
+                  @ { Placeholder::new("Type a message") }
+                }
               }
+              @ { send_icon }
             }
-            @ { send_icon }
           }
         }
       }
@@ -99,20 +102,23 @@ fn send_msg(
   def_bot_id: Uuid,
 ) {
   let text = text_area.display_text();
-  let mut cont = MsgCont::init_text();
-  cont.action(MsgAction::Receiving(MsgBody::Text(Some(text))));
-  let msg = Msg::new(MsgRole::User, vec![cont], MsgMeta::default());
-  channel.write().add_msg(msg);
+  let user_msg = Msg::new_user_text(&text, MsgMeta::default());
+  let user_msg_id = *user_msg.id();
+  channel.write().add_msg(user_msg);
+
   text_area.reset();
+
   let bots = text_area.edit_message.related_bot();
   let bot_id = bots.last().map_or(def_bot_id, |id| *id);
-  let mut cont = MsgCont::init_text();
+
+  let mut bot_msg = Msg::new_bot_text(bot_id, MsgMeta::reply(user_msg_id));
+  let cont = bot_msg.cur_cont_mut();
   cont.action(MsgAction::Receiving(MsgBody::Text(Some(
     "Hello, I'm Ribir!".to_string(),
   ))));
-  let msg = Msg::new(MsgRole::Bot(bot_id), vec![cont], MsgMeta::default());
-  let id = *msg.id();
-  channel.write().add_msg(msg);
+
+  let id = *bot_msg.id();
+  channel.write().add_msg(bot_msg);
 
   if let Some(msg) = channel.write().msg_mut(&id) {
     let cur_cont = msg.cur_cont_mut();

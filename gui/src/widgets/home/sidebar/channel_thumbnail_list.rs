@@ -11,7 +11,11 @@ pub fn w_channel_thumbnail_list(app: impl StateWriter<Value = AppGUI>) -> impl W
   fn_widget! {
     @InteractiveList {
       active: pipe! {
-        let last_idx = $app.data.channels().len() - 1;
+        let last_idx = if !$app.data.channels().is_empty() { 
+          $app.data.channels().len() - 1
+        } else {
+          0
+        };
         $app.data.cur_channel().map(|channel| *channel.id()).and_then(|id| {
           $app.data.channels().iter().position(|channel| *channel.id() == id).map(|idx| last_idx - idx)
         }).unwrap_or(last_idx)

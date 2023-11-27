@@ -1,4 +1,4 @@
-use polestar_core::model::{init_app_data, AppData, Channel, ChannelId, ChannelMode};
+use polestar_core::model::{init_app_data, AppData, Channel, ChannelId};
 use ribir::prelude::*;
 use ribir_algo::Sc;
 use std::collections::HashMap;
@@ -6,17 +6,13 @@ use url::Url;
 use uuid::Uuid;
 
 use super::{
-  common::{BotList, Modal, PartialPath, Route, Router, Tooltip},
+  common::{PartialPath, Route, Router, Tooltip},
   home::w_home,
   login::w_login,
   permission::w_permission,
   quick_launcher::QuickLauncher,
 };
-use crate::{
-  style::{CHINESE_WHITE, COMMON_RADIUS, CULTURED_F7F7F5_FF},
-  theme::polestar_theme,
-  WINDOW_MGR,
-};
+use crate::{theme::polestar_theme, widgets::modify_channel::w_modify_channel_modal, WINDOW_MGR};
 
 pub struct AppGUI {
   pub data: AppData,
@@ -236,145 +232,6 @@ fn w_tooltip(tooltip: &Option<String>) -> Option<impl WidgetBuilder> {
       }
     }
   })
-}
-
-fn w_mode_options<S>(channel: S, channel_mode: ChannelMode) -> impl WidgetBuilder
-where
-  S: StateReader<Value = Channel>,
-{
-  fn_widget! {
-    @ConstrainedBox {
-      clamp: BoxClamp {
-        min: Size::new(500., 40.),
-        max: Size::new(500., 65.),
-      },
-      cursor: CursorIcon::Pointer,
-      padding: EdgeInsets::all(10.),
-      border: Border::all(BorderSide {
-        width: 1.,
-        color: Color::from_u32(CHINESE_WHITE).into(),
-      }),
-      border_radius: COMMON_RADIUS,
-      @Row {
-        align_items: Align::Center,
-        @Checkbox {
-          checked: pipe!($channel.cfg().mode() == channel_mode),
-        }
-        @Column {
-          margin: EdgeInsets::only_left(6.),
-          @Text {
-            margin: EdgeInsets::only_bottom(4.),
-            text: match channel_mode {
-              ChannelMode::Balanced => "Balanced",
-              ChannelMode::Performance => "Performance",
-            },
-            text_style: TypographyTheme::of(ctx!()).title_small.text.clone(),
-          }
-          @Text {
-            text: "This mode automatically uses the advanced model and you will get more accurate answers but costs will increase.",
-            overflow: Overflow::AutoWrap,
-          }
-        }
-      }
-    }
-  }
-}
-
-fn w_modify_channel_modal(
-  app: impl StateWriter<Value = AppGUI>,
-  channel_id: Uuid,
-) -> impl WidgetBuilder {
-  let channel = app.split_writer(
-    move |app| {
-      app
-        .data
-        .get_channel(&channel_id)
-        .expect("channel not found")
-    },
-    move |app| {
-      app
-        .data
-        .get_channel_mut(&channel_id)
-        .expect("channel not found")
-    },
-  );
-
-  fn_widget! {
-    let channel_rename = @Input {};
-    let balanced_mode = w_mode_options(channel.clone_reader(), ChannelMode::Balanced);
-    let performance_mode = w_mode_options(channel.clone_reader(), ChannelMode::Performance);
-
-    $channel_rename.write().set_text($channel.name());
-
-    watch!($channel.name().to_owned())
-      .distinct_until_changed()
-      .subscribe(move |name| {
-        $channel_rename.write().set_text(&name);
-      });
-
-    let app_writer_cancel_ref = app.clone_writer();
-    let app_writer_confirm_ref = app.clone_writer();
-
-    @Modal {
-      title: "Channel Settings",
-      size: Size::new(480., 530.),
-      confirm_cb: Box::new(move || {
-        app_writer_confirm_ref.write().set_modify_channel_id(None);
-      }) as Box<dyn Fn()>,
-      cancel_cb: Box::new(move || {
-        app_writer_cancel_ref.write().set_modify_channel_id(None);
-      }) as Box<dyn Fn()>,
-      @Stack {
-        @VScrollBar {
-          @Column {
-            @Text {
-              text: "Channel Name",
-              text_style: TypographyTheme::of(ctx!()).title_medium.text.clone(),
-            }
-            @$channel_rename {
-              cursor: CursorIcon::Text,
-              h_align: HAlign::Stretch,
-              margin: EdgeInsets::only_bottom(10.),
-              background: Color::from_u32(CULTURED_F7F7F5_FF),
-              padding: EdgeInsets::new(10., 5., 10., 5.),
-              border: Border::all(BorderSide {
-                width: 1.,
-                color: Color::from_u32(CHINESE_WHITE).into(),
-              }),
-              border_radius: Radius::all(6.),
-              @ { Placeholder::new("Type a channel name") }
-            }
-            @Text {
-              text: "Default AI Bot",
-              text_style: TypographyTheme::of(ctx!()).title_medium.text.clone(),
-            }
-            @ConstrainedBox {
-              clamp: BoxClamp::fixed_height(40.),
-              @BotList {
-                bots: $app.data.bots_rc(),
-              }
-            }
-            @Text {
-              text: "Optimize Performance",
-              text_style: TypographyTheme::of(ctx!()).title_medium.text.clone(),
-            }
-            @Column {
-              @$balanced_mode {
-                on_tap: move |_| {
-
-                }
-              }
-              @$performance_mode {
-                on_tap: move |_| {
-
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
 }
 
 impl<T: StateWriter<Value = AppGUI>> AppExtraWidgets for T {}

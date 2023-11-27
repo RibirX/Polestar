@@ -1,8 +1,11 @@
-use polestar_core::model::{Channel, Msg, MsgRole};
+use polestar_core::model::{Channel, Msg, MsgAction, MsgBody, MsgCont, MsgRole};
+use polestar_core::service::open_ai::mock_stream_string;
 use ribir::prelude::*;
 
 use crate::style::decorator::channel::message_style;
 use crate::style::{GAINSBORO, WHITE};
+use crate::theme::polestar_svg;
+use crate::widgets::app::AppGUI;
 use crate::widgets::common::IconButton;
 
 use super::onboarding::w_msg_onboarding;
@@ -83,7 +86,7 @@ impl ComposeChild for MsgOps {
           width: 1.,
         }),
         @ {
-          child.into_iter().enumerate().map(|(idx, c)| {
+          child.into_iter().enumerate().map(|(idx, ch)| {
             let left_border = (idx != 0).then(|| {
               BoxDecoration {
                 border: Some(Border::only_left(BorderSide {
@@ -94,7 +97,7 @@ impl ComposeChild for MsgOps {
               }
             });
             @$left_border {
-              @ { c }
+              @ { ch }
             }
           })
         }
@@ -135,25 +138,68 @@ where
       }
     };
 
+    let retry_msg = msg.clone_writer();
+
     let msg_ops = @$msg_ops_anchor {
-      @MsgOps {
-        visible: pipe! {
-          $stack.mouse_hover() && $msg.role().is_system()
-        },
-        @MsgOp {
-          cb: Box::new(|| {
-            println!("add");
-          }) as Box<dyn Fn()>,
-          @IconButton {
-            @ { svgs::ADD }
-          }
-        }
-        @MsgOp {
-          cb: Box::new(|| {
-            println!("close");
-          }) as Box<dyn Fn()>,
-          @IconButton {
-            @ { svgs::CLOSE }
+      visible: pipe! {
+        $stack.mouse_hover() && !$msg.role().is_system()
+      },
+      @ {
+        match $msg.role() {
+          MsgRole::User | MsgRole::Bot(_) => {
+            @MsgOps {
+              @MsgOp {
+                cb: Box::new(move || {
+
+                }) as Box<dyn Fn()>,
+                @IconButton {
+                  padding: EdgeInsets::all(4.),
+                  size: IconSize::of(ctx!()).tiny,
+                  @ { polestar_svg::REPLY }
+                }
+              }
+              @MsgOp {
+                cb: Box::new(move || {
+                  if let Some(text) = $msg.cur_cont_ref().text() {
+                    let clipboard = AppCtx::clipboard();
+                    let _ = clipboard.borrow_mut().clear();
+                    let _ = clipboard.borrow_mut().write_text(text);
+                  }
+                }) as Box<dyn Fn()>,
+                @IconButton {
+                  padding: EdgeInsets::all(4.),
+                  size: IconSize::of(ctx!()).tiny,
+                  @ { polestar_svg::CLIPBOARD }
+                }
+              }
+              @ {
+                let retry_msg = retry_msg.clone_writer();
+                ($msg.role().is_bot()).then(move || {
+                  @MsgOp {
+                    cb: Box::new(move || {
+                      // TODO: send msg
+                      // receive msg
+                      let cont = MsgCont::init_text();
+                      let mut msg_write = $retry_msg.write();
+                      msg_write.add_cont(cont);
+
+                      let cont = msg_write.cur_cont_mut();
+                      mock_stream_string("", |delta| {
+                        cont.action(MsgAction::Receiving(MsgBody::Text(Some(delta))))
+                      });
+                    }) as Box<dyn Fn()>,
+                    @IconButton {
+                      padding: EdgeInsets::all(4.),
+                      size: IconSize::of(ctx!()).tiny,
+                      @ { polestar_svg::RETRY }
+                    }
+                  }
+                })
+              }
+            }.widget_build(ctx!())
+          },
+          _ => {
+            @Void {}.widget_build(ctx!())
           }
         }
       }
@@ -167,43 +213,49 @@ where
         },
         @$row {
           @Avatar {
-            // TODO: use bot avatar.
             @ { Label::new("A") }
           }
-          @ConstrainedBox {
-            clamp: BoxClamp {
-              min: Size::zero(),
-              max: Size::new(560., f32::INFINITY),
-            },
+          @Column {
             @ {
-              let default_txt = String::new();
-              // TODO: support Image Type.
-              let text = $msg
-                .cur_cont_ref()
-                .text()
-                .unwrap_or_else(|| &default_txt).to_owned();
-              let msg2 = msg.clone_writer();
-              message_style(
-                @Column {
-                  @ { w_msg_quote(msg2) }
-                  @ {
-                    let msg2 = msg.clone_writer();
-                    pipe! {
-                      ($msg.cont_list().len() > 1).then(|| {
-                        w_msg_multi_rst(msg2.clone_reader())
-                      })
+              $msg.role().bot().map(move |bot_id| {
+                @Text { text: "Bot name" }
+              })
+            }
+            @ConstrainedBox {
+              clamp: BoxClamp {
+                min: Size::zero(),
+                max: Size::new(560., f32::INFINITY),
+              },
+              @ {
+                let default_txt = String::new();
+                // TODO: support Image Type.
+                let text = $msg
+                  .cur_cont_ref()
+                  .text()
+                  .unwrap_or_else(|| &default_txt).to_owned();
+                let msg2 = msg.clone_writer();
+                message_style(
+                  @Column {
+                    @ { w_msg_quote(msg2) }
+                    @ {
+                      let msg2 = msg.clone_writer();
+                      pipe! {
+                        ($msg.cont_list().len() > 1).then(|| {
+                          w_msg_multi_rst(msg2.clone_reader())
+                        })
+                      }
                     }
-                  }
-                  @TextSelectable {
-                    @Text {
-                      text,
-                      overflow: Overflow::AutoWrap,
-                      text_style: TypographyTheme::of(ctx!()).body_large.text.clone()
+                    @TextSelectable {
+                      @Text {
+                        text,
+                        overflow: Overflow::AutoWrap,
+                        text_style: TypographyTheme::of(ctx!()).body_large.text.clone()
+                      }
                     }
-                  }
-                }.widget_build(ctx!()),
-                *$msg.role()
-              )
+                  }.widget_build(ctx!()),
+                  *$msg.role()
+                )
+              }
             }
           }
         }

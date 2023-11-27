@@ -144,15 +144,15 @@ pub mod launcher {
       @FocusNode {
         auto_focus: true,
         @Column {
-          on_key_down_capture: move |event| {
-            match event.key_code() {
+          on_key_down_capture: move |e| {
+            match e.key_code() {
               PhysicalKey::Code(KeyCode::Enter | KeyCode::NumpadEnter) => {
                 if $input.text().is_empty() {
                   if let Some((bot_id, _)) = $bot_list.selected_bot() {
                     if let Some(quick_launcher) = $app.write().quick_launcher.as_mut() {
                       quick_launcher.selected_bot_id = Some(bot_id);
                     }
-                    event.stop_propagation();
+                    e.stop_propagation();
                   }
                 } else {
                   let input = $input;
@@ -186,31 +186,31 @@ pub mod launcher {
                     quick_launcher.msg = Some(id);
                   }
 
-                  event.stop_propagation();
+                  e.stop_propagation();
                 }
               }
               PhysicalKey::Code(KeyCode::KeyJ) => {
-                if event.with_logo_key() {
+                if e.with_logo_key() {
                   let channel_id = $app.quick_launcher.as_ref().unwrap().channel_id;
                   $app.write().data.switch_channel(&channel_id);
                   hide_quick_launcher(app.clone_writer(), true);
                 }
               }
               PhysicalKey::Code(KeyCode::KeyR) => {
-                if event.with_logo_key() {
+                if e.with_logo_key() {
 
                 }
               }
               PhysicalKey::Code(KeyCode::Backspace) => {}
               PhysicalKey::Code(KeyCode::Escape) => {
                 hide_quick_launcher(app.clone_writer(), false);
-                event.stop_propagation();
+                e.stop_propagation();
               }
               _ => {}
             }
           },
-          on_key_down: move |event| {
-            match event.key_code() {
+          on_key_down: move |e| {
+            match e.key_code() {
               PhysicalKey::Code(KeyCode::ArrowUp) => {
                 $bot_list.write().move_up();
               }

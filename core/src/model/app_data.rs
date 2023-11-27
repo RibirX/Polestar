@@ -91,8 +91,13 @@ fn init_db() -> (Option<Pin<Box<PersistenceDB>>>, Vec<Channel>) {
 
   let db = PersistenceDB::connect(init_db(&db_path()), Duration::from_secs(1))
     .expect("Failed to connect db");
-  let channels = db.query_channels().expect("Failed to query channels");
-  (Some(Box::pin(db)), channels)
+  let mut channels = db.query_channels().expect("Failed to query channels");
+  let db_pin = Box::pin(db);
+  let ptr = NonNull::from(&*db_pin);
+  channels.iter_mut().for_each(|channel| {
+    channel.set_db(ptr);
+  });
+  (Some(db_pin), channels)
 }
 
 #[cfg(not(feature = "persistence"))]
@@ -143,6 +148,16 @@ impl AppData {
 
   #[inline]
   pub fn bots_rc(&self) -> Rc<Vec<Bot>> { self.bots.clone() }
+
+  pub fn bot(&self, bot_id: &Uuid) -> Option<&Bot> {
+    self.bots.iter().find(|bot| bot.id() == bot_id)
+  }
+
+  pub fn get_bot_or_default(&self, bot_id: Option<Uuid>) -> &Bot {
+    bot_id
+      .and_then(|bot_id| self.bot(&bot_id))
+      .unwrap_or_else(|| self.def_bot())
+  }
 
   #[inline]
   pub fn channels(&self) -> &Vec<Channel> { &self.channels }

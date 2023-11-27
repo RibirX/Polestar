@@ -383,6 +383,20 @@ impl MsgRole {
       _ => false,
     }
   }
+
+  pub fn bot(&self) -> Option<&Uuid> {
+    match self {
+      Self::Bot(id) => Some(id),
+      _ => None,
+    }
+  }
+
+  pub fn system(&self) -> Option<&u64> {
+    match self {
+      Self::System(id) => Some(id),
+      _ => None,
+    }
+  }
 }
 
 #[cfg(test)]
