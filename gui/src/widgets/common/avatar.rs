@@ -1,7 +1,7 @@
 use polestar_core::model::BotAvatar;
 use ribir::prelude::*;
 
-pub fn w_avatar(avatar: &BotAvatar) -> impl WidgetBuilder + '_ {
+pub fn w_avatar(avatar: BotAvatar) -> impl WidgetBuilder {
   fn_widget! {
     @ {
       match avatar {
@@ -13,7 +13,7 @@ pub fn w_avatar(avatar: &BotAvatar) -> impl WidgetBuilder + '_ {
         }
         BotAvatar::Text { name, color } => {
           @Avatar {
-            color: Color::from_u32(get_color_by_hex_str(color)),
+            color: Color::from_u32(get_color_by_hex_str(&color)),
             @ { Label::new(name.to_owned()) }
           }.widget_build(ctx!())
         }

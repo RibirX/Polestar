@@ -88,6 +88,13 @@ pub fn polestar_theme() -> InheritTheme {
 
   let mut icons = HashMap::<NamedSvg, ShareResource<Svg>, ahash::RandomState>::default();
 
+  // XXX: will override default theme svg icon.
+  fill_svgs! {
+    icons,
+    svgs::CHECK_BOX: "./theme/icons/radio_button_checked_FILL0_wght400_GRAD0_opsz48.svg",
+    svgs::CHECK_BOX_OUTLINE_BLANK: "./theme/icons/radio_button_unchecked_FILL0_wght400_GRAD0_opsz48.svg"
+  }
+
   fill_svgs! {
     icons,
     polestar_svg::LOGO: "./theme/icons/logo.svg",

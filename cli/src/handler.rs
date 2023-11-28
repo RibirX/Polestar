@@ -46,7 +46,7 @@ pub fn channel_handler(args: ArgMatches, app_data: &mut AppData) -> ReplResult<O
       let channel = app_data
         .channels()
         .iter()
-        .find(|c| Some(c.id()) == app_data.cur_channel_id())
+        .find(|c| Some(c.id()) == app_data.info().cur_channel_id())
         .expect("current channel not found");
       println!("{}: {}", channel.id(), channel.name());
       Ok(None)
@@ -81,7 +81,7 @@ pub fn msg_handler(args: ArgMatches, app_data: &mut AppData) -> ReplResult<Optio
         let cur_channel = app_data
           .cur_channel_mut()
           .expect("current channel not found");
-        let mut msg_cont = MsgCont::text_init();
+        let mut msg_cont = MsgCont::init_text();
         msg_cont.action(MsgAction::Receiving(MsgBody::Text(
           content.map(|s| s.to_owned()),
         )));
@@ -89,7 +89,7 @@ pub fn msg_handler(args: ArgMatches, app_data: &mut AppData) -> ReplResult<Optio
       }
 
       let mut ret_msg = String::new();
-      let def_bot = app_data.def_bot();
+      let def_bot = app_data.info().def_bot();
       let runtime = tokio::runtime::Runtime::new().unwrap();
       runtime.block_on(stream_string(
         content.expect("content is required"),
@@ -104,7 +104,7 @@ pub fn msg_handler(args: ArgMatches, app_data: &mut AppData) -> ReplResult<Optio
         let cur_channel = app_data
           .cur_channel_mut()
           .expect("current channel not found");
-        let mut msg_cont = MsgCont::text_init();
+        let mut msg_cont = MsgCont::init_text();
         msg_cont.action(MsgAction::Receiving(MsgBody::Text(Some(ret_msg.clone()))));
         cur_channel.add_msg(Msg::new(
           MsgRole::Bot(Uuid::nil()),

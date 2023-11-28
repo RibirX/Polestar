@@ -11,6 +11,7 @@ pub struct LocalState {
 }
 
 impl LocalState {
+  // TODO: move app info
   fn save_local(&self) {
     if let Some(uid) = self.uid {
       write_local_state(&uid.to_string(), self).expect("Failed to save local state");

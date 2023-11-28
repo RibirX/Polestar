@@ -1,8 +1,10 @@
-use polestar_core::model::{Channel, Msg, MsgRole};
+use polestar_core::model::{Channel, Msg, MsgAction, MsgBody, MsgCont, MsgRole};
+use polestar_core::service::open_ai::mock_stream_string;
 use ribir::prelude::*;
 
 use crate::style::decorator::channel::message_style;
 use crate::style::{GAINSBORO, WHITE};
+use crate::theme::polestar_svg;
 use crate::widgets::common::IconButton;
 
 use super::onboarding::w_msg_onboarding;
@@ -14,14 +16,24 @@ where
   fn_widget! {
     let scrollable_container = @VScrollBar {};
 
+    let mut content_constrained_box = @ConstrainedBox {
+      clamp: BoxClamp {
+        min: Size::new(500., 0.),
+        max: Size::new(800., f32::INFINITY),
+      },
+    };
+
+    watch!(($channel.msgs().len(), $channel.app_info().map(|info| info.cur_channel_id().map(|id| *id))))
+      .distinct_until_changed()
+      .subscribe(move |_| {
+        let mut scrollable_container = $scrollable_container.write();
+        scrollable_container.offset = -$content_constrained_box.layout_height();
+      });
+
     @ConstrainedBox {
       clamp: BoxClamp::EXPAND_BOTH,
       @$scrollable_container {
-        @ConstrainedBox {
-          clamp: BoxClamp {
-            min: Size::new(500., 0.),
-            max: Size::new(800., f32::INFINITY),
-          },
+        @$content_constrained_box {
           @Column {
             padding: EdgeInsets::all(16.),
             item_gap: 16.,
@@ -83,7 +95,7 @@ impl ComposeChild for MsgOps {
           width: 1.,
         }),
         @ {
-          child.into_iter().enumerate().map(|(idx, c)| {
+          child.into_iter().enumerate().map(|(idx, ch)| {
             let left_border = (idx != 0).then(|| {
               BoxDecoration {
                 border: Some(Border::only_left(BorderSide {
@@ -94,7 +106,7 @@ impl ComposeChild for MsgOps {
               }
             });
             @$left_border {
-              @ { c }
+              @ { ch }
             }
           })
         }
@@ -111,6 +123,8 @@ where
   S::OriginReader: StateReader<Value = Channel>,
   R: StateReader<Value = Channel>,
   W: StateWriter<Value = Channel>,
+  <S::Writer as StateWriter>::OriginWriter: StateWriter<Value = Channel>,
+  <<S::Writer as StateWriter>::Writer as StateWriter>::OriginWriter: StateWriter<Value = Channel>,
 {
   let channel = msg.origin_writer().clone_writer();
   fn_widget! {
@@ -119,40 +133,84 @@ where
     let mut row = @Row {
       item_gap: 8.,
       reverse: match $msg.role() {
-        MsgRole::Bot(_) => false,
         MsgRole::User => true,
+        _ => false,
       },
     };
 
     let msg_ops_anchor = {
       match $msg.role() {
-        MsgRole::Bot(_) => @LeftAnchor {
-          left_anchor: pipe!($row.layout_width() + 4.)
-        },
         MsgRole::User => @RightAnchor {
           right_anchor: pipe!($row.layout_width() + 4.)
+        },
+        _ => @LeftAnchor {
+          left_anchor: pipe!($row.layout_width() + 4.)
         },
       }
     };
 
-    let msg_ops = @$msg_ops_anchor {
-      @MsgOps {
-        visible: pipe!($stack.mouse_hover()),
+    let retry_msg = msg.clone_writer();
 
-        @MsgOp {
-          cb: Box::new(|| {
-            println!("add");
-          }) as Box<dyn Fn()>,
-          @IconButton {
-            @ { svgs::ADD }
-          }
-        }
-        @MsgOp {
-          cb: Box::new(|| {
-            println!("close");
-          }) as Box<dyn Fn()>,
-          @IconButton {
-            @ { svgs::CLOSE }
+    let msg_ops = @$msg_ops_anchor {
+      visible: pipe! {
+        $stack.mouse_hover() && !$msg.role().is_system()
+      },
+      @ {
+        match $msg.role() {
+          MsgRole::User | MsgRole::Bot(_) => {
+            @MsgOps {
+              @MsgOp {
+                cb: Box::new(move || {
+
+                }) as Box<dyn Fn()>,
+                @IconButton {
+                  padding: EdgeInsets::all(4.),
+                  size: IconSize::of(ctx!()).tiny,
+                  @ { polestar_svg::REPLY }
+                }
+              }
+              @MsgOp {
+                cb: Box::new(move || {
+                  if let Some(text) = $msg.cur_cont_ref().text() {
+                    let clipboard = AppCtx::clipboard();
+                    let _ = clipboard.borrow_mut().clear();
+                    let _ = clipboard.borrow_mut().write_text(text);
+                  }
+                }) as Box<dyn Fn()>,
+                @IconButton {
+                  padding: EdgeInsets::all(4.),
+                  size: IconSize::of(ctx!()).tiny,
+                  @ { polestar_svg::CLIPBOARD }
+                }
+              }
+              @ {
+                let retry_msg = retry_msg.clone_writer();
+                ($msg.role().is_bot()).then(move || {
+                  @MsgOp {
+                    cb: Box::new(move || {
+                      // TODO: send msg
+                      // receive msg
+                      let cont = MsgCont::init_text();
+                      let mut msg_write = $retry_msg.write();
+                      msg_write.add_cont(cont);
+
+                      let cont = msg_write.cur_cont_mut();
+                      mock_stream_string("", |delta| {
+                        cont.action(MsgAction::Receiving(MsgBody::Text(Some(delta))))
+                      });
+                    }) as Box<dyn Fn()>,
+                    @IconButton {
+                      padding: EdgeInsets::all(4.),
+                      size: IconSize::of(ctx!()).tiny,
+                      @ { polestar_svg::RETRY }
+                    }
+                  }
+                })
+              }
+            }.widget_build(ctx!())
+          },
+          _ => {
+            @Void {}.widget_build(ctx!())
           }
         }
       }
@@ -161,48 +219,60 @@ where
     @$stack {
       @Row {
         h_align: match $msg.role() {
-          MsgRole::Bot(_) => HAlign::Left,
           MsgRole::User => HAlign::Right,
+          _ => HAlign::Left,
         },
         @$row {
           @Avatar {
-            // TODO: use bot avatar.
             @ { Label::new("A") }
           }
-          @ConstrainedBox {
-            clamp: BoxClamp {
-              min: Size::zero(),
-              max: Size::new(560., f32::INFINITY),
-            },
+          @Column {
             @ {
-              let default_txt = String::new();
-              // TODO: support Image Type.
-              let text = $msg
-                .cur_cont_ref()
-                .text()
-                .unwrap_or_else(|| &default_txt).to_owned();
-              let msg2 = msg.clone_writer();
-              message_style(
-                @Column {
-                  @ { w_msg_quote(msg2) }
-                  @ {
-                    let msg2 = msg.clone_writer();
-                    pipe! {
-                      ($msg.cont_list().len() > 1).then(|| {
-                        w_msg_multi_rst(msg2.clone_reader())
-                      })
-                    }
-                  }
-                  @TextSelectable {
-                    @Text {
-                      text,
-                      overflow: Overflow::AutoWrap,
-                      text_style: TypographyTheme::of(ctx!()).body_large.text.clone()
-                    }
-                  }
-                }.widget_build(ctx!()),
-                *$msg.role()
-              )
+              $msg.role().bot().and_then(move |bot_id| {
+                $channel.app_info().map(|info| {
+                  let bot = info.get_bot_or_default(Some(*bot_id));
+                  @Text { text: bot.name().to_owned() }
+                })
+              })
+            }
+            @ConstrainedBox {
+              clamp: BoxClamp {
+                min: Size::zero(),
+                max: Size::new(560., f32::INFINITY),
+              },
+              @ {
+                pipe!($msg.cur_idx()).map(move |_| {
+                  let _msg_capture = || $msg.write();
+                  let default_txt = String::new();
+                  // TODO: support Image Type.
+                  let text = $msg
+                    .cur_cont_ref()
+                    .text()
+                    .unwrap_or_else(|| &default_txt).to_owned();
+                  let msg2 = msg.clone_writer();
+                  message_style(
+                    @Column {
+                      @ { w_msg_quote(msg2) }
+                      @ {
+                        let msg2 = msg.clone_writer();
+                        pipe! {
+                          ($msg.cont_list().len() > 1).then(|| {
+                            w_msg_multi_rst(msg2.clone_writer())
+                          })
+                        }
+                      }
+                      @TextSelectable {
+                        @Text {
+                          text,
+                          overflow: Overflow::AutoWrap,
+                          text_style: TypographyTheme::of(ctx!()).body_large.text.clone()
+                        }
+                      }
+                    }.widget_build(ctx!()),
+                    *$msg.role()
+                  )
+                })
+              }
             }
           }
         }
@@ -236,11 +306,12 @@ where
   })
 }
 
-fn w_msg_multi_rst(msg: impl StateReader<Value = Msg>) -> impl WidgetBuilder {
+fn w_msg_multi_rst(msg: impl StateWriter<Value = Msg>) -> impl WidgetBuilder {
   fn_widget! {
     let scrollable_widget = @ScrollableWidget {
       scrollable: Scrollable::X,
     };
+    let thumbnail_msg = msg.clone_writer();
     @Row {
       @Visibility {
         @Void {}
@@ -251,10 +322,14 @@ fn w_msg_multi_rst(msg: impl StateReader<Value = Msg>) -> impl WidgetBuilder {
           @Row {
             item_gap: 8.,
             @ {
-              $msg.cont_list().iter().map(|cont| {
+              $msg.cont_list().iter().enumerate().map(|(idx, cont)| {
                 let text = cont.text().map(|s| s.to_owned()).unwrap_or_else(|| String::new());
-                @ {
-                  w_msg_thumbnail(text)
+                let w_thumbnail = w_msg_thumbnail(text);
+                @$w_thumbnail {
+                  on_tap: move |_| {
+                    let mut msg_write = $thumbnail_msg.write();
+                    msg_write.switch_cont(idx);
+                  }
                 }
               }).collect::<Vec<_>>()
             }

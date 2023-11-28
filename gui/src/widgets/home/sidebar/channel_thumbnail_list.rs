@@ -11,7 +11,11 @@ pub fn w_channel_thumbnail_list(app: impl StateWriter<Value = AppGUI>) -> impl W
   fn_widget! {
     @InteractiveList {
       active: pipe! {
-        let last_idx = $app.data.channels().len() - 1;
+        let last_idx = if !$app.data.channels().is_empty() { 
+          $app.data.channels().len() - 1
+        } else {
+          0
+        };
         $app.data.cur_channel().map(|channel| *channel.id()).and_then(|id| {
           $app.data.channels().iter().position(|channel| *channel.id() == id).map(|idx| last_idx - idx)
         }).unwrap_or(last_idx)
@@ -62,9 +66,9 @@ where
   let app = channel.origin_writer().clone_writer();
   fn_widget! {
     let mut item = @ListItem {};
-    let support_text = $channel.desc().map(|desc| {
-      @SupportingText(Label::new(desc.to_owned()))
-    });
+    // let support_text = $channel.desc().map(|desc| {
+    //   @SupportingText(Label::new(desc.to_owned()))
+    // });
 
     @$item {
       @Leading {
@@ -72,16 +76,17 @@ where
           let channel_state = $channel;
           let app_state = $app;
           let channel_def_bot_id = channel_state.cfg().def_bot_id();
-          let bot_id = *(channel_def_bot_id.unwrap_or_else(|| app_state.data.cfg().def_bot_id()));
+          let bot_id = *(channel_def_bot_id.unwrap_or_else(|| app_state.data.info().cfg().def_bot_id()));
           let avatar = app_state
             .data
+            .info()
             .bots()
             .iter()
             .find(|bot| *bot.id() == bot_id)
             .expect("bot must be exist")
             .avatar();
           CustomEdgeWidget(
-            w_avatar(&avatar).widget_build(ctx!())
+            w_avatar(avatar.clone()).widget_build(ctx!())
           )
         }
       }

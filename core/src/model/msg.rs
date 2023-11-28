@@ -1,11 +1,13 @@
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+pub type MsgId = Uuid;
+
 /// `Message` is the message struct.
 /// It contains the message role, message active_index and message content list.
-#[derive(Debug, Serialize, Deserialize, Default, sqlx::FromRow, Clone)]
+#[derive(Debug, Serialize, Deserialize, sqlx::FromRow, Clone)]
 pub struct Msg {
-  id: Uuid,
+  id: MsgId,
   // role is the sender of the message.
   #[sqlx(json)]
   role: MsgRole,
@@ -21,7 +23,7 @@ pub struct Msg {
 
 impl Msg {
   #[inline]
-  pub fn id(&self) -> &Uuid { &self.id }
+  pub fn id(&self) -> &MsgId { &self.id }
 
   #[inline]
   pub fn cur_idx(&self) -> usize { self.cur_idx as _ }
@@ -42,22 +44,80 @@ impl Msg {
   pub fn cont_list(&self) -> &Vec<MsgCont> { &self.cont_list }
 }
 
-#[derive(Debug, Serialize, Deserialize, Default, PartialEq, Eq, Clone)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone, Default)]
 pub struct MsgMeta {
-  quote_id: Option<Uuid>,
-  source_id: Option<Uuid>,
+  // `quote_id` which message id is this message quote from.
+  quote_id: Option<MsgId>,
+  // `reply_id` which message is the reply message.
+  reply_id: Option<MsgId>,
+}
+
+impl MsgMeta {
+  pub fn quote(id: MsgId) -> Self { Self { quote_id: Some(id), reply_id: None } }
+
+  pub fn reply(id: MsgId) -> Self { Self { quote_id: None, reply_id: Some(id) } }
 }
 
 impl MsgMeta {
   #[inline]
-  pub fn quote_id(&self) -> Option<&Uuid> { self.quote_id.as_ref() }
+  pub fn quote_id(&self) -> Option<&MsgId> { self.quote_id.as_ref() }
 
   #[inline]
-  pub fn source_id(&self) -> Option<&Uuid> { self.source_id.as_ref() }
+  pub fn source_id(&self) -> Option<&MsgId> { self.reply_id.as_ref() }
 }
 
 impl Msg {
   pub fn new(role: MsgRole, cont_list: Vec<MsgCont>, meta: MsgMeta) -> Self {
+    Self {
+      id: Uuid::new_v4(),
+      role,
+      cur_idx: 0,
+      cont_list,
+      meta,
+    }
+  }
+
+  pub fn new_user_text(text: &str, meta: MsgMeta) -> Self {
+    let mut cont_list = Vec::new();
+    cont_list.push(MsgCont::new_text(text));
+    Self {
+      id: Uuid::new_v4(),
+      role: MsgRole::User,
+      cur_idx: 0,
+      cont_list,
+      meta,
+    }
+  }
+
+  pub fn new_bot_text(bot_id: Uuid, meta: MsgMeta) -> Self {
+    let mut cont_list = Vec::new();
+    cont_list.push(MsgCont::init_text());
+    Self {
+      id: Uuid::new_v4(),
+      role: MsgRole::Bot(bot_id),
+      cur_idx: 0,
+      cont_list,
+      meta,
+    }
+  }
+
+  pub fn new_system_text(text: &str) -> Self {
+    let mut cont_list = Vec::new();
+    cont_list.push(MsgCont::new_text(text));
+    Self {
+      id: Uuid::new_v4(),
+      role: MsgRole::System(0),
+      cur_idx: 0,
+      cont_list,
+      meta: MsgMeta::default(),
+    }
+  }
+
+  pub fn new_img(role: MsgRole, img: Image, meta: MsgMeta) -> Self {
+    let mut cont_list = Vec::new();
+    cont_list.push(MsgCont::init_image());
+    cont_list[0].action(MsgAction::Receiving(MsgBody::Image(Some(img))));
+    cont_list[0].action(MsgAction::Fulfilled);
     Self {
       id: Uuid::new_v4(),
       role,
@@ -192,17 +252,32 @@ impl MsgCont {
     "[polestar] message content action error: rejected action must be pending status";
   const RECEIVING_WARN: &'static str =
     "[polestar] message content action error: receiving action must be pending status";
-  pub fn text_init() -> Self {
+
+  pub fn init_text() -> Self {
     Self {
       body: MsgBody::Text(None),
       status: MsgStatus::Pending,
     }
   }
 
-  pub fn image_init() -> Self {
+  pub fn new_text(text: &str) -> Self {
+    Self {
+      body: MsgBody::Text(Some(text.to_owned())),
+      status: MsgStatus::Fulfilled,
+    }
+  }
+
+  pub fn init_image() -> Self {
     Self {
       body: MsgBody::Image(None),
       status: MsgStatus::Pending,
+    }
+  }
+
+  pub fn new_image(img: Image) -> Self {
+    Self {
+      body: MsgBody::Image(Some(img)),
+      status: MsgStatus::Fulfilled,
     }
   }
 
@@ -283,6 +358,45 @@ pub enum MsgRole {
   User,
   #[serde(rename = "bot")]
   Bot(Uuid),
+  #[serde(rename = "system")]
+  System(u64),
+}
+
+impl MsgRole {
+  pub fn is_bot(&self) -> bool {
+    match self {
+      Self::Bot(_) => true,
+      _ => false,
+    }
+  }
+
+  pub fn is_system(&self) -> bool {
+    match self {
+      Self::System(_) => true,
+      _ => false,
+    }
+  }
+
+  pub fn is_user(&self) -> bool {
+    match self {
+      Self::User => true,
+      _ => false,
+    }
+  }
+
+  pub fn bot(&self) -> Option<&Uuid> {
+    match self {
+      Self::Bot(id) => Some(id),
+      _ => None,
+    }
+  }
+
+  pub fn system(&self) -> Option<&u64> {
+    match self {
+      Self::System(id) => Some(id),
+      _ => None,
+    }
+  }
 }
 
 #[cfg(test)]
@@ -295,13 +409,9 @@ mod test {
   fn msg_update() {
     testing_logger::setup();
 
-    let mut msg = Msg::new(
-      MsgRole::User,
-      vec![MsgCont::text_init()],
-      MsgMeta::default(),
-    );
+    let mut msg = Msg::new_user_text("", MsgMeta::default());
     assert_eq!(msg.cur_idx(), 0);
-    msg.add_cont(MsgCont::text_init());
+    msg.add_cont(MsgCont::init_text());
     assert_eq!(msg.cur_idx(), 1);
     assert_eq!(msg.cont_count(), 2);
 
@@ -324,37 +434,34 @@ mod test {
   fn msg_cont_action() {
     testing_logger::setup();
 
-    let mut fulfilled_msg_cont = MsgCont::text_init();
-    fulfilled_msg_cont.action(MsgAction::Receiving(MsgBody::Text(Some("123".to_owned()))));
-    fulfilled_msg_cont.action(MsgAction::Fulfilled);
-    let _fulfilled_msg = Msg::new(MsgRole::User, vec![fulfilled_msg_cont], MsgMeta::default());
+    let _fulfilled_msg = Msg::new_user_text("123", MsgMeta::default());
 
-    let mut rejected_msg_cont = MsgCont::text_init();
+    let mut rejected_msg_cont = MsgCont::init_text();
     rejected_msg_cont.action(MsgAction::Rejected);
     let _rejected_msg = Msg::new(MsgRole::User, vec![rejected_msg_cont], MsgMeta::default());
 
     let _pend_msg = Msg::new(
       MsgRole::User,
-      vec![MsgCont::text_init()],
+      vec![MsgCont::init_text()],
       MsgMeta::default(),
     );
 
-    let mut fulfilled_msg_cont = MsgCont::text_init();
+    let mut fulfilled_msg_cont = MsgCont::init_text();
     fulfilled_msg_cont.action(MsgAction::Fulfilled);
     let _wrong_fulfilled_msg =
       Msg::new(MsgRole::User, vec![fulfilled_msg_cont], MsgMeta::default());
 
-    let mut rejected_msg_cont = MsgCont::text_init();
+    let mut rejected_msg_cont = MsgCont::init_text();
     rejected_msg_cont.action(MsgAction::Receiving(MsgBody::Text(Some("123".to_owned()))));
     rejected_msg_cont.action(MsgAction::Rejected);
     let _wrong_rejected_msg = Msg::new(MsgRole::User, vec![rejected_msg_cont], MsgMeta::default());
 
-    let mut pend_msg_cont = MsgCont::text_init();
+    let mut pend_msg_cont = MsgCont::init_text();
     pend_msg_cont.action(MsgAction::Receiving(MsgBody::Text(Some("123".to_owned()))));
     pend_msg_cont.action(MsgAction::Pending);
     let _wrong_pend_msg = Msg::new(MsgRole::User, vec![pend_msg_cont], MsgMeta::default());
 
-    let mut receiving_msg_cont = MsgCont::text_init();
+    let mut receiving_msg_cont = MsgCont::init_text();
     receiving_msg_cont.action(MsgAction::Rejected);
     receiving_msg_cont.action(MsgAction::Receiving(MsgBody::Text(Some("123".to_owned()))));
     let _wrong_receiving_msg =

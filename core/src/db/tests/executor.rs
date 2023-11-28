@@ -26,6 +26,7 @@ fn add_channel_test() {
     "test".to_owned(),
     Some("test channel".to_owned()),
     ChannelCfg::default(),
+    None,
     Some(NonNull::from(&*persistence_db)),
   );
   persistence_db
@@ -37,6 +38,7 @@ fn add_channel_test() {
     "test 2".to_owned(),
     Some("test channel 2".to_owned()),
     ChannelCfg::default(),
+    None,
     Some(NonNull::from(&*persistence_db)),
   );
   persistence_db
@@ -66,6 +68,7 @@ fn remove_channel_test() {
     "test".to_owned(),
     Some("test channel".to_owned()),
     ChannelCfg::default(),
+    None,
     Some(NonNull::from(&*persistence_db)),
   );
   persistence_db
@@ -77,6 +80,7 @@ fn remove_channel_test() {
     "test 2".to_owned(),
     Some("test channel 2".to_owned()),
     ChannelCfg::default(),
+    None,
     Some(NonNull::from(&*persistence_db)),
   );
   persistence_db
@@ -117,6 +121,7 @@ fn update_channel_test() {
     "test".to_owned(),
     Some("test channel".to_owned()),
     ChannelCfg::default(),
+    None,
     Some(NonNull::from(&*persistence_db)),
   );
   persistence_db
@@ -131,7 +136,7 @@ fn update_channel_test() {
   assert_eq!(channels.len(), 1);
 
   let mut channel_1 = channels[0].clone();
-  channel_1.update_name("test 2".to_owned());
+  channel_1.set_name("test 2".to_owned());
   persistence_db
     .as_mut()
     .add_persist(ActionPersist::UpdateChannel { channel: channel_1 });
@@ -145,7 +150,7 @@ fn update_channel_test() {
   assert_eq!(channels[0].name(), "test 2");
 
   let mut channel_1 = channels[0].clone();
-  channel_1.update_desc(Some("test channel 2".to_owned()));
+  channel_1.set_desc(Some("test channel 2".to_owned()));
   persistence_db
     .as_mut()
     .add_persist(ActionPersist::UpdateChannel { channel: channel_1 });
@@ -173,6 +178,7 @@ fn add_msg_test() {
     "test".to_owned(),
     Some("test channel".to_owned()),
     ChannelCfg::default(),
+    None,
     Some(NonNull::from(&*persistence_db)),
   );
   persistence_db
@@ -190,7 +196,7 @@ fn add_msg_test() {
 
   let msg = Msg::new(
     MsgRole::User,
-    vec![MsgCont::text_init()],
+    vec![MsgCont::init_text()],
     MsgMeta::default(),
   );
   persistence_db
@@ -220,6 +226,7 @@ fn update_msg_test() {
     "test".to_owned(),
     Some("test channel".to_owned()),
     ChannelCfg::default(),
+    None,
     Some(NonNull::from(&*persistence_db)),
   );
   persistence_db
@@ -237,7 +244,7 @@ fn update_msg_test() {
 
   let msg = Msg::new(
     MsgRole::User,
-    vec![MsgCont::text_init()],
+    vec![MsgCont::init_text()],
     MsgMeta::default(),
   );
   persistence_db
@@ -252,7 +259,7 @@ fn update_msg_test() {
   assert_eq!(msgs.len(), 1);
 
   let mut msg = msgs[0].clone();
-  msg.add_cont(MsgCont::text_init());
+  msg.add_cont(MsgCont::init_text());
   persistence_db
     .as_mut()
     .add_persist(ActionPersist::UpdateMsg { msg });
@@ -281,6 +288,7 @@ fn query_msgs_by_channel_id_test() {
     "test".to_owned(),
     Some("test channel".to_owned()),
     ChannelCfg::default(),
+    None,
     Some(NonNull::from(&*persistence_db)),
   );
   persistence_db
@@ -298,7 +306,7 @@ fn query_msgs_by_channel_id_test() {
 
   let msg = Msg::new(
     MsgRole::User,
-    vec![MsgCont::text_init()],
+    vec![MsgCont::init_text()],
     MsgMeta::default(),
   );
   persistence_db

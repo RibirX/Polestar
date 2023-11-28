@@ -46,7 +46,7 @@ pub(super) fn w_login(app: impl StateWriter<Value = AppGUI>) -> impl WidgetBuild
             item_gap: 8.,
             @LoginBtn {
               url: pipe! {
-                if $app.data.need_login() {
+                if $app.data.info().need_login() {
                   microsoft_login_uri()
                 } else {
                   String::new()
@@ -57,7 +57,7 @@ pub(super) fn w_login(app: impl StateWriter<Value = AppGUI>) -> impl WidgetBuild
             }
             @LoginBtn {
               url: pipe! {
-                if $app.data.need_login() {
+                if $app.data.info().need_login() {
                   google_login_uri()
                 } else {
                   String::new()
@@ -68,7 +68,7 @@ pub(super) fn w_login(app: impl StateWriter<Value = AppGUI>) -> impl WidgetBuild
             }
             @LoginBtn {
               url: pipe! {
-                if $app.data.need_login() {
+                if $app.data.info().need_login() {
                   apple_login_uri()
                 } else {
                   String::new()

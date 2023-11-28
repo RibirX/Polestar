@@ -52,7 +52,7 @@ fn w_bot_list(app: impl StateReader<Value = AppGUI>) -> impl WidgetBuilder {
               item_gap: 8.,
               line_gap: 8.,
               @ {
-                $app.data.bots().iter().filter(|bot| bot.cat() == Some(cat)).map(|bot| {
+                $app.data.info().bots().iter().filter(|bot| bot.cat() == Some(cat)).map(|bot| {
                   @Clip {
                     @SizedBox {
                       size: Size::new(200., 110.),

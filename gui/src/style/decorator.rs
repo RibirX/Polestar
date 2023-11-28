@@ -30,8 +30,8 @@ pub mod channel {
         }),
         background: {
           match role {
-            MsgRole::Bot(_) => Color::from_u32(ALICE_BLUE),
             MsgRole::User => Color::from_u32(BRIGHT_GRAY_E9EEF7_FF),
+            _ => Color::from_u32(ALICE_BLUE),
           }
         },
       }

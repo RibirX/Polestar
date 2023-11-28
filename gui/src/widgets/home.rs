@@ -38,12 +38,12 @@ pub fn w_home(app: impl StateWriter<Value = AppGUI>) -> impl WidgetBuilder {
             @ {
               pipe! {
                 let _ = $app.write();
-                let def_bot_id = *($app.data.def_bot().id());
+                let def_bot_id = *($app.data.info().def_bot().id());
                 let channel_writer = app.split_writer(
                   |app| { app.data.cur_channel().expect("current channel must be existed") },
                   |app| { app.data.cur_channel_mut().expect("current channel must be existed") },
                 );
-                w_chat(channel_writer.clone_writer(), $app.data.bots_rc(), def_bot_id)
+                w_chat(channel_writer.clone_writer(), $app.data.info().bots_rc(), def_bot_id)
               }
             }
           }

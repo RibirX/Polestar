@@ -1,26 +1,85 @@
-use std::{pin::Pin, ptr::NonNull, rc::Rc};
+use std::{marker::PhantomPinned, pin::Pin, ptr::NonNull, rc::Rc};
 
 use uuid::Uuid;
 
 use crate::{
   db::{executor::ActionPersist, pool::PersistenceDB},
-  utils::{self, LocalState},
+  utils,
 };
 
 use super::{
   bot::Bot,
   channel::{Channel, ChannelCfg},
-  User, UserBuilder,
+  ChannelId, User, UserBuilder,
 };
 
-pub struct AppData {
+pub struct AppInfo {
   bots: Rc<Vec<Bot>>,
-  channels: Vec<Channel>,
-  cur_channel_id: Option<Uuid>,
-  cfg: AppCfg,
   user: Option<User>,
+  cfg: AppCfg,
+  cur_channel_id: Option<Uuid>,
+  quick_launcher_id: Option<Uuid>,
+  has_official_server: bool,
+  _marker: PhantomPinned,
+}
+
+impl AppInfo {
+  pub fn user(&self) -> Option<&User> { self.user.as_ref() }
+
+  pub fn set_user(self: Pin<&mut Self>, user: Option<User>) {
+    let info = unsafe { self.get_unchecked_mut() };
+    info.user = user;
+  }
+
+  pub fn cur_channel_id(&self) -> Option<&Uuid> { self.cur_channel_id.as_ref() }
+
+  pub fn set_cur_channel_id(self: Pin<&mut Self>, cur_channel_id: Option<Uuid>) {
+    let info = unsafe { self.get_unchecked_mut() };
+    info.cur_channel_id = cur_channel_id;
+  }
+
+  pub fn quick_launcher_id(&self) -> Option<&Uuid> { self.quick_launcher_id.as_ref() }
+
+  pub fn set_quick_launcher_id(self: Pin<&mut Self>, quick_launcher_id: Option<Uuid>) {
+    let info = unsafe { self.get_unchecked_mut() };
+    info.quick_launcher_id = quick_launcher_id;
+  }
+
+  pub fn bots(&self) -> &Vec<Bot> { &self.bots }
+
+  pub fn bots_rc(&self) -> Rc<Vec<Bot>> { self.bots.clone() }
+
+  pub fn bot(&self, bot_id: &Uuid) -> Option<&Bot> {
+    self.bots.iter().find(|bot| bot.id() == bot_id)
+  }
+
+  pub fn get_bot_or_default(&self, bot_id: Option<Uuid>) -> &Bot {
+    bot_id
+      .and_then(|bot_id| self.bot(&bot_id))
+      .unwrap_or_else(|| self.def_bot())
+  }
+
+  pub fn def_bot(&self) -> &Bot {
+    self
+      .bots
+      .iter()
+      .find(|bot| bot.id() == self.cfg.def_bot_id())
+      .expect("default bot not found")
+  }
+
+  pub fn cfg(&self) -> &AppCfg { &self.cfg }
+
+  pub fn cfg_mut(&mut self) -> &mut AppCfg { &mut self.cfg }
+
+  pub fn has_official_server(&self) -> bool { self.has_official_server }
+
+  pub fn need_login(&self) -> bool { self.has_official_server && self.user.is_none() }
+}
+
+pub struct AppData {
+  channels: Vec<Channel>,
   db: Option<Pin<Box<PersistenceDB>>>,
-  local_state: LocalState,
+  info: Pin<Box<AppInfo>>,
 }
 
 pub fn init_app_data() -> AppData {
@@ -33,7 +92,7 @@ pub fn init_app_data() -> AppData {
   // 3. if has official server, load user info from local file.
   // TODO: load user info from local file.
   let cur_user = utils::read_current_user().unwrap_or_default();
-  let mut local_state = utils::read_local_state(&cur_user).unwrap_or_default();
+  let local_state = utils::read_local_state(&cur_user).unwrap_or_default();
   let (user_data_path, user) = if has_official_server {
     local_state.uid().map_or_else(
       || {
@@ -63,8 +122,8 @@ pub fn init_app_data() -> AppData {
   utils::create_if_not_exist_dir(user_data_path);
 
   // TODO: how to set app default bot
-  let cfg = AppCfg::new(None, bots[0].id().clone(), has_official_server);
-  let (db, channels) = init_db();
+  let cfg = AppCfg::new(None, bots[0].id().clone());
+  let (db, mut channels) = init_db();
 
   let cur_channel_id = local_state.cur_channel_id();
 
@@ -76,12 +135,27 @@ pub fn init_app_data() -> AppData {
     *cur_channel_id
   } else {
     // channels reverse display
-    let cur_channel_id = channels.last().map(|channel| *channel.id());
-    local_state.set_cur_channel_id(cur_channel_id);
-    cur_channel_id
+    channels.last().map(|channel| *channel.id())
   };
 
-  AppData::new(bots, channels, cur_channel_id, cfg, user, db, local_state)
+  let info = AppInfo {
+    bots: Rc::new(bots),
+    user,
+    cfg,
+    cur_channel_id,
+    quick_launcher_id: *local_state.quick_launcher_id(),
+    has_official_server,
+    _marker: PhantomPinned,
+  };
+
+  let pin_info = Box::pin(info);
+  let ptr = NonNull::from(&*pin_info);
+
+  channels.iter_mut().for_each(|channel| {
+    channel.set_app_info(ptr);
+  });
+
+  AppData::new(channels, db, pin_info)
 }
 
 #[cfg(feature = "persistence")]
@@ -91,8 +165,13 @@ fn init_db() -> (Option<Pin<Box<PersistenceDB>>>, Vec<Channel>) {
 
   let db = PersistenceDB::connect(init_db(&db_path()), Duration::from_secs(1))
     .expect("Failed to connect db");
-  let channels = db.query_channels().expect("Failed to query channels");
-  (Some(Box::pin(db)), channels)
+  let mut channels = db.query_channels().expect("Failed to query channels");
+  let db_pin = Box::pin(db);
+  let ptr = NonNull::from(&*db_pin);
+  channels.iter_mut().for_each(|channel| {
+    channel.set_db(ptr);
+  });
+  (Some(db_pin), channels)
 }
 
 #[cfg(not(feature = "persistence"))]
@@ -110,39 +189,17 @@ fn init_db() -> (Option<Pin<Box<PersistenceDB>>>, Vec<Channel>) {
 
 impl AppData {
   pub(crate) fn new(
-    bots: Vec<Bot>,
     channels: Vec<Channel>,
-    cur_channel_id: Option<Uuid>,
-    cfg: AppCfg,
-    user: Option<User>,
     db: Option<Pin<Box<PersistenceDB>>>,
-    local_state: LocalState,
+    info: Pin<Box<AppInfo>>,
   ) -> Self {
-    Self {
-      bots: Rc::new(bots),
-      channels,
-      cur_channel_id,
-      cfg,
-      user,
-      db,
-      local_state,
-    }
+    Self { channels, db, info }
   }
 
   #[inline]
-  pub fn user(&self) -> Option<&User> { self.user.as_ref() }
+  pub fn info(&self) -> &AppInfo { &self.info }
 
-  #[inline]
-  pub fn set_user(&mut self, user: Option<User>) { self.user = user; }
-
-  #[inline]
-  pub fn cur_channel_id(&self) -> Option<&Uuid> { self.cur_channel_id.as_ref() }
-
-  #[inline]
-  pub fn bots(&self) -> &Vec<Bot> { &self.bots }
-
-  #[inline]
-  pub fn bots_rc(&self) -> Rc<Vec<Bot>> { self.bots.clone() }
+  pub fn info_mut(&mut self) -> Pin<&mut AppInfo> { self.info.as_mut() }
 
   #[inline]
   pub fn channels(&self) -> &Vec<Channel> { &self.channels }
@@ -157,36 +214,37 @@ impl AppData {
       .find(|channel| channel.id() == channel_id)
   }
 
-  pub fn get_channel_mut(&mut self, channel_id: &Uuid) -> Option<&mut Channel> {
+  pub fn get_channel_mut(&mut self, channel_id: &ChannelId) -> Option<&mut Channel> {
     self
       .channels
       .iter_mut()
       .find(|channel| channel.id() == channel_id)
   }
 
-  pub fn switch_channel(&mut self, channel_id: &Uuid) {
-    self.cur_channel_id = Some(*channel_id);
-    self.local_state.set_cur_channel_id(Some(*channel_id));
+  pub fn switch_channel(&mut self, channel_id: &ChannelId) {
+    self.info.as_mut().set_cur_channel_id(Some(*channel_id));
   }
 
   pub fn cur_channel(&self) -> Option<&Channel> {
     self
       .channels
       .iter()
-      .find(|channel| Some(channel.id()) == self.cur_channel_id.as_ref())
+      .find(|channel| Some(channel.id()) == self.info.cur_channel_id.as_ref())
   }
 
   pub fn cur_channel_mut(&mut self) -> Option<&mut Channel> {
     self
       .channels
       .iter_mut()
-      .find(|channel| Some(channel.id()) == self.cur_channel_id.as_ref())
+      .find(|channel| Some(channel.id()) == self.info.cur_channel_id.as_ref())
   }
 
   pub fn new_channel(&mut self, name: String, desc: Option<String>) -> Uuid {
-    let id = Uuid::new_v4();
+    let channel_id = Uuid::new_v4();
     let db = self.db.as_mut().map(|db| NonNull::from(&**db));
-    let channel = Channel::new(id, name, desc, ChannelCfg::default(), db);
+    let info = &mut self.info;
+    let app_info = Some(NonNull::from(&**info));
+    let channel = Channel::new(channel_id, name, desc, ChannelCfg::default(), app_info, db);
 
     let p_channel = channel.clone();
 
@@ -196,9 +254,9 @@ impl AppData {
     });
 
     self.channels.push(channel);
-    self.cur_channel_id = Some(id);
+    self.info.as_mut().set_cur_channel_id(Some(channel_id));
 
-    id
+    channel_id
   }
 
   pub fn remove_channel(&mut self, channel_id: &Uuid) {
@@ -213,11 +271,11 @@ impl AppData {
     }
 
     // if current channel is removed, switch to nearest channel.
-    if Some(*channel_id) == self.cur_channel_id {
+    if Some(*channel_id) == self.info.cur_channel_id {
       let cur_channel_id = self
         .channels
         .iter()
-        .position(|channel| Some(channel.id()) == self.cur_channel_id.as_ref())
+        .position(|channel| Some(channel.id()) == self.info.cur_channel_id.as_ref())
         .map(|idx| {
           if idx == 0 {
             *self.channels[1].id()
@@ -225,46 +283,21 @@ impl AppData {
             *self.channels[idx - 1].id()
           }
         });
-      self.cur_channel_id = cur_channel_id;
+      self.info.as_mut().set_cur_channel_id(cur_channel_id);
     }
 
     self.channels.retain(|channel| channel.id() != channel_id);
   }
-
-  pub fn cfg(&self) -> &AppCfg { &self.cfg }
-
-  pub fn cfg_mut(&mut self) -> &mut AppCfg { &mut self.cfg }
-
-  pub fn def_bot(&self) -> &Bot {
-    self
-      .bots
-      .iter()
-      .find(|bot| bot.id() == self.cfg.def_bot_id())
-      .expect("default bot not found")
-  }
-
-  pub fn local_state(&self) -> &LocalState { &self.local_state }
-
-  pub fn local_state_mut(&mut self) -> &mut LocalState { &mut self.local_state }
-
-  pub fn need_login(&self) -> bool { self.cfg.has_official_server && self.user.is_none() }
 }
 
 #[derive(Debug, Default)]
 pub struct AppCfg {
   proxy: Option<String>,
   def_bot_id: Uuid,
-  has_official_server: bool,
 }
 
 impl AppCfg {
-  pub fn new(proxy: Option<String>, def_bot_id: Uuid, has_official_server: bool) -> Self {
-    Self {
-      proxy,
-      def_bot_id,
-      has_official_server,
-    }
-  }
+  pub fn new(proxy: Option<String>, def_bot_id: Uuid) -> Self { Self { proxy, def_bot_id } }
 
   #[inline]
   pub fn proxy(&self) -> Option<&str> { self.proxy.as_deref() }
@@ -274,7 +307,4 @@ impl AppCfg {
 
   #[inline]
   pub fn def_bot_id(&self) -> &Uuid { &self.def_bot_id }
-
-  #[inline]
-  pub fn has_official_server(&self) -> bool { self.has_official_server }
 }
