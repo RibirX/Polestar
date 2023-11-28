@@ -120,9 +120,10 @@ pub fn w_msg_onboarding() -> impl WidgetBuilder {
       @MsgOnboarding {
         text: "Welcome to Polestar!".to_owned(),
         @Link {
-          url: "",
+          cursor: CursorIcon::Pointer,
+          url: "https://www.polestarchat.com/",
           @Text {
-            text: "https://polestar.app".to_owned()
+            text: "polestarchat.com".to_owned()
           }
         }
       }
