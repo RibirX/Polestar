@@ -23,11 +23,24 @@ where
       },
     };
 
-    watch!(($channel.msgs().len(), $channel.app_info().map(|info| info.cur_channel_id().map(|id| *id))))
+    let scroll_to_bottom = move || {
+      let _ = $scrollable_container.write();
+      let scrollable_container = scrollable_container.clone_writer();
+      watch!($content_constrained_box.layout_height())
+        .distinct_until_changed()
+        .take(1)
+        .subscribe(move |layout_height| {
+          let mut scrollable_container = $scrollable_container.write();
+          scrollable_container.offset = -layout_height;
+        });
+    };
+
+    scroll_to_bottom();
+
+    watch!($channel.msgs().len())
       .distinct_until_changed()
       .subscribe(move |_| {
-        let mut scrollable_container = $scrollable_container.write();
-        scrollable_container.offset = -$content_constrained_box.layout_height();
+        scroll_to_bottom();
       });
 
     @ConstrainedBox {
@@ -350,6 +363,7 @@ fn w_msg_thumbnail(text: String) -> impl WidgetBuilder {
       background: Color::from_u32(WHITE),
       @Text {
         text,
+        overflow: Overflow::AutoWrap,
         text_style: TypographyTheme::of(ctx!()).body_large.text.clone()
       }
     }
