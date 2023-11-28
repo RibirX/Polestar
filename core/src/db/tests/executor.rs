@@ -26,6 +26,7 @@ fn add_channel_test() {
     "test".to_owned(),
     Some("test channel".to_owned()),
     ChannelCfg::default(),
+    None,
     Some(NonNull::from(&*persistence_db)),
   );
   persistence_db
@@ -37,6 +38,7 @@ fn add_channel_test() {
     "test 2".to_owned(),
     Some("test channel 2".to_owned()),
     ChannelCfg::default(),
+    None,
     Some(NonNull::from(&*persistence_db)),
   );
   persistence_db
@@ -66,6 +68,7 @@ fn remove_channel_test() {
     "test".to_owned(),
     Some("test channel".to_owned()),
     ChannelCfg::default(),
+    None,
     Some(NonNull::from(&*persistence_db)),
   );
   persistence_db
@@ -77,6 +80,7 @@ fn remove_channel_test() {
     "test 2".to_owned(),
     Some("test channel 2".to_owned()),
     ChannelCfg::default(),
+    None,
     Some(NonNull::from(&*persistence_db)),
   );
   persistence_db
@@ -117,6 +121,7 @@ fn update_channel_test() {
     "test".to_owned(),
     Some("test channel".to_owned()),
     ChannelCfg::default(),
+    None,
     Some(NonNull::from(&*persistence_db)),
   );
   persistence_db
@@ -173,6 +178,7 @@ fn add_msg_test() {
     "test".to_owned(),
     Some("test channel".to_owned()),
     ChannelCfg::default(),
+    None,
     Some(NonNull::from(&*persistence_db)),
   );
   persistence_db
@@ -220,6 +226,7 @@ fn update_msg_test() {
     "test".to_owned(),
     Some("test channel".to_owned()),
     ChannelCfg::default(),
+    None,
     Some(NonNull::from(&*persistence_db)),
   );
   persistence_db
@@ -281,6 +288,7 @@ fn query_msgs_by_channel_id_test() {
     "test".to_owned(),
     Some("test channel".to_owned()),
     ChannelCfg::default(),
+    None,
     Some(NonNull::from(&*persistence_db)),
   );
   persistence_db

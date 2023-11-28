@@ -1,4 +1,5 @@
 use std::marker::PhantomPinned;
+use std::ops::DerefMut;
 use std::pin::Pin;
 use std::time::Duration;
 

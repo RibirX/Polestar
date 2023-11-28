@@ -69,6 +69,7 @@ pub async fn query_channel_by_id(pool: &DbPool, id: &Uuid) -> Result<Channel, Po
     row.get(2),
     serde_json::from_str(row.get(3))?,
     None,
+    None,
   );
 
   log::info!("query channel result: {:?}", channel);
@@ -115,6 +116,7 @@ pub async fn query_channels(pool: &DbPool) -> Result<Vec<Channel>, PolestarError
       row.get(1),
       row.get(2),
       serde_json::from_str(row.get(3))?,
+      None,
       None,
     );
 

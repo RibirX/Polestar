@@ -26,11 +26,11 @@ pub struct AppGUI {
 impl AppGUI {
   fn new(data: AppData) -> Self {
     let quick_launcher = data
-      .local_state()
+      .info()
       .quick_launcher_id()
-      .and_then(|id| data.get_channel(&id).map(|_| QuickLauncher::new(id)));
+      .and_then(|id| data.get_channel(id).map(|_| QuickLauncher::new(*id)));
 
-    let cur_router_path = if data.need_login() {
+    let cur_router_path = if data.info().need_login() {
       "/login".to_owned()
     } else {
       "/home/chat".to_owned()
@@ -190,7 +190,8 @@ fn gen_handler(app: impl StateWriter<Value = AppGUI>) -> impl for<'a> FnMut(&'a 
           let user_data_path = polestar_core::user_data_path(&uid.to_string());
           polestar_core::create_if_not_exist_dir(user_data_path);
 
-          app.write().data.local_state_mut().set_uid(Some(uid));
+          // TODO: move app info
+          // app.write().data.local_state_mut().set_uid(Some(uid));
 
           let _ = polestar_core::write_current_user(&uid.to_string());
 
@@ -200,7 +201,7 @@ fn gen_handler(app: impl StateWriter<Value = AppGUI>) -> impl for<'a> FnMut(&'a 
             .token(token)
             .build()
             .expect("Failed to build user");
-          app.write().data.set_user(Some(user));
+          app.write().data.info_mut().set_user(Some(user));
 
           app.write().navigate_to("/home/chat");
 

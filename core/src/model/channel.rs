@@ -5,7 +5,7 @@ use uuid::Uuid;
 
 use crate::db::pool::PersistenceDB;
 
-use super::msg::Msg;
+use super::{msg::Msg, AppInfo};
 
 pub type ChannelId = Uuid;
 
@@ -16,6 +16,8 @@ pub struct Channel {
   desc: Option<String>,
   cfg: ChannelCfg,
   msgs_coll: MsgColl,
+  #[serde(skip)]
+  app_info: Option<NonNull<AppInfo>>,
   #[serde(skip)]
   db: Option<NonNull<PersistenceDB>>,
 }
@@ -49,6 +51,7 @@ impl Channel {
     name: String,
     desc: Option<String>,
     cfg: ChannelCfg,
+    app_info: Option<NonNull<AppInfo>>,
     db: Option<NonNull<PersistenceDB>>,
   ) -> Self {
     Self {
@@ -57,12 +60,20 @@ impl Channel {
       desc,
       cfg,
       msgs_coll: MsgColl::default(),
+      app_info,
       db,
     }
   }
 
   #[inline]
   pub fn set_db(&mut self, db: NonNull<PersistenceDB>) { self.db = Some(db); }
+
+  #[inline]
+  pub fn set_app_info(&mut self, app_info: NonNull<AppInfo>) { self.app_info = Some(app_info); }
+
+  pub fn app_info(&self) -> Option<&AppInfo> {
+    self.app_info.map(|app_info| unsafe { app_info.as_ref() })
+  }
 
   #[inline]
   pub fn id(&self) -> &ChannelId { &self.id }

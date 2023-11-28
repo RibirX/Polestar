@@ -66,9 +66,9 @@ where
   let app = channel.origin_writer().clone_writer();
   fn_widget! {
     let mut item = @ListItem {};
-    let support_text = $channel.desc().map(|desc| {
-      @SupportingText(Label::new(desc.to_owned()))
-    });
+    // let support_text = $channel.desc().map(|desc| {
+    //   @SupportingText(Label::new(desc.to_owned()))
+    // });
 
     @$item {
       @Leading {
@@ -76,9 +76,10 @@ where
           let channel_state = $channel;
           let app_state = $app;
           let channel_def_bot_id = channel_state.cfg().def_bot_id();
-          let bot_id = *(channel_def_bot_id.unwrap_or_else(|| app_state.data.cfg().def_bot_id()));
+          let bot_id = *(channel_def_bot_id.unwrap_or_else(|| app_state.data.info().cfg().def_bot_id()));
           let avatar = app_state
             .data
+            .info()
             .bots()
             .iter()
             .find(|bot| *bot.id() == bot_id)

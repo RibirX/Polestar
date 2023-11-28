@@ -18,10 +18,7 @@ pub fn create_quick_launcher(app: impl StateWriter<Value = AppGUI>) {
   if app.read().quick_launcher.is_none() {
     let mut app = app.write();
     let channel_id = app.data.new_channel("Quick Launcher".to_owned(), None);
-    app
-      .data
-      .local_state_mut()
-      .set_quick_launcher_id(Some(channel_id));
+    app.data.info_mut().set_quick_launcher_id(Some(channel_id));
     let quick_launcher = QuickLauncher::new(channel_id);
     app.quick_launcher = Some(quick_launcher);
   }
@@ -36,10 +33,7 @@ pub mod launcher {
   use crate::{
     style::{COMMON_RADIUS, GAINSBORO_DFDFDF_FF, WHITE},
     theme::polestar_svg,
-    widgets::{
-      app::AppExtraWidgets,
-      common::{w_avatar, BotList, IconButton},
-    },
+    widgets::common::{w_avatar, BotList, IconButton},
     window::WindowInfo,
     WINDOW_MGR,
   };
@@ -116,7 +110,7 @@ pub mod launcher {
   fn w_quick_launcher_editor(app: impl StateWriter<Value = AppGUI>) -> impl WidgetBuilder {
     fn_widget! {
       let bot_list = @BotList {
-        bots: $app.data.bots_rc(),
+        bots: $app.data.info().bots_rc(),
         visible: pipe! {
           $app.quick_launcher.as_ref().map(|quick_launcher| {
             quick_launcher.selected_bot_id.is_none() && quick_launcher.msg.is_none()
@@ -234,7 +228,7 @@ pub mod launcher {
                   id.and_then(move |id| {
                     set_quick_launcher_size(QUICK_LAUNCHER_WND_SELECTED_BOT_SIZE);
                     let app_ref = $app;
-                    let bot = app_ref.data.bots().iter().find(|bot| bot.id() == &id);
+                    let bot = app_ref.data.info().bots().iter().find(|bot| bot.id() == &id);
                     bot.map(|bot| {
                       w_avatar(bot.avatar().clone())
                     })
@@ -407,14 +401,7 @@ pub mod launcher {
   use crate::widgets::app::AppGUI;
   use ribir::prelude::*;
 
-  pub fn create_wnd<S>(quick_launcher: S)
-  where
-    S: StateWriter<Value = QuickLauncher>,
-    S::OriginWriter: StateWriter<Value = AppGUI>,
-    <S::Writer as StateWriter>::OriginWriter: StateWriter<Value = AppGUI>,
-    <<S::Writer as StateWriter>::Writer as StateWriter>::OriginWriter: StateWriter<Value = AppGUI>,
-  {
-  }
+  pub fn create_wnd(app: impl StateWriter<Value = AppGUI>) {}
 
   pub fn hide_quick_launcher(app: impl StateWriter<Value = AppGUI>, is_need_active: bool) {}
 }

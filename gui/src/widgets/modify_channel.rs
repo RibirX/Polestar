@@ -92,7 +92,7 @@ pub fn w_modify_channel_modal(
     let app_writer_confirm_ref = app.clone_writer();
 
     let bot_list = @BotList {
-      bots: $app.data.bots_rc(),
+      bots: $app.data.info().bots_rc(),
     };
 
     let mut selected_bot_box = @LayoutBox {};
@@ -162,7 +162,7 @@ pub fn w_modify_channel_modal(
             @ {
               pipe! {
                 let app_ref = $app;
-                let bot = app_ref.data.get_bot_or_default(channel_def_bot_id);
+                let bot = app_ref.data.info().get_bot_or_default(channel_def_bot_id);
                 @ListItem {
                   on_tap: move |e| {
                     if !$channel_state.bot_list_visible {

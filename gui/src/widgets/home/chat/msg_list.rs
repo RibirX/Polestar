@@ -5,7 +5,6 @@ use ribir::prelude::*;
 use crate::style::decorator::channel::message_style;
 use crate::style::{GAINSBORO, WHITE};
 use crate::theme::polestar_svg;
-use crate::widgets::app::AppGUI;
 use crate::widgets::common::IconButton;
 
 use super::onboarding::w_msg_onboarding;
@@ -17,14 +16,24 @@ where
   fn_widget! {
     let scrollable_container = @VScrollBar {};
 
+    let mut content_constrained_box = @ConstrainedBox {
+      clamp: BoxClamp {
+        min: Size::new(500., 0.),
+        max: Size::new(800., f32::INFINITY),
+      },
+    };
+
+    watch!(($channel.msgs().len(), $channel.app_info().map(|info| info.cur_channel_id().map(|id| *id))))
+      .distinct_until_changed()
+      .subscribe(move |_| {
+        let mut scrollable_container = $scrollable_container.write();
+        scrollable_container.offset = -$content_constrained_box.layout_height();
+      });
+
     @ConstrainedBox {
       clamp: BoxClamp::EXPAND_BOTH,
       @$scrollable_container {
-        @ConstrainedBox {
-          clamp: BoxClamp {
-            min: Size::new(500., 0.),
-            max: Size::new(800., f32::INFINITY),
-          },
+        @$content_constrained_box {
           @Column {
             padding: EdgeInsets::all(16.),
             item_gap: 16.,
@@ -114,6 +123,8 @@ where
   S::OriginReader: StateReader<Value = Channel>,
   R: StateReader<Value = Channel>,
   W: StateWriter<Value = Channel>,
+  <S::Writer as StateWriter>::OriginWriter: StateWriter<Value = Channel>,
+  <<S::Writer as StateWriter>::Writer as StateWriter>::OriginWriter: StateWriter<Value = Channel>,
 {
   let channel = msg.origin_writer().clone_writer();
   fn_widget! {
@@ -217,8 +228,11 @@ where
           }
           @Column {
             @ {
-              $msg.role().bot().map(move |bot_id| {
-                @Text { text: "Bot name" }
+              $msg.role().bot().and_then(move |bot_id| {
+                $channel.app_info().map(|info| {
+                  let bot = info.get_bot_or_default(Some(*bot_id));
+                  @Text { text: bot.name().to_owned() }
+                })
               })
             }
             @ConstrainedBox {
@@ -227,34 +241,37 @@ where
                 max: Size::new(560., f32::INFINITY),
               },
               @ {
-                let default_txt = String::new();
-                // TODO: support Image Type.
-                let text = $msg
-                  .cur_cont_ref()
-                  .text()
-                  .unwrap_or_else(|| &default_txt).to_owned();
-                let msg2 = msg.clone_writer();
-                message_style(
-                  @Column {
-                    @ { w_msg_quote(msg2) }
-                    @ {
-                      let msg2 = msg.clone_writer();
-                      pipe! {
-                        ($msg.cont_list().len() > 1).then(|| {
-                          w_msg_multi_rst(msg2.clone_reader())
-                        })
+                pipe!($msg.cur_idx()).map(move |_| {
+                  let _msg_capture = || $msg.write();
+                  let default_txt = String::new();
+                  // TODO: support Image Type.
+                  let text = $msg
+                    .cur_cont_ref()
+                    .text()
+                    .unwrap_or_else(|| &default_txt).to_owned();
+                  let msg2 = msg.clone_writer();
+                  message_style(
+                    @Column {
+                      @ { w_msg_quote(msg2) }
+                      @ {
+                        let msg2 = msg.clone_writer();
+                        pipe! {
+                          ($msg.cont_list().len() > 1).then(|| {
+                            w_msg_multi_rst(msg2.clone_writer())
+                          })
+                        }
                       }
-                    }
-                    @TextSelectable {
-                      @Text {
-                        text,
-                        overflow: Overflow::AutoWrap,
-                        text_style: TypographyTheme::of(ctx!()).body_large.text.clone()
+                      @TextSelectable {
+                        @Text {
+                          text,
+                          overflow: Overflow::AutoWrap,
+                          text_style: TypographyTheme::of(ctx!()).body_large.text.clone()
+                        }
                       }
-                    }
-                  }.widget_build(ctx!()),
-                  *$msg.role()
-                )
+                    }.widget_build(ctx!()),
+                    *$msg.role()
+                  )
+                })
               }
             }
           }
@@ -289,11 +306,12 @@ where
   })
 }
 
-fn w_msg_multi_rst(msg: impl StateReader<Value = Msg>) -> impl WidgetBuilder {
+fn w_msg_multi_rst(msg: impl StateWriter<Value = Msg>) -> impl WidgetBuilder {
   fn_widget! {
     let scrollable_widget = @ScrollableWidget {
       scrollable: Scrollable::X,
     };
+    let thumbnail_msg = msg.clone_writer();
     @Row {
       @Visibility {
         @Void {}
@@ -304,10 +322,14 @@ fn w_msg_multi_rst(msg: impl StateReader<Value = Msg>) -> impl WidgetBuilder {
           @Row {
             item_gap: 8.,
             @ {
-              $msg.cont_list().iter().map(|cont| {
+              $msg.cont_list().iter().enumerate().map(|(idx, cont)| {
                 let text = cont.text().map(|s| s.to_owned()).unwrap_or_else(|| String::new());
-                @ {
-                  w_msg_thumbnail(text)
+                let w_thumbnail = w_msg_thumbnail(text);
+                @$w_thumbnail {
+                  on_tap: move |_| {
+                    let mut msg_write = $thumbnail_msg.write();
+                    msg_write.switch_cont(idx);
+                  }
                 }
               }).collect::<Vec<_>>()
             }
