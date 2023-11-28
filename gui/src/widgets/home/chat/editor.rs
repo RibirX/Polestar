@@ -102,6 +102,11 @@ fn send_msg(
   def_bot_id: Uuid,
 ) {
   let text = text_area.display_text();
+
+  if text.is_empty() {
+    return;
+  }
+
   let user_msg = Msg::new_user_text(&text, MsgMeta::default());
   let user_msg_id = *user_msg.id();
   channel.write().add_msg(user_msg);
