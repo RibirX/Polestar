@@ -5,7 +5,7 @@ use uuid::Uuid;
 
 use crate::db::pool::PersistenceDB;
 
-use super::{msg::Msg, AppInfo};
+use super::{msg::Msg, AppInfo, Bot};
 
 pub type ChannelId = Uuid;
 
@@ -117,6 +117,8 @@ impl Channel {
       .iter_mut()
       .find(|msg| msg.id() == msg_id)
   }
+
+  pub fn bots(&self) -> Option<&Vec<Bot>> { self.app_info().map(|info| info.bots()) }
 }
 
 #[derive(Debug, Deserialize, Serialize, Default, Clone)]

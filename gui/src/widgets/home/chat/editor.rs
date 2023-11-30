@@ -1,4 +1,4 @@
-use crate::widgets::common::BotList;
+use crate::{req::query_open_ai, widgets::common::BotList};
 use polestar_core::{
   model::{Bot, Channel, Msg, MsgAction, MsgBody, MsgCont, MsgMeta, MsgRole},
   service::open_ai::mock_stream_string,
@@ -113,19 +113,44 @@ fn send_msg(
 
   let mut bot_msg = Msg::new_bot_text(bot_id, MsgMeta::reply(user_msg_id));
   let cont = bot_msg.cur_cont_mut();
-  cont.action(MsgAction::Receiving(MsgBody::Text(Some(
-    "Hello, I'm Ribir!".to_string(),
-  ))));
 
   let id = *bot_msg.id();
+  let idx = bot_msg.cur_idx();
   channel.write().add_msg(bot_msg);
 
-  if let Some(msg) = channel.write().msg_mut(&id) {
-    let cur_cont = msg.cur_cont_mut();
-    mock_stream_string("", |delta| {
-      cur_cont.action(MsgAction::Receiving(MsgBody::Text(Some(delta))));
-    });
-  }
+  let (url, headers) = {
+    let channel = channel.read();
+    let bot = channel
+      .bots()
+      .and_then(|bots: &Vec<Bot>| bots.iter().find(|bot| bot.id() == &bot_id));
+    bot
+      .map(|bot| {
+        (
+          bot.url().to_string(),
+          bot.headers().try_into().ok().unwrap_or_default(),
+        )
+      })
+      .unwrap_or_default()
+  };
+
+  let _ = AppCtx::spawn_local(async move {
+    if channel.read().msg(&id).is_none() {
+      return;
+    }
+
+    let update_msg = |act| {
+      let mut channel = channel.write();
+      let cur_cont = channel.msg_mut(&id).unwrap().cont_mut(idx);
+      cur_cont.action(act);
+    };
+
+    query_open_ai(url, text, headers, |delta| {
+      update_msg(MsgAction::Receiving(MsgBody::Text(Some(delta))));
+    })
+    .await;
+
+    update_msg(MsgAction::Fulfilled);
+  });
 }
 
 fn select_bot(text_area: &mut MessageEditor, bots: &BotList) {

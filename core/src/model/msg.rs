@@ -38,6 +38,9 @@ impl Msg {
   pub fn cur_cont_mut(&mut self) -> &mut MsgCont { &mut self.cont_list[self.cur_idx as usize] }
 
   #[inline]
+  pub fn cont_mut(&mut self, idx: usize) -> &mut MsgCont { &mut self.cont_list[idx] }
+
+  #[inline]
   pub fn meta(&self) -> &MsgMeta { &self.meta }
 
   #[inline]

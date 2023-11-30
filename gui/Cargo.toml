@@ -8,12 +8,14 @@ description.workspace = true
 
 [dependencies]
 polestar-core = { path = "../core", features = [] }
-ribir = { path = "../../Ribir/ribir", features = ["png"] }
+ribir = { path = "../../Ribir/ribir", features = ["png", "tokio-async"] }
 ribir_algo = { path = "../../Ribir/algo" }
 
 serde.workspace = true
 serde_json.workspace = true
 uuid.workspace = true
+reqwest.workspace = true
+reqwest-eventsource.workspace = true
 
 ahash = "0.8.3"
 once_cell = "1.18.0"
