@@ -1,4 +1,4 @@
-use futures_util::StreamExt;
+use futures_util::{Stream, StreamExt};
 use reqwest::{header::HeaderMap, Method};
 use reqwest_eventsource::{Event, EventSource};
 use serde::{Deserialize, Serialize};
@@ -47,27 +47,35 @@ pub enum Role {
   Function,
 }
 
-// TODO: add msg context
-pub async fn stream_string(content: &str, bot: &Bot, mut delta_op: impl FnMut(String)) {
+pub async fn open_ai_stream(
+  url: String,
+  content: String,
+  header: HeaderMap,
+) -> Result<EventSource, PolestarError> {
   // TODO: model need to be configurable
   let body = format!(
     r#"{{"model":"gpt-3.5-turbo","messages":[{{"role":"user","content":"{}"}}],"stream":true}}"#,
     content
   );
 
-  let headers = bot.headers().try_into().unwrap();
-  let mut stream = req_stream(bot.url(), Method::POST, headers, Some(body.to_owned()))
-    .await
-    .unwrap();
+  req_stream(&url, Method::POST, header, Some(body.to_owned())).await
+}
 
+pub async fn deal_open_ai_stream(
+  stream: &mut (impl Stream<Item = Result<Event, reqwest_eventsource::Error>> + Unpin),
+  mut delta_op: impl FnMut(String),
+) -> Result<String, PolestarError> {
+  let mut answer = String::default();
   loop {
-    let delta = stream_event_source_handler(&mut stream).await;
-    if let Ok(Some(delta)) = delta {
+    let delta = stream_event_source_handler(stream).await?;
+    if let Some(delta) = delta {
+      answer.push_str(delta.as_ref());
       delta_op(delta);
     } else {
       break;
     }
   }
+  Ok(answer)
 }
 
 pub fn mock_stream_string(content: &str, mut delta_op: impl FnMut(String)) {
@@ -90,7 +98,7 @@ pub fn mock_stream_string(content: &str, mut delta_op: impl FnMut(String)) {
 }
 
 async fn stream_event_source_handler(
-  stream: &mut EventSource,
+  stream: &mut (impl Stream<Item = Result<Event, reqwest_eventsource::Error>> + Unpin),
 ) -> Result<Option<String>, PolestarError> {
   let terminated = "[DONE]";
   let chunk_size = 256;
@@ -116,6 +124,10 @@ async fn stream_event_source_handler(
           }
         }
       }
+      Err(reqwest_eventsource::Error::StreamEnded) => match delta.is_empty() {
+        true => return Ok(None),
+        false => return Ok(Some(delta)),
+      },
       Err(e) => {
         return Err(PolestarError::EventSource(e));
       }

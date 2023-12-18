@@ -7,6 +7,7 @@ use window::WindowMgr;
 
 mod hotkey;
 mod oauth;
+mod req;
 mod style;
 mod theme;
 mod widgets;
