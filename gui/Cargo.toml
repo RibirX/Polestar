@@ -7,7 +7,7 @@ description.workspace = true
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-polestar-core = { path = "../core", features = [] }
+polestar-core = { path = "../core", features = ["persistence"] }
 ribir = { path = "../../Ribir/ribir", features = ["png", "tokio-async"] }
 ribir_algo = { path = "../../Ribir/algo" }
 
