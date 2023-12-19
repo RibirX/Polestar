@@ -165,8 +165,28 @@ fn init_db() -> (Option<Pin<Box<PersistenceDB>>>, Vec<Channel>) {
 
   let db = PersistenceDB::connect(init_db(&db_path()), Duration::from_secs(1))
     .expect("Failed to connect db");
+
   let mut channels = db.query_channels().expect("Failed to query channels");
-  let db_pin = Box::pin(db);
+
+  let mut db_pin = Box::pin(db);
+
+  // if channels is empty, create a default channel.
+  if channels.is_empty() {
+    let channel_id = Uuid::new_v4();
+    let channel = Channel::new(
+      channel_id,
+      "Untitled".to_owned(),
+      None,
+      ChannelCfg::default(),
+      None,
+      None,
+    );
+    db_pin
+      .as_mut()
+      .add_persist(ActionPersist::AddChannel { channel: channel.clone() });
+    channels.push(channel);
+  }
+
   let ptr = NonNull::from(&*db_pin);
   channels.iter_mut().for_each(|channel| {
     channel.set_db(ptr);
@@ -178,7 +198,7 @@ fn init_db() -> (Option<Pin<Box<PersistenceDB>>>, Vec<Channel>) {
 fn init_db() -> (Option<Pin<Box<PersistenceDB>>>, Vec<Channel>) {
   use crate::db::executor::channel;
 
-  let channels = serde_json::from_str::<Vec<Channel>>(include_str!(concat!(
+  let mut channels = serde_json::from_str::<Vec<Channel>>(include_str!(concat!(
     env!("CARGO_MANIFEST_DIR"),
     "/..",
     "/gui/channels_mock.json"
