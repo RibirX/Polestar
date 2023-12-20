@@ -109,6 +109,8 @@ impl Channel {
     self.msgs_coll.msgs.iter().find(|msg| msg.id() == msg_id)
   }
 
+  pub fn last_msg(&self) -> Option<&Msg> { self.msgs_coll.msgs.last() }
+
   // this method is used to get a message and update it.
   pub fn msg_mut(&mut self, msg_id: &Uuid) -> Option<&mut Msg> {
     self
