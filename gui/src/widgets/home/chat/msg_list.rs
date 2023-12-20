@@ -153,11 +153,11 @@ where
 
     let msg_ops_anchor = {
       match $msg.role() {
-        MsgRole::User => @RightAnchor {
-          right_anchor: pipe!($row.layout_width() + 4.)
+        MsgRole::User => @RelativeAnchor {
+          anchor: pipe!(Anchor::right($row.layout_width() + 4.))
         },
-        _ => @LeftAnchor {
-          left_anchor: pipe!($row.layout_width() + 4.)
+        _ => @RelativeAnchor {
+          anchor: pipe!(Anchor::left($row.layout_width() + 4.))
         },
       }
     };

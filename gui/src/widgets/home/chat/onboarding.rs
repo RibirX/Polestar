@@ -52,7 +52,7 @@ impl ComposeChild for MsgOnboardingContainer {
       @Row {
         align_items: Align::Start,
         h_align: HAlign::Stretch,
-        left_anchor: 0.,
+        anchor: Anchor::left(0.),
         item_gap: 8.,
         @ { avatar }
         @ { msg }
