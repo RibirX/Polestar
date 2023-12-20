@@ -50,13 +50,13 @@ impl AppGUI {
 
   pub fn navigate_to(&mut self, path: &str) { self.cur_router_path = path.to_owned(); }
 
-  pub fn tooltip(&self) -> &Option<String> { &self.tooltip }
+  pub fn tooltip(&self) -> Option<String> { self.tooltip.clone() }
 
   pub fn set_tooltip(&mut self, tooltip: Option<&str>) {
     self.tooltip = tooltip.map(|s| s.to_owned());
   }
 
-  pub fn modify_channel_id(&self) -> &Option<Uuid> { &self.modify_channel_id }
+  pub fn modify_channel_id(&self) -> Option<&Uuid> { self.modify_channel_id.as_ref() }
 
   pub fn set_modify_channel_id(&mut self, modify_channel_id: Option<Uuid>) {
     self.modify_channel_id = modify_channel_id;
@@ -225,12 +225,10 @@ fn gen_handler(app: impl StateWriter<Value = AppGUI>) -> impl for<'a> FnMut(&'a 
   }
 }
 
-fn w_tooltip(tooltip: &Option<String>) -> Option<impl WidgetBuilder> {
-  tooltip.to_owned().map(|tooltip| {
+fn w_tooltip(content: Option<String>) -> Option<impl WidgetBuilder> {
+  content.map(|content| {
     fn_widget! {
-      @Tooltip {
-        content: tooltip,
-      }
+      @Tooltip { content }
     }
   })
 }
