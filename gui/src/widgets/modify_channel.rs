@@ -59,8 +59,9 @@ struct ChannelState {
 
 pub fn w_modify_channel_modal(
   app: impl StateWriter<Value = AppGUI>,
-  channel_id: Uuid,
+  channel_id: &Uuid,
 ) -> impl WidgetBuilder {
+  let channel_id = *channel_id;
   let channel = app.split_writer(
     move |app| {
       app
