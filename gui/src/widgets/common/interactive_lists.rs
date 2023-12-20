@@ -52,11 +52,11 @@ impl ComposeChild for InteractiveList {
               let highlight = highlight_style(block.widget_build(ctx!()));
               $this.highlight_visible.then(||
                 @$highlight {
-                  top_anchor: pipe!($this.active).map(move |idx| {
+                  anchor: pipe!($this.active).map(move |idx| {
                     if let Some(rect) = &$this.highlight_rect_list.get(idx) {
-                      rect.origin.y
+                      Anchor::top(rect.origin.y)
                     } else {
-                      0.
+                      Anchor::top(0.)
                     }
                   }).value_chain(|s| s.distinct_until_changed().box_it())
                 }

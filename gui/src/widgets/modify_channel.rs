@@ -206,7 +206,7 @@ pub fn w_modify_channel_modal(
           clamp: BoxClamp::fixed_height(120.),
           background: Color::from_u32(WHITE),
           visible: pipe!($channel_state.bot_list_visible),
-          top_anchor: pipe!($channel_state.bot_list_top),
+          anchor: pipe!(Anchor::top($channel_state.bot_list_top)),
           on_tap: move |_| {
             $channel_state.write().bot_list_visible = false;
           },
