@@ -168,6 +168,13 @@ impl Msg {
 
   #[inline]
   pub fn cont_count(&self) -> usize { self.cont_list.len() }
+
+  pub fn cont_size(&self) -> usize {
+    self
+      .cont_list
+      .iter()
+      .fold(0_usize, |acc, cont| acc + cont.cont_size())
+  }
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
@@ -331,6 +338,13 @@ impl MsgCont {
     match &self.body {
       MsgBody::Image(i) => i.as_ref(),
       _ => None,
+    }
+  }
+
+  pub fn cont_size(&self) -> usize {
+    match &self.body {
+      MsgBody::Text(s) => s.as_ref().map(|s| s.len()).unwrap_or_default(),
+      MsgBody::Image(i) => i.as_ref().map(|_| 1_usize).unwrap_or_default(),
     }
   }
 

@@ -37,7 +37,10 @@ where
 
     scroll_to_bottom();
 
-    watch!($channel.msgs().len())
+    watch!((
+      $channel.msgs().len(),
+      $channel.last_msg().map_or(0, |msg| msg.cont_size())
+    ))
       .distinct_until_changed()
       .subscribe(move |_| {
         scroll_to_bottom();
