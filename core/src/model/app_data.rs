@@ -4,7 +4,7 @@ use uuid::Uuid;
 
 use crate::{
   db::{executor::ActionPersist, pool::PersistenceDB},
-  utils,
+  utils, LocalState,
 };
 
 use super::{
@@ -24,11 +24,26 @@ pub struct AppInfo {
 }
 
 impl AppInfo {
+  fn save_local(&self) {
+    if let Some(user) = &self.user {
+      if let Some(uid) = user.uid() {
+        let local_state = LocalState::new(
+          self.cur_channel_id,
+          self.quick_launcher_id,
+          Some(*uid),
+        );
+        utils::write_local_state(&uid.to_string(), &local_state)
+          .expect("Failed to save local state");
+      }
+    }
+  }
+
   pub fn user(&self) -> Option<&User> { self.user.as_ref() }
 
   pub fn set_user(self: Pin<&mut Self>, user: Option<User>) {
     let info = unsafe { self.get_unchecked_mut() };
     info.user = user;
+    info.save_local();
   }
 
   pub fn cur_channel_id(&self) -> Option<&Uuid> { self.cur_channel_id.as_ref() }
@@ -36,6 +51,7 @@ impl AppInfo {
   pub fn set_cur_channel_id(self: Pin<&mut Self>, cur_channel_id: Option<Uuid>) {
     let info = unsafe { self.get_unchecked_mut() };
     info.cur_channel_id = cur_channel_id;
+    info.save_local();
   }
 
   pub fn quick_launcher_id(&self) -> Option<&Uuid> { self.quick_launcher_id.as_ref() }
@@ -43,6 +59,7 @@ impl AppInfo {
   pub fn set_quick_launcher_id(self: Pin<&mut Self>, quick_launcher_id: Option<Uuid>) {
     let info = unsafe { self.get_unchecked_mut() };
     info.quick_launcher_id = quick_launcher_id;
+    info.save_local();
   }
 
   pub fn bots(&self) -> &Vec<Bot> { &self.bots }
