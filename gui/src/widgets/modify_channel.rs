@@ -77,8 +77,6 @@ pub fn w_modify_channel_modal(
     },
   );
 
-  let channel_def_bot_id = channel.read().cfg().def_bot_id().map(|id| *id);
-
   fn_widget! {
     let channel_rename = @Input {};
     $channel_rename.write().set_text($channel.name());
@@ -163,7 +161,7 @@ pub fn w_modify_channel_modal(
             @ {
               pipe! {
                 let app_ref = $app;
-                let bot = app_ref.data.info().get_bot_or_default(channel_def_bot_id);
+                let bot = app_ref.data.info().get_bot_or_default($channel_state.selected_bot);
                 @ListItem {
                   on_tap: move |e| {
                     if !$channel_state.bot_list_visible {
