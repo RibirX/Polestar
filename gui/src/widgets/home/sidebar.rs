@@ -1,4 +1,4 @@
-use polestar_core::open_user_config_folder;
+use polestar_core::{model::ChannelCfg, open_user_config_folder};
 use ribir::prelude::*;
 
 use crate::{
@@ -44,7 +44,7 @@ fn w_sidebar_header(app: impl StateWriter<Value = AppGUI>) -> impl WidgetBuilder
         @IconButton {
           size: IconSize::of(ctx!()).medium,
           on_tap: move |_| {
-            $app.write().data.new_channel("Untitled".to_owned(), None);
+            $app.write().data.new_channel("Untitled".to_owned(), None, ChannelCfg::default());
           },
           @ { svgs::ADD }
         }
@@ -74,7 +74,17 @@ fn w_sidebar_others(app: impl StateWriter<Value = AppGUI>) -> impl WidgetBuilder
       }
       @ListItem {
         on_tap: move |_| {
+          let feedback_id = $app.data.channels().iter().find(|channel| {
+            channel.is_feedback()
+          }).map(|channel| *channel.id());
 
+          if let Some(feedback_id) = feedback_id {
+            $app.write().data.switch_channel(&feedback_id);
+          } else {
+            let id = $app.write().data.new_channel("Feedback".to_owned(), None, ChannelCfg::feedback_cfg());
+            $app.write().data.switch_channel(&id);
+          }
+          $app.write().navigate_to("/home/chat");
         },
         @HeadlineText(Label::new("Feedback"))
       }
