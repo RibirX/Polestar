@@ -56,6 +56,10 @@ pub struct MsgMeta {
 }
 
 impl MsgMeta {
+  pub fn new(quote_id: Option<MsgId>, reply_id: Option<MsgId>) -> Self {
+    Self { quote_id, reply_id }
+  }
+
   pub fn quote(id: MsgId) -> Self { Self { quote_id: Some(id), reply_id: None } }
 
   pub fn reply(id: MsgId) -> Self { Self { quote_id: None, reply_id: Some(id) } }
@@ -325,9 +329,9 @@ impl MsgCont {
 
   pub fn body(&self) -> &MsgBody { &self.body }
 
-  pub fn text(&self) -> Option<&String> {
+  pub fn text(&self) -> Option<&str> {
     match &self.body {
-      MsgBody::Text(s) => s.as_ref(),
+      MsgBody::Text(s) => s.as_deref(),
       _ => None,
     }
   }
