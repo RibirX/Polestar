@@ -1,6 +1,6 @@
 use inquire::Select;
 use polestar_core::{
-  model::{AppData, Msg, MsgAction, MsgBody, MsgCont, MsgMeta, MsgRole},
+  model::{AppData, ChannelCfg, Msg, MsgAction, MsgBody, MsgCont, MsgMeta, MsgRole},
   service::open_ai::{deal_open_ai_stream, open_ai_stream},
 };
 use reedline_repl_rs::{clap::ArgMatches, Result as ReplResult};
@@ -21,7 +21,7 @@ pub fn channel_handler(args: ArgMatches, app_data: &mut AppData) -> ReplResult<O
         .expect("name is required")
         .to_owned();
       let desc = args.get_one::<String>("desc").map(|s| s.to_owned());
-      app_data.new_channel(name, desc);
+      app_data.new_channel(name, desc, ChannelCfg::default());
       Ok(None)
     }
     Some(("remove", _args)) => {

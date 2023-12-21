@@ -178,15 +178,19 @@ where
         match $msg.role() {
           MsgRole::User | MsgRole::Bot(_) => {
             @MsgOps {
-              @MsgOp {
-                cb: Box::new(move || {
-                  *quote_id.write() = Some(*$msg.id())
-                }) as Box<dyn Fn()>,
-                @IconButton {
-                  padding: EdgeInsets::all(4.),
-                  size: IconSize::of(ctx!()).tiny,
-                  @ { polestar_svg::REPLY }
-                }
+              @ {
+                (!$channel.is_feedback()).then(move || {
+                  @MsgOp {
+                    cb: Box::new(move || {
+                      *quote_id.write() = Some(*$msg.id())
+                    }) as Box<dyn Fn()>,
+                    @IconButton {
+                      padding: EdgeInsets::all(4.),
+                      size: IconSize::of(ctx!()).tiny,
+                      @ { polestar_svg::REPLY }
+                    }
+                  }
+                })
               }
               @MsgOp {
                 cb: Box::new(move || {
@@ -207,8 +211,6 @@ where
                 ($msg.role().is_bot()).then(move || {
                   @MsgOp {
                     cb: Box::new(move || {
-                      // TODO: send msg
-                      // receive msg
                       let cont = MsgCont::init_text();
                       let mut msg_write = $retry_msg.write();
                       msg_write.add_cont(cont);

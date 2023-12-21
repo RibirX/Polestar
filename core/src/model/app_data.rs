@@ -272,12 +272,12 @@ impl AppData {
       .find(|channel| Some(channel.id()) == self.info.cur_channel_id.as_ref())
   }
 
-  pub fn new_channel(&mut self, name: String, desc: Option<String>) -> Uuid {
+  pub fn new_channel(&mut self, name: String, desc: Option<String>, cfg: ChannelCfg) -> Uuid {
     let channel_id = Uuid::new_v4();
     let db = self.db.as_mut().map(|db| NonNull::from(&**db));
     let info = &mut self.info;
     let app_info = Some(NonNull::from(&**info));
-    let channel = Channel::new(channel_id, name, desc, ChannelCfg::default(), app_info, db);
+    let channel = Channel::new(channel_id, name, desc, cfg, app_info, db);
 
     let p_channel = channel.clone();
 
@@ -300,7 +300,7 @@ impl AppData {
 
     // guard channels is empty after remove channel
     if self.channels.len() == 1 {
-      self.new_channel("Untitled".to_owned(), None);
+      self.new_channel("Untitled".to_owned(), None, ChannelCfg::default());
     }
 
     // if current channel is removed, switch to nearest channel.

@@ -24,20 +24,29 @@ pub fn w_editor(
     let send_msg_by_icon_quote_id = quote_id.clone_writer();
     let send_icon = @IconButton {
       on_tap: move |_| {
-        send_msg(&mut $text_area.write(), send_msg_by_icon_channel.clone_writer(), def_bot_id, send_msg_by_icon_quote_id.clone_writer());
+        if $channel.is_feedback() {
+          send_feedback(&mut $text_area.write(), send_msg_by_icon_channel.clone_writer());
+        } else {
+          send_msg(&mut $text_area.write(), send_msg_by_icon_channel.clone_writer(), def_bot_id, send_msg_by_icon_quote_id.clone_writer());
+        }
+        $text_area.write().reset();
       },
       @ { polestar_svg::SEND }
     };
-    watch!($text_area.bot_hint())
-      .distinct_until_changed()
-      .subscribe(move |hint| {
-        if let Some(mut hint) = hint {
-          $bots.write().set_filter(hint.split_off(1));
-          $bots.write().visible = $bots.get_bots().count() > 0;
-        } else {
-          $bots.write().visible = false;
-        }
-      });
+
+    if !$channel.is_feedback() {
+      watch!($text_area.bot_hint())
+        .distinct_until_changed()
+        .subscribe(move |hint| {
+          if let Some(mut hint) = hint {
+            $bots.write().set_filter(hint.split_off(1));
+            $bots.write().visible = $bots.get_bots().count() > 0;
+          } else {
+            $bots.write().visible = false;
+          }
+        });
+    }
+
     @Column {
       on_key_down_capture: move |e| {
         if $bots.visible {
@@ -59,7 +68,12 @@ pub fn w_editor(
             select_bot(&mut $text_area.write(), &$bots);
             e.stop_propagation();
           } else if !e.with_shift_key() {
-            send_msg(&mut $text_area.write(), send_msg_by_char_channel.clone_writer(), def_bot_id, send_msg_by_char_quote_id.clone_writer());
+            if $channel.is_feedback() {
+              send_feedback(&mut $text_area.write(), send_msg_by_char_channel.clone_writer());
+            } else {
+              send_msg(&mut $text_area.write(), send_msg_by_char_channel.clone_writer(), def_bot_id, send_msg_by_char_quote_id.clone_writer());
+            }
+            $text_area.write().reset();
             e.stop_propagation();
           }
         }
@@ -117,6 +131,23 @@ pub fn w_editor(
   }
 }
 
+fn send_feedback(
+  text_area: &mut MessageEditor,
+  channel: impl StateWriter<Value = Channel>,
+) {
+  let text = text_area.display_text();
+
+  if text.is_empty() {
+    return;
+  }
+
+  let user_msg = Msg::new_user_text(&text, MsgMeta::default());
+  channel.write().add_msg(user_msg);
+
+  let system_msg = Msg::new_system_text("Thanks for your feedback!");
+  channel.write().add_msg(system_msg);
+}
+
 fn send_msg(
   text_area: &mut MessageEditor,
   channel: impl StateWriter<Value = Channel>,
@@ -132,15 +163,13 @@ fn send_msg(
   let user_msg = Msg::new_user_text(&text, MsgMeta::default());
   let user_msg_id = *user_msg.id();
   channel.write().add_msg(user_msg);
-
   
   let bots = text_area.edit_message.related_bot();
   let bot_id = bots.last().map_or(def_bot_id, |id| *id);
   
   let msg_quote_id = quote_id.read().clone();
   let bot_msg = Msg::new_bot_text(bot_id, MsgMeta::new(msg_quote_id, Some(user_msg_id)));
-  
-  text_area.reset();
+
   *quote_id.write() = None;
 
   let id = *bot_msg.id();

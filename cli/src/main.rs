@@ -1,5 +1,5 @@
 use handler::{channel_handler, msg_handler};
-use polestar_core::model::init_app_data;
+use polestar_core::model::{init_app_data, ChannelCfg};
 use reedline_repl_rs::clap::{Arg, Command};
 use reedline_repl_rs::{Repl, Result as ReplResult};
 
@@ -11,7 +11,7 @@ static APP_DESC: &str = env!("CARGO_PKG_DESCRIPTION");
 
 fn main() -> ReplResult<()> {
   let mut app_data = init_app_data();
-  app_data.new_channel("quick launcher".to_owned(), None);
+  app_data.new_channel("quick launcher".to_owned(), None, ChannelCfg::default());
   let mut repl = Repl::new(app_data)
     .with_name(APP_NAME)
     .with_version(&format!("v{}", VERSION))

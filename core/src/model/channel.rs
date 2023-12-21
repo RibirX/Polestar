@@ -121,16 +121,26 @@ impl Channel {
   }
 
   pub fn bots(&self) -> Option<&Vec<Bot>> { self.app_info().map(|info| info.bots()) }
+
+  pub fn is_feedback(&self) -> bool { self.cfg.kind == ChannelKind::Feedback }
 }
 
 #[derive(Debug, Deserialize, Serialize, Default, Clone)]
 pub struct ChannelCfg {
   mode: ChannelMode,
+  kind: ChannelKind,
   // if channel default bot id is none, it means this channel use global default bot id.
   def_bot_id: Option<Uuid>,
 }
 
 impl ChannelCfg {
+  pub fn feedback_cfg() -> Self {
+    Self {
+      kind: ChannelKind::Feedback,
+      ..<_>::default()
+    }
+  }
+
   #[inline]
   pub fn mode(&self) -> ChannelMode { self.mode }
 
@@ -142,6 +152,15 @@ impl ChannelCfg {
 
   #[inline]
   pub fn set_def_bot_id(&mut self, def_bot_id: Option<Uuid>) { self.def_bot_id = def_bot_id; }
+}
+
+#[derive(Debug, Deserialize, Serialize, PartialEq, Eq, Clone, Copy, Default)]
+pub enum ChannelKind {
+  #[default]
+  #[serde(rename = "chat")]
+  Chat,
+  #[serde(rename = "feedback")]
+  Feedback,
 }
 
 #[derive(Debug, Deserialize, Serialize, PartialEq, Eq, Clone, Copy, Default)]
