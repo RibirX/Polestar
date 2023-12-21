@@ -7,6 +7,7 @@ use window::WindowMgr;
 
 mod hotkey;
 mod oauth;
+mod platform;
 mod req;
 mod style;
 mod theme;
@@ -61,6 +62,10 @@ pub static WINDOW_MGR: Lazy<Mutex<WindowMgr>> = Lazy::new(|| Mutex::new(WindowMg
 pub static TIMER: Lazy<Mutex<Instant>> = Lazy::new(|| Mutex::new(Instant::now()));
 
 fn main() {
+  if !platform::app_init_hook() {
+    return;
+  }
+
   local_server_listen();
   unsafe {
     AppCtx::set_app_theme(material::purple::light());
@@ -77,6 +82,8 @@ fn main() {
 
   WINDOW_MGR.lock().unwrap().set_main_window(wnd.id());
   *TIMER.lock().unwrap() = Instant::now();
+
+  platform::app_run_before_hook();
 
   App::exec();
 }

@@ -1,6 +1,7 @@
 use ribir::prelude::*;
 
 use crate::{
+  platform,
   style::{COMMON_RADIUS, WHITE},
   widgets::app::AppGUI,
 };
@@ -32,9 +33,13 @@ pub fn w_settings(app: impl StateWriter<Value = AppGUI>) -> impl WidgetBuilder {
               @ { w_subscription() }
             }
           }
-          @SettingItem {
-            name: "General Settings",
-            @ { w_general_settings() }
+          @ {
+            (!platform::has_permission()).then(|| {
+              @SettingItem {
+                name: "General Settings",
+                @ { w_general_settings() }
+              }
+            })
           }
           @SettingItem {
             name: "Network Settings",

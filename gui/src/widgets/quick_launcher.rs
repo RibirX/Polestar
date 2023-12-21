@@ -299,8 +299,7 @@ pub mod launcher {
             @Row {
               item_gap: 4.,
               align_items: Align::Center,
-              right_anchor: 15.,
-              bottom_anchor: 15.,
+              anchor: Anchor::right_bottom(15., 15.),
               @Text {
                 text: "Copy to clipboard",
               }

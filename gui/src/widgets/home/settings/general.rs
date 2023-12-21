@@ -1,6 +1,6 @@
 use ribir::prelude::*;
 
-use crate::style::BLACK;
+use crate::{platform, style::BLACK};
 
 pub(super) fn w_general_settings() -> impl WidgetBuilder {
   fn_widget! {
@@ -23,6 +23,9 @@ pub(super) fn w_general_settings() -> impl WidgetBuilder {
       @FilledButton {
         cursor: CursorIcon::Pointer,
         color: Color::from_u32(BLACK),
+        on_tap: move |_| {
+          platform::permission_prompt();
+        },
         @ { Label::new("Allow Permission") }
       }
     }
