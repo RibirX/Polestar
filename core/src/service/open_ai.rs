@@ -78,7 +78,7 @@ pub async fn deal_open_ai_stream(
   Ok(answer)
 }
 
-pub fn mock_stream_string(content: &str, mut delta_op: impl FnMut(String)) {
+pub fn mock_stream_string(_content: &str, mut delta_op: impl FnMut(String)) {
   use rand::{distributions::Alphanumeric, Rng};
 
   let mut count = 0;

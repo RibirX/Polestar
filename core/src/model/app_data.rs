@@ -27,11 +27,7 @@ impl AppInfo {
   fn save_local(&self) {
     if let Some(user) = &self.user {
       if let Some(uid) = user.uid() {
-        let local_state = LocalState::new(
-          self.cur_channel_id,
-          self.quick_launcher_id,
-          Some(*uid),
-        );
+        let local_state = LocalState::new(self.cur_channel_id, self.quick_launcher_id, Some(*uid));
         utils::write_local_state(&uid.to_string(), &local_state)
           .expect("Failed to save local state");
       }
@@ -297,10 +293,10 @@ impl AppData {
   }
 
   pub fn remove_channel(&mut self, channel_id: &Uuid) {
-    self.db.as_mut().map(|db| {
+    if let Some(db) = self.db.as_mut() {
       db.as_mut()
         .add_persist(ActionPersist::RemoveChannel { channel_id: *channel_id })
-    });
+    }
 
     // guard channels is empty after remove channel
     if self.channels.len() == 1 {

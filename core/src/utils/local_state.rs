@@ -1,8 +1,6 @@
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use super::write_local_state;
-
 #[derive(Serialize, Deserialize, Debug, Default)]
 pub struct LocalState {
   cur_channel_id: Option<Uuid>,
