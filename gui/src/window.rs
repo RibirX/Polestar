@@ -5,14 +5,13 @@ pub struct WindowInfo {
   pub focused: Option<bool>,
 }
 
+#[derive(Default)]
 pub struct WindowMgr {
   pub main: Option<WindowInfo>,
   pub quick_launcher: Option<WindowInfo>,
 }
 
 impl WindowMgr {
-  pub fn new() -> Self { Self { main: None, quick_launcher: None } }
-
   pub fn set_main_window(&mut self, id: WindowId) {
     self.main = Some(WindowInfo { id, focused: None });
   }

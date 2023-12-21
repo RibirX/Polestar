@@ -97,11 +97,14 @@ pub fn msg_handler(args: ArgMatches, app_data: &mut AppData) -> ReplResult<Optio
         if let Ok(mut stream) =
           open_ai_stream(url, content.expect("content is required").clone(), headers).await
         {
-          if let Err(e) = deal_open_ai_stream(&mut stream, |s| print!("{}", s)).await {
-            println!("\nerror: {:?}", e);
-          } else {
-            println!("")
-          }
+          let res = deal_open_ai_stream(&mut stream, |s| print!("{}", s)).await;
+          match res {
+            Ok(s) => {
+              ret_msg = s;
+              println!();
+            }
+            Err(e) => println!("\nerror: {:?}", e),
+          };
         }
       });
 

@@ -1,8 +1,5 @@
 use crate::{req::query_open_ai, widgets::common::BotList};
-use polestar_core::{
-  model::{Bot, Channel, Msg, MsgAction, MsgBody, MsgCont, MsgMeta, MsgRole},
-  service::open_ai::mock_stream_string,
-};
+use polestar_core::model::{Bot, Channel, Msg, MsgAction, MsgBody, MsgMeta};
 use ribir::{core::ticker::FrameMsg, prelude::*};
 use std::ops::Range;
 use std::rc::Rc;
@@ -22,7 +19,7 @@ pub fn w_editor(
     let channel2 = channel.clone_writer();
     let send_icon = @IconButton {
       on_tap: move |_| {
-        send_msg(&mut *$text_area.write(), channel.clone_writer(), def_bot_id);
+        send_msg(&mut $text_area.write(), channel.clone_writer(), def_bot_id);
       },
       @ { polestar_svg::SEND }
     };
@@ -54,10 +51,10 @@ pub fn w_editor(
       on_chars_capture: move |e| {
         if e.chars == "\r" || e.chars == "\n" {
           if $bots.visible {
-            select_bot(&mut *$text_area.write(), &$bots);
+            select_bot(&mut $text_area.write(), &$bots);
             e.stop_propagation();
           } else if !e.with_shift_key() {
-            send_msg(&mut *$text_area.write(), channel2.clone_writer(), def_bot_id);
+            send_msg(&mut $text_area.write(), channel2.clone_writer(), def_bot_id);
             e.stop_propagation();
           }
         }
@@ -116,8 +113,7 @@ fn send_msg(
   let bots = text_area.edit_message.related_bot();
   let bot_id = bots.last().map_or(def_bot_id, |id| *id);
 
-  let mut bot_msg = Msg::new_bot_text(bot_id, MsgMeta::reply(user_msg_id));
-  let cont = bot_msg.cur_cont_mut();
+  let bot_msg = Msg::new_bot_text(bot_id, MsgMeta::reply(user_msg_id));
 
   let id = *bot_msg.id();
   let idx = bot_msg.cur_idx();
@@ -222,7 +218,7 @@ impl EditedMessage {
       .iter()
       .filter(|f| matches!(f, MessageFragment::Text(_)))
       .for_each(|f| match f {
-        MessageFragment::Text(txt) => msg.push_str(&txt),
+        MessageFragment::Text(txt) => msg.push_str(txt),
         MessageFragment::Bot { .. } => unreachable!(),
       });
     msg
@@ -332,7 +328,7 @@ impl EditedMessage {
         .insert(i + 1, MessageFragment::Text(String::default()));
       cursor = cursor - offset + self.fragments[i].display_text().len();
       offset = 0;
-      i = i + 1;
+      i += 1;
     }
 
     match &mut self.fragments[i] {
@@ -344,7 +340,7 @@ impl EditedMessage {
 
     self.try_merge_text(i, 2);
 
-    return cursor + s.len();
+    cursor + s.len()
   }
 
   pub fn insert_bot(&mut self, mut cursor: usize, uuid: Uuid, name: String) -> usize {
@@ -364,20 +360,20 @@ impl EditedMessage {
     };
 
     idx += 1;
-    let bot = MessageFragment::Bot { uuid: uuid, name: name };
+    let bot = MessageFragment::Bot { uuid, name };
     cursor += bot.display_text().len();
     self.fragments.insert(idx, bot);
     cursor
   }
 
   fn try_merge_text(&mut self, from: usize, len: usize) {
-    assert!(self.fragments.len() > 0 && len > 0);
+    assert!(!self.fragments.is_empty() && len > 0);
     let to = (from + len - 1).min(self.fragments.len() - 1);
     let mut last_text = None;
 
     for idx in (from..=to).rev() {
       if self.fragments[idx].is_text() {
-        if last_text == None {
+        if last_text.is_none() {
           last_text = Some(idx);
         }
       } else {
@@ -393,18 +389,16 @@ impl EditedMessage {
   }
 
   fn merge_text(&mut self, from: usize, to: usize) {
-    {
-      if to - from > 0 {
-        let mut txt = String::default();
-        for i in from..=to {
-          if let MessageFragment::Text(t) = &self.fragments[i] {
-            txt.push_str(t);
-          }
+    if to - from > 0 {
+      let mut txt = String::default();
+      for i in from..=to {
+        if let MessageFragment::Text(t) = &self.fragments[i] {
+          txt.push_str(t);
         }
-        self.fragments[from] = MessageFragment::Text(txt);
-        let _: Vec<_> = self.fragments.drain(from + 1..=to).collect();
       }
-    };
+      self.fragments[from] = MessageFragment::Text(txt);
+      let _: Vec<_> = self.fragments.drain(from + 1..=to).collect();
+    }
   }
 
   fn position(&self, mut cursor: usize) -> (usize, usize) {
@@ -473,7 +467,7 @@ impl MessageEditor {
     let rg = self.caret.select_range();
     self.delete(rg);
     let mut cluster = self.caret.cluster();
-    cluster = self.edit_message.insert_str(cluster, &txt);
+    cluster = self.edit_message.insert_str(cluster, txt);
     self.caret = CaretPosition { cluster, position: None }.into();
   }
 
@@ -489,8 +483,7 @@ impl MessageEditor {
     self.caret = caret;
   }
 
-  fn set_caret_with_check(&mut self, caret: CaretState) {
-    let mut caret = caret.clone();
+  fn set_caret_with_check(&mut self, mut caret: CaretState) {
     match &mut caret {
       CaretState::Caret(pos) => {
         let cluster = self
@@ -625,7 +618,10 @@ fn deal_copy_paste(this: &impl StateWriter<Value = MessageEditor>, e: &KeyboardE
       }
       true
     }
-    PhysicalKey::Code(KeyCode::KeyC) => copy(&this.read()) || true,
+    PhysicalKey::Code(KeyCode::KeyC) => {
+      copy(&this.read());
+      true
+    }
     PhysicalKey::Code(KeyCode::KeyX) => {
       if copy(&this.read()) {
         let rg = this.read().caret.select_range();

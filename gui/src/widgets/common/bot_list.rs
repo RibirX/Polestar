@@ -60,13 +60,18 @@ impl BotList {
     })
   }
 
-  fn select(&mut self, bot_id: Option<Uuid>) { self.selected_id = bot_id; }
-
   pub fn get_bots(&self) -> impl DoubleEndedIterator<Item = &Bot> {
     self
       .bots
       .iter()
       .filter(|bot| self.filter.is_empty() || bot.name().contains(&self.filter))
+  }
+
+  fn select(&mut self, bot_id: Option<Uuid>) { self.selected_id = bot_id; }
+
+  fn init_select(&mut self) {
+    let selected_id = { self.get_bots().next().map(|bot| *bot.id()) };
+    self.selected_id = selected_id;
   }
 }
 
@@ -83,14 +88,16 @@ impl Compose for BotList {
         }).value_chain(|s| s.distinct_until_changed().box_it()),
       };
 
+      this.silent().init_select();
+      watch!($this.filter.clone())
+        .distinct_until_changed()
+        .subscribe(move |_| $this.silent().init_select());
+
       @$list {
         @ {
           pipe!($this.filter.clone())
             .value_chain(|s| s.distinct_until_changed().box_it())
             .map(move |_| {
-              // TODO: here has bug, channel modify modal bot list will update twice.
-              let selected_id = { $this.get_bots().next().map(|bot| *bot.id()) };
-              $this.silent().selected_id = selected_id;
               $this.get_bots().map(|bot| {
                 let bot_id = *bot.id();
                 @ListItem {

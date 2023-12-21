@@ -57,11 +57,8 @@ fn w_sidebar_others(app: impl StateWriter<Value = AppGUI>) -> impl WidgetBuilder
   fn_widget! {
     @InteractiveList {
       highlight_visible: pipe! {
-        match $app.cur_router_path() {
-          "/home/bot_store" => true,
-          "/home/settings" => true,
-          _ => false,
-        }
+        let app = $app;
+        matches!(app.cur_router_path(), "/home/bot_store" | "/home/settings")
       },
       @ListItem {
         on_tap: move |_| {

@@ -1,16 +1,12 @@
-use polestar_core::{
-  error::PolestarError,
-  service::open_ai::{deal_open_ai_stream, open_ai_stream},
-};
+use polestar_core::service::open_ai::{deal_open_ai_stream, open_ai_stream};
 use reqwest::header::HeaderMap;
 use ribir::prelude::*;
-use tokio::runtime::Runtime;
 
 pub async fn query_open_ai(
   url: String,
   content: String,
   header: HeaderMap,
-  mut delta_op: impl FnMut(String),
+  delta_op: impl FnMut(String),
 ) {
   let mut stream = open_ai_stream(url, content, header)
     .to_ribir_future()

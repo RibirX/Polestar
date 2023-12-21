@@ -1,5 +1,5 @@
 use serde::Deserialize;
-use std::{collections::HashMap, rc::Rc};
+use std::collections::HashMap;
 use uuid::Uuid;
 
 use crate::service::service_provider::{get_service, Service, ServiceModel};
