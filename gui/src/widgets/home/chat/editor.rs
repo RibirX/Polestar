@@ -1,4 +1,4 @@
-use crate::{req::query_open_ai, widgets::common::BotList};
+use crate::{req::query_open_ai, widgets::common::BotList, style::WHITE};
 use polestar_core::model::{Bot, Channel, Msg, MsgAction, MsgBody, MsgMeta};
 use ribir::{core::ticker::FrameMsg, prelude::*};
 use std::ops::Range;
@@ -11,15 +11,20 @@ pub fn w_editor(
   channel: impl StateWriter<Value = Channel>,
   bots: Rc<Vec<Bot>>,
   def_bot_id: Uuid,
+  quote_id: impl StateWriter<Value = Option<Uuid>>,
 ) -> impl WidgetBuilder {
   fn_widget! {
     let mut bots = @BotList { bots, visible: false };
     let ignore_pointer = @IgnorePointer { ignore: false };
     let mut text_area = @MessageEditor {};
-    let channel2 = channel.clone_writer();
+    let send_msg_by_char_channel = channel.clone_writer();
+    let send_msg_by_icon_channel = channel.clone_writer();
+    let quote_id_channel = channel.clone_writer();
+    let send_msg_by_char_quote_id = quote_id.clone_writer();
+    let send_msg_by_icon_quote_id = quote_id.clone_writer();
     let send_icon = @IconButton {
       on_tap: move |_| {
-        send_msg(&mut $text_area.write(), channel.clone_writer(), def_bot_id);
+        send_msg(&mut $text_area.write(), send_msg_by_icon_channel.clone_writer(), def_bot_id, send_msg_by_icon_quote_id.clone_writer());
       },
       @ { polestar_svg::SEND }
     };
@@ -54,7 +59,7 @@ pub fn w_editor(
             select_bot(&mut $text_area.write(), &$bots);
             e.stop_propagation();
           } else if !e.with_shift_key() {
-            send_msg(&mut $text_area.write(), channel2.clone_writer(), def_bot_id);
+            send_msg(&mut $text_area.write(), send_msg_by_char_channel.clone_writer(), def_bot_id, send_msg_by_char_quote_id.clone_writer());
             e.stop_propagation();
           }
         }
@@ -65,15 +70,34 @@ pub fn w_editor(
           $text_area.request_focus();
         }
       }
-      @Column {
-
-        @$ignore_pointer {
-          @ConstrainedBox {
-            clamp: BoxClamp {
-              min: Size::new(f32::INFINITY, 48.),
-              max: Size::new(f32::INFINITY, 114.),
-            },
-            padding: EdgeInsets::new(0., 11., 11., 11.),
+      @$ignore_pointer {
+        @ConstrainedBox {
+          clamp: BoxClamp {
+            min: Size::new(f32::INFINITY, 48.),
+            max: Size::new(f32::INFINITY, 114.),
+          },
+          padding: EdgeInsets::new(0., 11., 11., 11.),
+          @Column {
+            @ {
+              let quote_id_channel = quote_id_channel.clone_reader();
+              pipe! {
+                let _ = || $quote_id.write();
+                let non_quote_id = quote_id.clone_writer();
+                (*$quote_id).map(move |id| {
+                  let text = $quote_id_channel.msg(&id).and_then(|msg| msg.cur_cont_ref().text().map(str::to_string)).unwrap_or_default();
+                  @Row {
+                    background: Color::from_u32(WHITE),
+                    @Icon {
+                      on_tap: move |_| {
+                        *non_quote_id.write() = None;
+                      },
+                      @ { svgs::CLOSE }
+                    }
+                    @Text { text }
+                  }
+                })
+              }
+            }
             @Row {
               padding: EdgeInsets::all(10.),
               background: Color::from_u32(CULTURED_F4F4F4_FF),
@@ -97,6 +121,7 @@ fn send_msg(
   text_area: &mut MessageEditor,
   channel: impl StateWriter<Value = Channel>,
   def_bot_id: Uuid,
+  quote_id: impl StateWriter<Value = Option<Uuid>>,
 ) {
   let text = text_area.display_text();
 
@@ -108,12 +133,15 @@ fn send_msg(
   let user_msg_id = *user_msg.id();
   channel.write().add_msg(user_msg);
 
-  text_area.reset();
-
+  
   let bots = text_area.edit_message.related_bot();
   let bot_id = bots.last().map_or(def_bot_id, |id| *id);
-
-  let bot_msg = Msg::new_bot_text(bot_id, MsgMeta::reply(user_msg_id));
+  
+  let msg_quote_id = quote_id.read().clone();
+  let bot_msg = Msg::new_bot_text(bot_id, MsgMeta::new(msg_quote_id, Some(user_msg_id)));
+  
+  text_area.reset();
+  *quote_id.write() = None;
 
   let id = *bot_msg.id();
   let idx = bot_msg.cur_idx();

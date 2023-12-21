@@ -1,6 +1,7 @@
 use polestar_core::model::{Channel, Msg, MsgAction, MsgBody, MsgCont, MsgRole};
 use polestar_core::service::open_ai::mock_stream_string;
 use ribir::prelude::*;
+use uuid::Uuid;
 
 use crate::style::decorator::channel::message_style;
 use crate::style::{GAINSBORO, WHITE};
@@ -9,7 +10,10 @@ use crate::widgets::common::IconButton;
 
 use super::onboarding::w_msg_onboarding;
 
-pub fn w_msg_list<S>(channel: S) -> impl WidgetBuilder
+pub fn w_msg_list<S>(
+  channel: S,
+  quote_id: impl StateWriter<Value = Option<Uuid>>,
+) -> impl WidgetBuilder
 where
   S: StateWriter<Value = Channel>,
 {
@@ -57,9 +61,10 @@ where
             @ {
               pipe! {
                 let _ = || $channel.write();
-                let channel2 = channel.clone_writer();
+                let channel_cloned = channel.clone_writer();
+                let quote_id = quote_id.clone_writer();
                 $channel.msgs().iter().enumerate().map(move |(idx, _)| {
-                  let msg = channel2.split_writer(
+                  let msg = channel_cloned.split_writer(
                     move |channel| {
                       channel.msgs().get(idx).expect("msg must be existed")
                     },
@@ -67,7 +72,7 @@ where
                       channel.msgs_mut().get_mut(idx).expect("msg must be existed")
                     },
                   );
-                  @ { w_msg(msg) }
+                  @ { w_msg(msg, quote_id.clone_writer()) }
                 }).collect::<Vec<_>>()
               }
             }
@@ -131,7 +136,7 @@ impl ComposeChild for MsgOps {
   }
 }
 
-fn w_msg<S, R, W>(msg: S) -> impl WidgetBuilder
+fn w_msg<S, R, W>(msg: S, quote_id: impl StateWriter<Value = Option<Uuid>>) -> impl WidgetBuilder
 where
   S: StateWriter<Value = Msg>,
   S::Writer: StateWriter<Value = Msg, OriginReader = R, OriginWriter = W>,
@@ -175,7 +180,7 @@ where
             @MsgOps {
               @MsgOp {
                 cb: Box::new(move || {
-
+                  *quote_id.write() = Some(*$msg.id())
                 }) as Box<dyn Fn()>,
                 @IconButton {
                   padding: EdgeInsets::all(4.),
