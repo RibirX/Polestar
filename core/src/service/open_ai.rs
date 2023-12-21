@@ -3,7 +3,7 @@ use reqwest::{header::HeaderMap, Method};
 use reqwest_eventsource::{Event, EventSource};
 use serde::{Deserialize, Serialize};
 
-use crate::{error::PolestarError, model::Bot};
+use crate::error::PolestarError;
 
 use super::req::req_stream;
 

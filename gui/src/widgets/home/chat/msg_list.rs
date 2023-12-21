@@ -146,12 +146,10 @@ where
   fn_widget! {
     let mut stack = @Stack {};
 
+    let role = *$msg.role();
     let mut row = @Row {
       item_gap: 8.,
-      reverse: match $msg.role() {
-        MsgRole::User => true,
-        _ => false,
-      },
+      reverse: matches!(role, MsgRole::User)
     };
 
     let msg_ops_anchor = {
@@ -339,7 +337,7 @@ fn w_msg_multi_rst(msg: impl StateWriter<Value = Msg>) -> impl WidgetBuilder {
             item_gap: 8.,
             @ {
               $msg.cont_list().iter().enumerate().map(|(idx, cont)| {
-                let text = cont.text().map(|s| s.to_owned()).unwrap_or_else(|| String::new());
+                let text = cont.text().map(|s| s.to_owned()).unwrap_or_default();
                 let w_thumbnail = w_msg_thumbnail(text);
                 @$w_thumbnail {
                   on_tap: move |_| {

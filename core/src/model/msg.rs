@@ -81,8 +81,8 @@ impl Msg {
   }
 
   pub fn new_user_text(text: &str, meta: MsgMeta) -> Self {
-    let mut cont_list = Vec::new();
-    cont_list.push(MsgCont::new_text(text));
+    let cont_list = vec![MsgCont::new_text(text)];
+
     Self {
       id: Uuid::new_v4(),
       role: MsgRole::User,
@@ -93,8 +93,7 @@ impl Msg {
   }
 
   pub fn new_bot_text(bot_id: Uuid, meta: MsgMeta) -> Self {
-    let mut cont_list = Vec::new();
-    cont_list.push(MsgCont::init_text());
+    let cont_list = vec![MsgCont::init_text()];
     Self {
       id: Uuid::new_v4(),
       role: MsgRole::Bot(bot_id),
@@ -105,8 +104,7 @@ impl Msg {
   }
 
   pub fn new_system_text(text: &str) -> Self {
-    let mut cont_list = Vec::new();
-    cont_list.push(MsgCont::new_text(text));
+    let cont_list = vec![MsgCont::new_text(text)];
     Self {
       id: Uuid::new_v4(),
       role: MsgRole::System(0),
@@ -387,19 +385,9 @@ impl MsgRole {
     }
   }
 
-  pub fn is_system(&self) -> bool {
-    match self {
-      Self::System(_) => true,
-      _ => false,
-    }
-  }
+  pub fn is_system(&self) -> bool { matches!(self, Self::System(_)) }
 
-  pub fn is_user(&self) -> bool {
-    match self {
-      Self::User => true,
-      _ => false,
-    }
-  }
+  pub fn is_user(&self) -> bool { matches!(self, Self::User) }
 
   pub fn bot(&self) -> Option<&Uuid> {
     match self {

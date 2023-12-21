@@ -26,10 +26,8 @@ pub fn w_channel_thumbnail_list(app: impl StateWriter<Value = AppGUI>) -> impl W
         }
       },
       highlight_visible: pipe! {
-        match $app.cur_router_path() {
-          "/home/chat" => true,
-          _ => false,
-        }
+        let app = $app;
+        matches!(app.cur_router_path(), "/home/chat")
       },
       @ {
         pipe! {

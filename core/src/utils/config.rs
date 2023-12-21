@@ -17,7 +17,7 @@ pub fn load_bot_cfg_file() -> PolestarResult<Vec<Bot>> {
 
   let path = project_bot_config_path();
 
-  fs::File::open(&path)
+  fs::File::open(path)
     .and_then(|mut file| {
       let mut content = String::new();
       file

@@ -122,7 +122,7 @@ pub fn init_app_data() -> AppData {
   utils::create_if_not_exist_dir(user_data_path);
 
   // TODO: how to set app default bot
-  let cfg = AppCfg::new(None, bots[0].id().clone());
+  let cfg = AppCfg::new(None, *bots[0].id());
   let (db, mut channels) = init_db();
 
   let cur_channel_id = local_state.cur_channel_id();
@@ -268,10 +268,10 @@ impl AppData {
 
     let p_channel = channel.clone();
 
-    self.db.as_mut().map(|db| {
+    if let Some(db) = self.db.as_mut() {
       db.as_mut()
         .add_persist(ActionPersist::AddChannel { channel: p_channel.clone() })
-    });
+    }
 
     self.channels.push(channel);
     self.info.as_mut().set_cur_channel_id(Some(channel_id));

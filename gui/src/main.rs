@@ -57,7 +57,7 @@ pub struct GlobalConfig {
 pub static GLOBAL_CONFIG: Lazy<Mutex<GlobalConfig>> =
   Lazy::new(|| Mutex::new(GlobalConfig::default()));
 
-pub static WINDOW_MGR: Lazy<Mutex<WindowMgr>> = Lazy::new(|| Mutex::new(WindowMgr::new()));
+pub static WINDOW_MGR: Lazy<Mutex<WindowMgr>> = Lazy::new(|| Mutex::new(WindowMgr::default()));
 pub static TIMER: Lazy<Mutex<Instant>> = Lazy::new(|| Mutex::new(Instant::now()));
 
 fn main() {

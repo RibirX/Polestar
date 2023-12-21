@@ -1,5 +1,4 @@
 use std::marker::PhantomPinned;
-use std::ops::DerefMut;
 use std::pin::Pin;
 use std::time::Duration;
 
@@ -55,7 +54,7 @@ impl PersistenceDB {
       .worker_threads(2)
       .enable_all()
       .build()?;
-    let inner = rt.block_on(async { init_db.await })?;
+    let inner = rt.block_on(init_db)?;
     Ok(Self {
       rt,
       inner,
