@@ -119,8 +119,7 @@ impl Msg {
   }
 
   pub fn new_img(role: MsgRole, img: Image, meta: MsgMeta) -> Self {
-    let mut cont_list = Vec::new();
-    cont_list.push(MsgCont::init_image());
+    let mut cont_list = vec![MsgCont::init_image()];
     cont_list[0].action(MsgAction::Receiving(MsgBody::Image(Some(img))));
     cont_list[0].action(MsgAction::Fulfilled);
     Self {
@@ -382,12 +381,7 @@ pub enum MsgRole {
 }
 
 impl MsgRole {
-  pub fn is_bot(&self) -> bool {
-    match self {
-      Self::Bot(_) => true,
-      _ => false,
-    }
-  }
+  pub fn is_bot(&self) -> bool { matches!(self, Self::Bot(_)) }
 
   pub fn is_system(&self) -> bool { matches!(self, Self::System(_)) }
 
