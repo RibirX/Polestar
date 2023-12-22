@@ -28,6 +28,8 @@ pub struct Bot {
   headers: HashMap<String, String>,
   // The `sp` field indicate AI service model need parameters
   params: serde_json::Value,
+  // The bot's onboarding message, it's optional
+  onboarding: Option<String>,
 }
 
 impl Bot {
@@ -54,6 +56,8 @@ impl Bot {
   pub fn params(&self) -> &serde_json::Value { &self.params }
 
   pub fn lang(&self) -> &[Lang] { &self.lang }
+
+  pub fn onboarding(&self) -> Option<&str> { self.onboarding.as_deref() }
 }
 
 #[derive(Deserialize, Debug)]
