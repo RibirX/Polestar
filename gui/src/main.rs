@@ -70,7 +70,7 @@ fn main() {
   unsafe {
     AppCtx::set_app_theme(material::purple::light());
   }
-
+  install_fonts();
   let UISettings { window_size, language: _ } = read_ui_settings();
 
   let wnd = App::new_window(widgets::app::w_app(), Some(window_size.normal));
@@ -127,5 +127,33 @@ fn local_server_listen() {
         }
       }
     }
+  });
+}
+
+fn install_fonts() {
+  let font_db = AppCtx::font_db();
+  [
+    include_bytes!("./theme/fonts/Inter-Regular.otf").to_vec(),
+    include_bytes!("./theme/fonts/Inter-Bold.otf").to_vec(),
+    include_bytes!("./theme/fonts/Inter-Medium.otf").to_vec(),
+    include_bytes!("./theme/fonts/NotoSansSC-Regular.otf").to_vec(),
+    include_bytes!("./theme/fonts/NotoSansSC-Bold.otf").to_vec(),
+    include_bytes!("./theme/fonts/NotoSansSC-Medium.otf").to_vec(),
+    include_bytes!("./theme/fonts/NotoColorEmoji.ttf").to_vec(),
+  ]
+  .into_iter()
+  .for_each(|font| font_db.borrow_mut().load_from_bytes(font));
+
+  font_db.borrow_mut().set_default_fonts(&FontFace {
+    families: Box::new([
+      FontFamily::Name("Inter".into()),
+      FontFamily::Name("PingFang SC".into()),
+      FontFamily::Name("Segoe UI".into()),
+      FontFamily::Name("Helvetica".into()),
+      FontFamily::Name("Arial".into()),
+      FontFamily::Name("Noto Sans SC".into()),
+      FontFamily::Name("Noto Color Emoji".into()),
+    ]),
+    ..Default::default()
   });
 }
