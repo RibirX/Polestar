@@ -58,7 +58,7 @@ impl AppInfo {
     info.save_local();
   }
 
-  pub fn bots(&self) -> &Vec<Bot> { &self.bots }
+  pub fn bots(&self) -> &[Bot] { &self.bots }
 
   pub fn bots_rc(&self) -> Rc<Vec<Bot>> { self.bots.clone() }
 

@@ -1,3 +1,4 @@
+use polestar_core::model::{ChannelCfg, MsgMeta, Msg};
 use ribir::prelude::*;
 
 use crate::{
@@ -5,7 +6,7 @@ use crate::{
   widgets::app::AppGUI,
 };
 
-pub fn w_bot_store(app: impl StateReader<Value = AppGUI>) -> impl WidgetBuilder {
+pub fn w_bot_store(app: impl StateWriter<Value = AppGUI>) -> impl WidgetBuilder {
   fn_widget! {
     @ConstrainedBox {
       clamp: BoxClamp::EXPAND_BOTH,
@@ -15,7 +16,7 @@ pub fn w_bot_store(app: impl StateReader<Value = AppGUI>) -> impl WidgetBuilder 
         align_items: Align::Stretch,
         h_align: HAlign::Center,
         @VScrollBar {
-          @ { w_bot_list(app.clone_reader()) }
+          @ { w_bot_list(app.clone_writer()) }
         }
       }
     }
@@ -35,7 +36,7 @@ const CATEGORY_LIST: [&str; 10] = [
   "Interviewer",
 ];
 
-fn w_bot_list(app: impl StateReader<Value = AppGUI>) -> impl WidgetBuilder {
+fn w_bot_list(app: impl StateWriter<Value = AppGUI>) -> impl WidgetBuilder {
   fn_widget! {
     @Column {
       margin: EdgeInsets::all(14.),
@@ -52,8 +53,22 @@ fn w_bot_list(app: impl StateReader<Value = AppGUI>) -> impl WidgetBuilder {
               item_gap: 8.,
               line_gap: 8.,
               @ {
-                $app.data.info().bots().iter().filter(|bot| bot.cat() == Some(cat)).map(|bot| {
+                $app.data.info().bots().iter().filter(|bot| bot.cat() == Some(cat)).map(move |bot| {
+                  let bot_name = bot.name().to_owned();
+                  let bot_id = *bot.id();
+                  let bot_onboarding = bot.onboarding().map_or(format!("@{bot_name}"), |str| {
+                    format!("@{bot_name} {str}")
+                  });
                   @Clip {
+                    on_tap: move |_| {
+                      let mut app_write = $app.write();
+                      let id = app_write.data.new_channel(bot_name.clone(), None, ChannelCfg::def_bot_id_cfg(bot_id));
+                      let channel = app_write.data.get_channel_mut(&id).unwrap();
+                      let msg = Msg::new_user_text(&bot_onboarding, MsgMeta::default());
+                      channel.add_msg(msg);
+                      app_write.data.switch_channel(&id);
+                      app_write.navigate_to("/home/chat");
+                    },
                     @SizedBox {
                       size: Size::new(200., 110.),
                       cursor: CursorIcon::Pointer,
@@ -64,9 +79,6 @@ fn w_bot_list(app: impl StateReader<Value = AppGUI>) -> impl WidgetBuilder {
                         color: Color::from_u32(LIGHT_SILVER_15).into(),
                       }),
                       border_radius: COMMON_RADIUS,
-                      on_tap: move |_| {
-
-                      },
                       @Column {
                         @Row {
                           align_items: Align::Center,

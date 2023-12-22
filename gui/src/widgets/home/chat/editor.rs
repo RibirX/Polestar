@@ -180,7 +180,7 @@ fn send_msg(
     let channel = channel.read();
     let bot = channel
       .bots()
-      .and_then(|bots: &Vec<Bot>| bots.iter().find(|bot| bot.id() == &bot_id));
+      .and_then(|bots: &[Bot]| bots.iter().find(|bot| bot.id() == &bot_id));
     bot
       .map(|bot| {
         (

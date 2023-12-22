@@ -29,7 +29,8 @@
       "params": {
         "model": "gpt-3.5-turbo",
         "prompt": ""
-      }
+      },
+      "onboarding": "Hi, I'm Polestar Assistant. I'm here to help you with your daily tasks. I can help you with your calendar, email, and more. I can also help you with your tasks, and I can even help you with your homework."
     },
     {
       "id": "a7f965e5-b1d1-4e9b-89e4-975f8ef7cd80",

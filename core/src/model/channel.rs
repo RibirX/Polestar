@@ -120,7 +120,7 @@ impl Channel {
       .find(|msg| msg.id() == msg_id)
   }
 
-  pub fn bots(&self) -> Option<&Vec<Bot>> { self.app_info().map(|info| info.bots()) }
+  pub fn bots(&self) -> Option<&[Bot]> { self.app_info().map(|info| info.bots()) }
 
   pub fn is_feedback(&self) -> bool { self.cfg.kind == ChannelKind::Feedback }
 }
@@ -134,9 +134,20 @@ pub struct ChannelCfg {
 }
 
 impl ChannelCfg {
+  pub fn new(mode: ChannelMode, kind: ChannelKind, def_bot_id: Option<Uuid>) -> Self {
+    Self { mode, kind, def_bot_id }
+  }
+
   pub fn feedback_cfg() -> Self {
     Self {
       kind: ChannelKind::Feedback,
+      ..<_>::default()
+    }
+  }
+
+  pub fn def_bot_id_cfg(bot_id: Uuid) -> Self {
+    Self {
+      def_bot_id: Some(bot_id),
       ..<_>::default()
     }
   }
