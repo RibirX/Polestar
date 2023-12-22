@@ -74,15 +74,6 @@ pub fn polestar_theme() -> InheritTheme {
   );
   let mut inherit_theme = InheritTheme {
     typography_theme: Some(typography_theme),
-    font_bytes: Some(vec![
-      include_bytes!("./theme/fonts/Inter-Regular.otf").to_vec(),
-      include_bytes!("./theme/fonts/Inter-Bold.otf").to_vec(),
-      include_bytes!("./theme/fonts/Inter-Medium.otf").to_vec(),
-      include_bytes!("./theme/fonts/NotoSansSC-Regular.otf").to_vec(),
-      include_bytes!("./theme/fonts/NotoSansSC-Bold.otf").to_vec(),
-      include_bytes!("./theme/fonts/NotoSansSC-Medium.otf").to_vec(),
-      include_bytes!("./theme/fonts/NotoColorEmoji.ttf").to_vec(),
-    ]),
     ..<_>::default()
   };
 
