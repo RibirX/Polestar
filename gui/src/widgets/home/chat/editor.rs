@@ -1,5 +1,5 @@
-use crate::{req::query_open_ai, widgets::common::BotList, style::WHITE};
-use polestar_core::model::{Bot, Channel, Msg, MsgAction, MsgBody, MsgMeta};
+use crate::{widgets::{helper::send_msg, common::BotList}, style::WHITE};
+use polestar_core::model::{Bot, Channel, Msg, MsgMeta};
 use ribir::{core::ticker::FrameMsg, prelude::*};
 use std::ops::Range;
 use std::rc::Rc;
@@ -27,7 +27,7 @@ pub fn w_editor(
         if $channel.is_feedback() {
           send_feedback(&mut $text_area.write(), send_msg_by_icon_channel.clone_writer());
         } else {
-          send_msg(&mut $text_area.write(), send_msg_by_icon_channel.clone_writer(), def_bot_id, send_msg_by_icon_quote_id.clone_writer());
+          send_question(&mut $text_area.write(), send_msg_by_icon_channel.clone_writer(), def_bot_id, send_msg_by_icon_quote_id.clone_writer());
         }
         $text_area.write().reset();
       },
@@ -71,7 +71,7 @@ pub fn w_editor(
             if $channel.is_feedback() {
               send_feedback(&mut $text_area.write(), send_msg_by_char_channel.clone_writer());
             } else {
-              send_msg(&mut $text_area.write(), send_msg_by_char_channel.clone_writer(), def_bot_id, send_msg_by_char_quote_id.clone_writer());
+              send_question(&mut $text_area.write(), send_msg_by_char_channel.clone_writer(), def_bot_id, send_msg_by_char_quote_id.clone_writer());
             }
             $text_area.write().reset();
             e.stop_propagation();
@@ -148,7 +148,7 @@ fn send_feedback(
   channel.write().add_msg(system_msg);
 }
 
-fn send_msg(
+fn send_question(
   text_area: &mut MessageEditor,
   channel: impl StateWriter<Value = Channel>,
   def_bot_id: Uuid,
@@ -170,45 +170,13 @@ fn send_msg(
   let msg_quote_id = quote_id.read().clone();
   let bot_msg = Msg::new_bot_text(bot_id, MsgMeta::new(msg_quote_id, Some(user_msg_id)));
 
-  *quote_id.write() = None;
-
   let id = *bot_msg.id();
   let idx = bot_msg.cur_idx();
   channel.write().add_msg(bot_msg);
 
-  let (url, headers) = {
-    let channel = channel.read();
-    let bot = channel
-      .bots()
-      .and_then(|bots: &[Bot]| bots.iter().find(|bot| bot.id() == &bot_id));
-    bot
-      .map(|bot| {
-        (
-          bot.url().to_string(),
-          bot.headers().try_into().ok().unwrap_or_default(),
-        )
-      })
-      .unwrap_or_default()
-  };
+  *quote_id.write() = None;
 
-  let _ = AppCtx::spawn_local(async move {
-    if channel.read().msg(&id).is_none() {
-      return;
-    }
-
-    let update_msg = |act| {
-      let mut channel = channel.write();
-      let cur_cont = channel.msg_mut(&id).unwrap().cont_mut(idx);
-      cur_cont.action(act);
-    };
-
-    query_open_ai(url, text, headers, |delta| {
-      update_msg(MsgAction::Receiving(MsgBody::Text(Some(delta))));
-    })
-    .await;
-
-    update_msg(MsgAction::Fulfilled);
-  });
+  send_msg(channel.clone_writer(), text_area.edit_message.message_content(), idx, id, bot_id);
 }
 
 fn select_bot(text_area: &mut MessageEditor, bots: &BotList) {

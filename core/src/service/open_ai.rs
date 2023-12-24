@@ -50,7 +50,7 @@ pub enum Role {
 pub async fn open_ai_stream(
   url: String,
   content: String,
-  header: HeaderMap,
+  headers: HeaderMap,
 ) -> Result<EventSource, PolestarError> {
   // TODO: model need to be configurable
   let body = format!(
@@ -58,7 +58,7 @@ pub async fn open_ai_stream(
     content
   );
 
-  req_stream(&url, Method::POST, header, Some(body.to_owned())).await
+  req_stream(&url, Method::POST, headers, Some(body.to_owned())).await
 }
 
 pub async fn deal_open_ai_stream(

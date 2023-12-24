@@ -190,9 +190,6 @@ fn gen_handler(app: impl StateWriter<Value = AppGUI>) -> impl for<'a> FnMut(&'a 
           let user_data_path = polestar_core::user_data_path(&uid.to_string());
           polestar_core::create_if_not_exist_dir(user_data_path);
 
-          // TODO: move app info
-          // app.write().data.local_state_mut().set_uid(Some(uid));
-
           let _ = polestar_core::write_current_user(&uid.to_string());
 
           // create `User`

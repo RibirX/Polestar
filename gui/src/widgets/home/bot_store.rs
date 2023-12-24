@@ -3,7 +3,7 @@ use ribir::prelude::*;
 
 use crate::{
   style::{ANTI_FLASH_WHITE, COMMON_RADIUS, LIGHT_SILVER_15, SPANISH_GRAY, WHITE},
-  widgets::app::AppGUI,
+  widgets::{app::AppGUI, helper::send_msg},
 };
 
 pub fn w_bot_store(app: impl StateWriter<Value = AppGUI>) -> impl WidgetBuilder {
@@ -61,13 +61,29 @@ fn w_bot_list(app: impl StateWriter<Value = AppGUI>) -> impl WidgetBuilder {
                   });
                   @Clip {
                     on_tap: move |_| {
-                      let mut app_write = $app.write();
-                      let id = app_write.data.new_channel(bot_name.clone(), None, ChannelCfg::def_bot_id_cfg(bot_id));
-                      let channel = app_write.data.get_channel_mut(&id).unwrap();
-                      let msg = Msg::new_user_text(&bot_onboarding, MsgMeta::default());
-                      channel.add_msg(msg);
-                      app_write.data.switch_channel(&id);
-                      app_write.navigate_to("/home/chat");
+                      let (channel_id, bot_msg_id) = {
+                        let mut app_write = $app.write();
+                        let channel_id = app_write.data.new_channel(bot_name.clone(), None, ChannelCfg::def_bot_id_cfg(bot_id));
+                        let channel = app_write.data.get_channel_mut(&channel_id).unwrap();
+                        let msg = Msg::new_user_text(&bot_onboarding, MsgMeta::default());
+                        let user_msg_id = *msg.id();
+                        channel.add_msg(msg);
+                        let bot_msg = Msg::new_bot_text(bot_id, MsgMeta::reply(user_msg_id));
+                        let bot_msg_id = *bot_msg.id();
+                        channel.add_msg(bot_msg);
+                        app_write.data.switch_channel(&channel_id);
+                        app_write.navigate_to("/home/chat");
+                        (channel_id, bot_msg_id)
+                      };
+
+                      println!("channel_id: {:?}, bot_msg_id: {:?}", channel_id, bot_msg_id);
+
+                      let channel_writer = app.split_writer(
+                        move |app| { app.data.get_channel(&channel_id).unwrap() },
+                        move |app| { app.data.get_channel_mut(&channel_id).unwrap() },
+                      );
+
+                      send_msg(channel_writer, bot_onboarding.clone(), 0, bot_msg_id, bot_id);
                     },
                     @SizedBox {
                       size: Size::new(200., 110.),

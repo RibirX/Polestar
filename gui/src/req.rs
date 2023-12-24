@@ -5,10 +5,10 @@ use ribir::prelude::*;
 pub async fn query_open_ai(
   url: String,
   content: String,
-  header: HeaderMap,
+  headers: HeaderMap,
   delta_op: impl FnMut(String),
 ) {
-  let mut stream = open_ai_stream(url, content, header)
+  let mut stream = open_ai_stream(url, content, headers)
     .to_ribir_future()
     .await
     .unwrap()
