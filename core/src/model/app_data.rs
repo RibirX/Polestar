@@ -181,6 +181,13 @@ fn init_db() -> (Option<Pin<Box<PersistenceDB>>>, Vec<Channel>) {
 
   let mut channels = db.query_channels().expect("Failed to query channels");
 
+  channels.iter_mut().for_each(|channel| {
+    let msgs = db
+      .query_msgs_by_channel_id(channel.id())
+      .expect("Failed to query msgs");
+    channel.load_msgs(msgs);
+  });
+
   let mut db_pin = Box::pin(db);
 
   // if channels is empty, create a default channel.
@@ -196,7 +203,7 @@ fn init_db() -> (Option<Pin<Box<PersistenceDB>>>, Vec<Channel>) {
     );
     db_pin
       .as_mut()
-      .add_persist(ActionPersist::AddChannel { channel: channel.clone() });
+      .pin_add_persist(ActionPersist::AddChannel { channel: channel.clone() });
     channels.push(channel);
   }
 
@@ -283,7 +290,7 @@ impl AppData {
 
     if let Some(db) = self.db.as_mut() {
       db.as_mut()
-        .add_persist(ActionPersist::AddChannel { channel: p_channel.clone() })
+        .pin_add_persist(ActionPersist::AddChannel { channel: p_channel.clone() })
     }
 
     self.channels.push(channel);
@@ -295,7 +302,7 @@ impl AppData {
   pub fn remove_channel(&mut self, channel_id: &Uuid) {
     if let Some(db) = self.db.as_mut() {
       db.as_mut()
-        .add_persist(ActionPersist::RemoveChannel { channel_id: *channel_id })
+        .pin_add_persist(ActionPersist::RemoveChannel { channel_id: *channel_id })
     }
 
     // guard channels is empty after remove channel

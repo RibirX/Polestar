@@ -3,9 +3,9 @@ use std::ptr::NonNull;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::db::pool::PersistenceDB;
+use crate::db::{executor::ActionPersist, pool::PersistenceDB};
 
-use super::{msg::Msg, AppInfo, Bot};
+use super::{msg::Msg, AppInfo, Bot, MsgAction};
 
 pub type ChannelId = Uuid;
 
@@ -96,8 +96,34 @@ impl Channel {
   #[inline]
   pub fn set_desc(&mut self, desc: Option<String>) { self.desc = desc; }
 
-  #[inline]
-  pub fn add_msg(&mut self, msg: Msg) { self.msgs_coll.msgs.push(msg); }
+  pub fn add_msg(&mut self, msg: Msg) {
+    self.msgs_coll.msgs.push(msg.clone());
+    let channel_id = *self.id();
+    self.db.as_mut().map(|db| unsafe {
+      db.as_mut()
+        .add_persist(ActionPersist::AddMsg { channel_id, msg })
+    });
+  }
+
+  pub fn update_msg(&mut self, msg_id: &Uuid, idx: usize, act: MsgAction) {
+    let msg = self.msg_mut(msg_id);
+    if let Some(msg) = msg {
+      let is_need_persist = matches!(act, MsgAction::Fulfilled | MsgAction::Rejected);
+      msg.cont_mut(idx).action(act);
+      if is_need_persist {
+        let msg = msg.clone();
+        self
+          .db
+          .as_mut()
+          .map(|db| unsafe { db.as_mut().add_persist(ActionPersist::UpdateMsg { msg }) });
+      }
+    }
+  }
+
+  pub fn load_msgs(&mut self, msgs: Vec<Msg>) {
+    self.msgs_coll.msgs.extend(msgs.clone());
+    self.msgs_coll.status = MsgsCollStatus::Fetched;
+  }
 
   #[inline]
   pub fn msgs(&self) -> &Vec<Msg> { &self.msgs_coll.msgs }

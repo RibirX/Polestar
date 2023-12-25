@@ -247,6 +247,7 @@ pub struct MsgCont {
   status: MsgStatus,
 }
 
+#[derive(PartialEq, Eq)]
 pub enum MsgAction {
   Pending,
   Fulfilled,

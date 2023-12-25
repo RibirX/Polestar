@@ -31,7 +31,7 @@ fn add_channel_test() {
   );
   persistence_db
     .as_mut()
-    .add_persist(ActionPersist::AddChannel { channel: channel_1 });
+    .pin_add_persist(ActionPersist::AddChannel { channel: channel_1 });
   let id_2 = Uuid::new_v4();
   let channel_2 = Channel::new(
     id_2,
@@ -43,7 +43,7 @@ fn add_channel_test() {
   );
   persistence_db
     .as_mut()
-    .add_persist(ActionPersist::AddChannel { channel: channel_2 });
+    .pin_add_persist(ActionPersist::AddChannel { channel: channel_2 });
 
   sleep(Duration::from_millis(100));
 
@@ -73,7 +73,7 @@ fn remove_channel_test() {
   );
   persistence_db
     .as_mut()
-    .add_persist(ActionPersist::AddChannel { channel: channel_1 });
+    .pin_add_persist(ActionPersist::AddChannel { channel: channel_1 });
   let id_2 = Uuid::new_v4();
   let channel_2 = Channel::new(
     id_2,
@@ -85,7 +85,7 @@ fn remove_channel_test() {
   );
   persistence_db
     .as_mut()
-    .add_persist(ActionPersist::AddChannel { channel: channel_2 });
+    .pin_add_persist(ActionPersist::AddChannel { channel: channel_2 });
 
   sleep(Duration::from_millis(100));
 
@@ -96,7 +96,7 @@ fn remove_channel_test() {
 
   persistence_db
     .as_mut()
-    .add_persist(ActionPersist::RemoveChannel { channel_id: id_1 });
+    .pin_add_persist(ActionPersist::RemoveChannel { channel_id: id_1 });
 
   sleep(Duration::from_millis(100));
 
@@ -126,7 +126,7 @@ fn update_channel_test() {
   );
   persistence_db
     .as_mut()
-    .add_persist(ActionPersist::AddChannel { channel: channel_1 });
+    .pin_add_persist(ActionPersist::AddChannel { channel: channel_1 });
 
   sleep(Duration::from_millis(100));
 
@@ -139,7 +139,7 @@ fn update_channel_test() {
   channel_1.set_name("test 2".to_owned());
   persistence_db
     .as_mut()
-    .add_persist(ActionPersist::UpdateChannel { channel: channel_1 });
+    .pin_add_persist(ActionPersist::UpdateChannel { channel: channel_1 });
 
   sleep(Duration::from_millis(100));
 
@@ -153,7 +153,7 @@ fn update_channel_test() {
   channel_1.set_desc(Some("test channel 2".to_owned()));
   persistence_db
     .as_mut()
-    .add_persist(ActionPersist::UpdateChannel { channel: channel_1 });
+    .pin_add_persist(ActionPersist::UpdateChannel { channel: channel_1 });
 
   sleep(Duration::from_millis(100));
 
@@ -183,7 +183,7 @@ fn add_msg_test() {
   );
   persistence_db
     .as_mut()
-    .add_persist(ActionPersist::AddChannel { channel });
+    .pin_add_persist(ActionPersist::AddChannel { channel });
 
   sleep(Duration::from_millis(100));
 
@@ -201,7 +201,7 @@ fn add_msg_test() {
   );
   persistence_db
     .as_mut()
-    .add_persist(ActionPersist::AddMsg { channel_id, msg });
+    .pin_add_persist(ActionPersist::AddMsg { channel_id, msg });
 
   sleep(Duration::from_millis(100));
 
@@ -231,7 +231,7 @@ fn update_msg_test() {
   );
   persistence_db
     .as_mut()
-    .add_persist(ActionPersist::AddChannel { channel });
+    .pin_add_persist(ActionPersist::AddChannel { channel });
 
   sleep(Duration::from_millis(100));
 
@@ -249,7 +249,7 @@ fn update_msg_test() {
   );
   persistence_db
     .as_mut()
-    .add_persist(ActionPersist::AddMsg { channel_id, msg });
+    .pin_add_persist(ActionPersist::AddMsg { channel_id, msg });
 
   sleep(Duration::from_millis(100));
 
@@ -262,7 +262,7 @@ fn update_msg_test() {
   msg.add_cont(MsgCont::init_text());
   persistence_db
     .as_mut()
-    .add_persist(ActionPersist::UpdateMsg { msg });
+    .pin_add_persist(ActionPersist::UpdateMsg { msg });
 
   sleep(Duration::from_millis(100));
 
@@ -293,7 +293,7 @@ fn query_msgs_by_channel_id_test() {
   );
   persistence_db
     .as_mut()
-    .add_persist(ActionPersist::AddChannel { channel });
+    .pin_add_persist(ActionPersist::AddChannel { channel });
 
   sleep(Duration::from_millis(100));
 
@@ -311,7 +311,7 @@ fn query_msgs_by_channel_id_test() {
   );
   persistence_db
     .as_mut()
-    .add_persist(ActionPersist::AddMsg { channel_id, msg });
+    .pin_add_persist(ActionPersist::AddMsg { channel_id, msg });
 
   sleep(Duration::from_millis(100));
 
@@ -333,7 +333,7 @@ fn add_attachment_test() {
   let attachment_clone = attachment.clone();
   persistence_db
     .as_mut()
-    .add_persist(ActionPersist::AddAttachment { attachment });
+    .pin_add_persist(ActionPersist::AddAttachment { attachment });
 
   sleep(Duration::from_millis(100));
 
