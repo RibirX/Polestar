@@ -76,9 +76,7 @@ fn w_bot_list(app: impl StateWriter<Value = AppGUI>) -> impl WidgetBuilder {
                         (channel_id, bot_msg_id)
                       };
 
-                      println!("channel_id: {:?}, bot_msg_id: {:?}", channel_id, bot_msg_id);
-
-                      let channel_writer = app.split_writer(
+                      let channel_writer = app.map_writer(
                         move |app| { app.data.get_channel(&channel_id).unwrap() },
                         move |app| { app.data.get_channel_mut(&channel_id).unwrap() },
                       );
