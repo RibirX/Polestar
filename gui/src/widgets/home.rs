@@ -37,7 +37,7 @@ pub fn w_home(app: impl StateWriter<Value = AppGUI>) -> impl WidgetBuilder {
             path: PartialPath::new("/chat", 1),
             @ {
               pipe! {
-                let _ = $app.write();
+                let _ = || $app.write();
                 let def_bot_id = *($app.data.info().def_bot().id());
                 let channel_writer = app.split_writer(
                   |app| { app.data.cur_channel().expect("current channel must be existed") },
@@ -49,11 +49,21 @@ pub fn w_home(app: impl StateWriter<Value = AppGUI>) -> impl WidgetBuilder {
           }
           @Route {
             path: PartialPath::new("/settings", 1),
-            @ { w_settings(app.clone_writer()) }
+            @ {
+              pipe! {
+                let _ = || $app.write();
+                w_settings(app.clone_writer())
+              }
+            }
           }
           @Route {
             path: PartialPath::new("/bot_store", 1),
-            @ { w_bot_store(app.clone_writer()) }
+            @ {
+              pipe! {
+                let _ = || $app.write();
+                w_bot_store(app.clone_writer())
+              }
+            }
           }
         }
       }
