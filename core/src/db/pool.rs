@@ -2,6 +2,7 @@ use std::marker::PhantomPinned;
 use std::pin::Pin;
 use std::time::Duration;
 
+use crate::model::Msg;
 use crate::utils::user_data_path;
 use crate::{error::PolestarResult, model::Channel};
 use sqlx::{migrate::MigrateDatabase, sqlite::SqlitePool, Sqlite};
@@ -79,11 +80,18 @@ impl PersistenceDB {
     })
   }
 
-  pub fn add_persist(self: Pin<&mut Self>, persist: ActionPersist) {
+  pub fn pin_add_persist(self: Pin<&mut Self>, persist: ActionPersist) {
     let db = unsafe { self.get_unchecked_mut() };
     db.list.push(persist);
     if db.status == PersistStatus::Done {
       db.run_batch_timeout(db.timeout);
+    }
+  }
+
+  pub fn add_persist(&mut self, persist: ActionPersist) {
+    self.list.push(persist);
+    if self.status == PersistStatus::Done {
+      self.run_batch_timeout(self.timeout);
     }
   }
 
@@ -96,7 +104,7 @@ impl PersistenceDB {
   pub fn query_msgs_by_channel_id(
     &self,
     channel_id: &uuid::Uuid,
-  ) -> PolestarResult<Vec<crate::model::Msg>> {
+  ) -> PolestarResult<Vec<Msg>> {
     self
       .rt
       .block_on(super::executor::msg::query_msgs_by_channel_id(

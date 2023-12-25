@@ -32,8 +32,7 @@ pub fn send_msg(
 
     let update_msg = |act| {
       let mut channel = channel.write();
-      let cur_cont = channel.msg_mut(&msg_id).unwrap().cont_mut(idx);
-      cur_cont.action(act);
+      channel.update_msg(&msg_id, idx, act);
     };
 
     query_open_ai(url, content, headers, |delta| {

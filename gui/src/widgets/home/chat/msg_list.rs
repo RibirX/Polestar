@@ -63,6 +63,7 @@ where
                 let _ = || $channel.write();
                 let channel_cloned = channel.clone_writer();
                 let quote_id = quote_id.clone_writer();
+                // TODO: need use msg id, don't use idx.
                 $channel.msgs().iter().enumerate().map(move |(idx, _)| {
                   let msg = channel_cloned.split_writer(
                     move |channel| {
