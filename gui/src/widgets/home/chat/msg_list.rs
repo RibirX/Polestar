@@ -63,14 +63,14 @@ where
                 let _ = || $channel.write();
                 let channel_cloned = channel.clone_writer();
                 let quote_id = quote_id.clone_writer();
-                // TODO: need use msg id, don't use idx.
-                $channel.msgs().iter().enumerate().map(move |(idx, _)| {
+                $channel.msgs().iter().map(move |m| {
+                  let id = *m.id();
                   let msg = channel_cloned.split_writer(
                     move |channel| {
-                      channel.msgs().get(idx).expect("msg must be existed")
+                      channel.msg(&id).expect("msg must be existed")
                     },
                     move |channel| {
-                      channel.msgs_mut().get_mut(idx).expect("msg must be existed")
+                      channel.msg_mut(&id).expect("msg must be existed")
                     },
                   );
                   @ { w_msg(msg, quote_id.clone_writer()) }
