@@ -1,5 +1,4 @@
-use polestar_core::model::{Channel, Msg, MsgAction, MsgBody, MsgCont, MsgRole};
-use polestar_core::service::open_ai::mock_stream_string;
+use polestar_core::model::{Channel, Msg, MsgCont, MsgRole};
 use ribir::prelude::*;
 use uuid::Uuid;
 
@@ -7,6 +6,7 @@ use crate::style::decorator::channel::message_style;
 use crate::style::{GAINSBORO, WHITE};
 use crate::theme::polestar_svg;
 use crate::widgets::common::IconButton;
+use crate::widgets::helper::send_msg;
 
 use super::onboarding::w_msg_onboarding;
 
@@ -147,159 +147,181 @@ where
   W: StateWriter<Value = Channel>,
   <S::Writer as StateWriter>::OriginWriter: StateWriter<Value = Channel>,
   <<S::Writer as StateWriter>::Writer as StateWriter>::OriginWriter: StateWriter<Value = Channel>,
+  <<<S::Writer as StateWriter>::Writer as StateWriter>::Writer as StateWriter>::OriginWriter:
+    StateWriter<Value = Channel>,
 {
   let channel = msg.origin_writer().clone_writer();
+  let channel2 = channel.clone_writer();
   fn_widget! {
-    let mut stack = @Stack {};
+    @ {
+      pipe! {
+        let mut stack = @Stack {};
 
-    let role = *$msg.role();
-    let mut row = @Row {
-      item_gap: 8.,
-      reverse: matches!(role, MsgRole::User)
-    };
+        let role = *$msg.role();
+        let mut row = @Row {
+          item_gap: 8.,
+          reverse: matches!(role, MsgRole::User)
+        };
 
-    let msg_ops_anchor = {
-      match $msg.role() {
-        MsgRole::User => @RelativeAnchor {
-          anchor: pipe!(Anchor::right($row.layout_width() + 4.))
-        },
-        _ => @RelativeAnchor {
-          anchor: pipe!(Anchor::left($row.layout_width() + 4.))
-        },
-      }
-    };
+        let msg_ops_anchor = {
+          match $msg.role() {
+            MsgRole::User => @RelativeAnchor {
+              anchor: pipe!(Anchor::right($row.layout_width() + 4.))
+            },
+            _ => @RelativeAnchor {
+              anchor: pipe!(Anchor::left($row.layout_width() + 4.))
+            },
+          }
+        };
 
-    let retry_msg = msg.clone_writer();
+        let retry_msg = msg.clone_writer();
 
-    let msg_ops = @$msg_ops_anchor {
-      visible: pipe! {
-        $stack.mouse_hover() && !$msg.role().is_system()
-      },
-      @ {
-        match $msg.role() {
-          MsgRole::User | MsgRole::Bot(_) => {
-            @MsgOps {
-              @ {
-                (!$channel.is_feedback()).then(move || {
+        let msg_ops = @$msg_ops_anchor {
+          visible: pipe! {
+            $stack.mouse_hover() && !$msg.role().is_system()
+          },
+          @ {
+            match $msg.role() {
+              MsgRole::User | MsgRole::Bot(_) => {
+                @MsgOps {
+                  @ {
+                    let quote_id = quote_id.clone_writer();
+                    (!$channel.is_feedback()).then(move || {
+                      @MsgOp {
+                        cb: Box::new(move || {
+                          *quote_id.write() = Some(*$msg.id())
+                        }) as Box<dyn Fn()>,
+                        @IconButton {
+                          padding: EdgeInsets::all(4.),
+                          size: IconSize::of(ctx!()).tiny,
+                          @ { polestar_svg::REPLY }
+                        }
+                      }
+                    })
+                  }
                   @MsgOp {
                     cb: Box::new(move || {
-                      *quote_id.write() = Some(*$msg.id())
+                      if let Some(text) = $msg.cur_cont_ref().text() {
+                        let clipboard = AppCtx::clipboard();
+                        let _ = clipboard.borrow_mut().clear();
+                        let _ = clipboard.borrow_mut().write_text(text);
+                      }
                     }) as Box<dyn Fn()>,
                     @IconButton {
                       padding: EdgeInsets::all(4.),
                       size: IconSize::of(ctx!()).tiny,
-                      @ { polestar_svg::REPLY }
+                      @ { polestar_svg::CLIPBOARD }
                     }
                   }
-                })
-              }
-              @MsgOp {
-                cb: Box::new(move || {
-                  if let Some(text) = $msg.cur_cont_ref().text() {
-                    let clipboard = AppCtx::clipboard();
-                    let _ = clipboard.borrow_mut().clear();
-                    let _ = clipboard.borrow_mut().write_text(text);
+                  @ {
+                    let _ = || $channel.write();
+                    let retry_msg = retry_msg.clone_writer();
+                    let channel = channel.clone_writer();
+                    ($msg.role().is_bot()).then(move || {
+                      @MsgOp {
+                        // TODO: cb code is messy, need to refactor.
+                        cb: Box::new(move || {
+                          let _ = || $retry_msg.write();
+                          let _ = || $channel.write();
+                          let source_id = {
+                            let retry_msg_write = $retry_msg.write();
+                            *retry_msg_write.meta().source_id().unwrap()
+                          };
+                          let msg_id = *$retry_msg.id();
+                          let source_msg_text = $channel
+                            .msg(&source_id)
+                            .and_then(|msg| msg.cur_cont_ref().text().map(|text| text.to_owned()))
+                            .unwrap_or_default().clone();
+                          let (cur_idx, bot_id) = {
+                            let mut retry_msg_write = $retry_msg.write();
+                            let cont = MsgCont::init_text();
+                            retry_msg_write.add_cont(cont);
+                            let cur_idx = retry_msg_write.cur_idx();
+                            let bot_id = *retry_msg_write.role().bot().unwrap();
+                            (cur_idx, bot_id)
+                          };
+                          send_msg(channel.clone_writer(), source_msg_text, cur_idx, msg_id, bot_id);
+                        }) as Box<dyn Fn()>,
+                        @IconButton {
+                          padding: EdgeInsets::all(4.),
+                          size: IconSize::of(ctx!()).tiny,
+                          @ { polestar_svg::RETRY }
+                        }
+                      }
+                    })
                   }
-                }) as Box<dyn Fn()>,
-                @IconButton {
-                  padding: EdgeInsets::all(4.),
-                  size: IconSize::of(ctx!()).tiny,
-                  @ { polestar_svg::CLIPBOARD }
+                }.widget_build(ctx!())
+              },
+              _ => {
+                @Void {}.widget_build(ctx!())
+              }
+            }
+          }
+        };
+        @$stack {
+          @Row {
+            h_align: match $msg.role() {
+              MsgRole::User => HAlign::Right,
+              _ => HAlign::Left,
+            },
+            @$row {
+              @Avatar {
+                @ { Label::new("A") }
+              }
+              @Column {
+                @ {
+                  $msg.role().bot().and_then(move |bot_id| {
+                    $channel2.app_info().map(|info| {
+                      let bot = info.get_bot_or_default(Some(*bot_id));
+                      @Text { text: bot.name().to_owned() }
+                    })
+                  })
+                }
+                @ConstrainedBox {
+                  clamp: BoxClamp {
+                    min: Size::zero(),
+                    max: Size::new(560., f32::INFINITY),
+                  },
+                  @ {
+                    pipe!($msg.cur_idx()).map(move |_| {
+                      let _msg_capture = || $msg.write();
+                      let default_txt = String::new();
+                      // TODO: support Image Type.
+                      let text = $msg
+                        .cur_cont_ref()
+                        .text()
+                        .unwrap_or_else(|| &default_txt).to_owned();
+                      let msg2 = msg.clone_writer();
+                      message_style(
+                        @Column {
+                          @ { w_msg_quote(msg2) }
+                          @ {
+                            let msg2 = msg.clone_writer();
+                            pipe! {
+                              ($msg.cont_list().len() > 1).then(|| {
+                                w_msg_multi_rst(msg2.clone_writer())
+                              })
+                            }
+                          }
+                          @TextSelectable {
+                            @Text {
+                              text,
+                              overflow: Overflow::AutoWrap,
+                              text_style: TypographyTheme::of(ctx!()).body_large.text.clone()
+                            }
+                          }
+                        }.widget_build(ctx!()),
+                        *$msg.role()
+                      )
+                    })
+                  }
                 }
               }
-              @ {
-                let retry_msg = retry_msg.clone_writer();
-                ($msg.role().is_bot()).then(move || {
-                  @MsgOp {
-                    cb: Box::new(move || {
-                      let cont = MsgCont::init_text();
-                      let mut msg_write = $retry_msg.write();
-                      msg_write.add_cont(cont);
-
-                      let cont = msg_write.cur_cont_mut();
-                      mock_stream_string("", |delta| {
-                        cont.action(MsgAction::Receiving(MsgBody::Text(Some(delta))))
-                      });
-                    }) as Box<dyn Fn()>,
-                    @IconButton {
-                      padding: EdgeInsets::all(4.),
-                      size: IconSize::of(ctx!()).tiny,
-                      @ { polestar_svg::RETRY }
-                    }
-                  }
-                })
-              }
-            }.widget_build(ctx!())
-          },
-          _ => {
-            @Void {}.widget_build(ctx!())
-          }
-        }
-      }
-    };
-
-    @$stack {
-      @Row {
-        h_align: match $msg.role() {
-          MsgRole::User => HAlign::Right,
-          _ => HAlign::Left,
-        },
-        @$row {
-          @Avatar {
-            @ { Label::new("A") }
-          }
-          @Column {
-            @ {
-              $msg.role().bot().and_then(move |bot_id| {
-                $channel.app_info().map(|info| {
-                  let bot = info.get_bot_or_default(Some(*bot_id));
-                  @Text { text: bot.name().to_owned() }
-                })
-              })
-            }
-            @ConstrainedBox {
-              clamp: BoxClamp {
-                min: Size::zero(),
-                max: Size::new(560., f32::INFINITY),
-              },
-              @ {
-                pipe!($msg.cur_idx()).map(move |_| {
-                  let _msg_capture = || $msg.write();
-                  let default_txt = String::new();
-                  // TODO: support Image Type.
-                  let text = $msg
-                    .cur_cont_ref()
-                    .text()
-                    .unwrap_or_else(|| &default_txt).to_owned();
-                  let msg2 = msg.clone_writer();
-                  message_style(
-                    @Column {
-                      @ { w_msg_quote(msg2) }
-                      @ {
-                        let msg2 = msg.clone_writer();
-                        pipe! {
-                          ($msg.cont_list().len() > 1).then(|| {
-                            w_msg_multi_rst(msg2.clone_writer())
-                          })
-                        }
-                      }
-                      @TextSelectable {
-                        @Text {
-                          text,
-                          overflow: Overflow::AutoWrap,
-                          text_style: TypographyTheme::of(ctx!()).body_large.text.clone()
-                        }
-                      }
-                    }.widget_build(ctx!()),
-                    *$msg.role()
-                  )
-                })
-              }
             }
           }
+          @ { msg_ops }
         }
       }
-      @ { msg_ops }
     }
   }
 }
