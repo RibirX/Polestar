@@ -1,5 +1,7 @@
-use std::{marker::PhantomPinned, pin::Pin, ptr::NonNull, rc::Rc};
-
+use once_cell::sync::Lazy;
+use std::{
+  collections::HashMap, marker::PhantomPinned, pin::Pin, ptr::NonNull, rc::Rc, sync::Mutex,
+};
 use uuid::Uuid;
 
 use crate::{
@@ -22,6 +24,27 @@ pub struct AppInfo {
   has_official_server: bool,
   _marker: PhantomPinned,
 }
+
+#[derive(Clone, Copy, Eq, PartialEq, Hash, Debug)]
+pub enum GlbVar {
+  Version,
+  PolestarKey,
+}
+
+impl ToString for GlbVar {
+  fn to_string(&self) -> String {
+    match self {
+      GlbVar::Version => "Version".to_owned(),
+      GlbVar::PolestarKey => "PolestarKey".to_owned(),
+    }
+  }
+}
+
+pub(crate) static GLOBAL_VARS: Lazy<Mutex<HashMap<GlbVar, String>>> = Lazy::new(|| {
+  let mut vars = HashMap::new();
+  vars.insert(GlbVar::Version, env!("CARGO_PKG_VERSION").to_owned());
+  Mutex::new(vars)
+});
 
 impl AppInfo {
   fn save_local(&self) {
@@ -98,12 +121,10 @@ pub struct AppData {
 pub fn init_app_data() -> AppData {
   utils::launch::setup_project();
   // 1. load bots config from local file.
-  // TODO: need handle load bot error.
   let bots = utils::load_bot_cfg_file().expect("Failed to load bot config");
   // 2. judge bot has official server.
   let has_official_server = utils::has_official_server(&bots);
   // 3. if has official server, load user info from local file.
-  // TODO: load user info from local file.
   let cur_user = utils::read_current_user().unwrap_or_default();
   let local_state = utils::read_local_state(&cur_user).unwrap_or_default();
   let (user_data_path, user) = if has_official_server {
@@ -119,6 +140,10 @@ pub fn init_app_data() -> AppData {
         let mut user_builder = UserBuilder::default();
         user_builder = user_builder.uid(uid);
         if let Some(token) = token {
+          GLOBAL_VARS
+            .try_lock()
+            .unwrap()
+            .insert(GlbVar::PolestarKey, token.to_owned());
           user_builder = user_builder.token(token);
         }
         (

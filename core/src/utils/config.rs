@@ -8,6 +8,10 @@ use crate::{error::PolestarResult, model::Bot, project_bot_config_path, project_
 #[derive(Deserialize, Debug)]
 struct BotCfg {
   bots: Vec<Bot>,
+}
+
+#[derive(Deserialize, Debug)]
+struct CfgVars {
   vars: Option<HashMap<String, String>>,
 }
 
@@ -64,12 +68,7 @@ pub fn open_user_config_folder() {
 }
 
 fn bot_vars_parser(file: &str) -> PolestarResult<Vec<Bot>> {
-  let bot_cfg = serde_json::from_str::<serde_json::Value>(file)?;
-  let vars = bot_cfg.get("vars").map(|vars| {
-    serde_json::from_value::<HashMap<String, String>>(vars.clone()).expect("can't parse vars")
-  });
-
-  if let Some(vars) = vars {
+  if let Some(vars) = serde_json::from_str::<CfgVars>(file)?.vars {
     let bots_str = String::from(file);
     let replaced_str = vars.iter().fold(bots_str, |str, (key, value)| {
       let regex = Regex::new(&format!(r"([^$])\{{{}\}}", key)).unwrap();
@@ -154,7 +153,7 @@ mod test {
     let bots = bots.expect("can't parse bots");
     assert_eq!(bots.len(), 2);
     assert_eq!(
-      bots[0].headers().get("Authorization"),
+      bots[1].headers().get("Authorization"),
       Some(&String::from("abc"))
     );
   }

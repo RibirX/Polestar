@@ -1,7 +1,5 @@
 {
-  "vars": {
-    "OpenAI": "v1.eyJ1c2VyX2lkIjoxMDAxMDIsImV4cCI6MTcwMTE0ODM5MywidmVyIjoidjEifQ.h0He4zJA8EnthH698wJF4uAwGFrk7gZN9JweeY_1hC0"
-  },
+  "vars": {},
   "bots": [
     {
       "id": "87cc7e88-fd55-4c01-9a34-d0f1397b1c73",
@@ -18,13 +16,13 @@
       "lang": [
         "en"
       ],
-      "sp": "OpenAI",
+      "sp": "Polestar",
       "url": "https://api.ribir.org/stream/open_ai/v1/chat/completions",
       "headers": {
-        "User-Agent": "PolestarChat/v1.0.0",
+        "User-Agent": "PolestarChat/${Version}",
         "Content-Type": "application/json",
-        "Authorization": "{OpenAI}",
-        "Version": "v1.0.0"
+        "Authorization": "${PolestarKey}",
+        "Version": "${Version}"
       },
       "params": {
         "model": "gpt-3.5-turbo",
@@ -50,10 +48,10 @@
       "sp": "Polestar",
       "url": "https://api.ribir.org/stream/open_ai/v1/chat/completions",
       "headers": {
-        "User-Agent": "PolestarChat/v1.0.0",
+        "User-Agent": "PolestarChat/${Version}",
         "Content-Type": "application/json",
-        "Authorization": "{OpenAI}",
-        "Version": "v1.0.0"
+        "Authorization": "${PolestarKey}",
+        "Version": "${Version}"
       },
       "params": {
         "model": "gpt-3.5-turbo",
@@ -75,13 +73,13 @@
       "lang": [
         "en"
       ],
-      "sp": "OpenAI",
+      "sp": "Polestar",
       "url": "https://api.ribir.org/stream/open_ai/v1/chat/completions",
       "headers": {
-        "User-Agent": "PolestarChat/v1.0.0",
+        "User-Agent": "PolestarChat/${Version}",
         "Content-Type": "application/json",
-        "Authorization": "{OpenAI}",
-        "Version": "v1.0.0"
+        "Authorization": "${PolestarKey}",
+        "Version": "${Version}"
       },
       "params": {
         "model": "gpt-3.5-turbo",
