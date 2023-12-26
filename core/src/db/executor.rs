@@ -2,7 +2,7 @@ use uuid::Uuid;
 
 use crate::{
   error::PolestarResult,
-  model::{Attachment, Channel, Msg},
+  model::{Attachment, ChannelCfg, ChannelId, Msg},
 };
 
 use super::pool::DbPool;
@@ -13,13 +13,34 @@ pub mod msg;
 
 #[derive(Clone)]
 pub enum ActionPersist {
-  AddMsg { channel_id: Uuid, msg: Msg },
-  UpdateMsg { msg: Msg },
-  RemoveMsg { msg_id: Uuid },
-  AddChannel { channel: Channel },
-  RemoveChannel { channel_id: Uuid },
-  UpdateChannel { channel: Channel },
-  AddAttachment { attachment: Attachment },
+  AddMsg {
+    channel_id: Uuid,
+    msg: Msg,
+  },
+  UpdateMsg {
+    msg: Msg,
+  },
+  RemoveMsg {
+    msg_id: Uuid,
+  },
+  AddChannel {
+    id: ChannelId,
+    name: String,
+    desc: Option<String>,
+    cfg: ChannelCfg,
+  },
+  RemoveChannel {
+    channel_id: Uuid,
+  },
+  UpdateChannel {
+    id: ChannelId,
+    name: String,
+    desc: Option<String>,
+    cfg: ChannelCfg,
+  },
+  AddAttachment {
+    attachment: Attachment,
+  },
 }
 
 pub trait Persist {
@@ -38,14 +59,14 @@ impl Persist for ActionPersist {
       ActionPersist::RemoveMsg { msg_id } => {
         msg::remove_msg(pool, msg_id).await?;
       }
-      ActionPersist::AddChannel { channel } => {
-        channel::add_channel(pool, channel).await?;
+      ActionPersist::AddChannel { id, name, desc, cfg } => {
+        channel::add_channel(pool, id, name.as_str(), desc.as_deref(), cfg).await?;
       }
       ActionPersist::RemoveChannel { channel_id } => {
         channel::remove_channel(pool, channel_id).await?;
       }
-      ActionPersist::UpdateChannel { channel } => {
-        channel::update_channel(pool, channel).await?;
+      ActionPersist::UpdateChannel { id, name, desc, cfg } => {
+        channel::update_channel(pool, id, name, desc.as_deref(), cfg).await?;
       }
       ActionPersist::AddAttachment { attachment } => {
         attachment::add_attachment(pool, attachment).await?;

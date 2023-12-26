@@ -1,19 +1,29 @@
 use sqlx::Row;
 use uuid::Uuid;
 
-use crate::{db::pool::DbPool, error::PolestarError, model::Channel};
+use crate::{
+  db::pool::DbPool,
+  error::PolestarError,
+  model::{Channel, ChannelCfg, ChannelId},
+};
 
-pub async fn add_channel(pool: &DbPool, channel: &Channel) -> Result<(), PolestarError> {
-  let cfg = serde_json::to_string(channel.cfg())?;
+pub async fn add_channel(
+  pool: &DbPool,
+  id: &ChannelId,
+  name: &str,
+  desc: Option<&str>,
+  cfg: &ChannelCfg,
+) -> Result<(), PolestarError> {
+  let cfg = serde_json::to_string(cfg)?;
   let res = sqlx::query(
     r#"
     INSERT INTO channel (id, name, desc, cfg)
     VALUES (?1, ?2, ?3, ?4)
     "#,
   )
-  .bind(channel.id())
-  .bind(channel.name())
-  .bind(channel.desc())
+  .bind(id)
+  .bind(name)
+  .bind(desc)
   .bind(cfg)
   .execute(pool)
   .await?;
@@ -77,8 +87,14 @@ pub async fn query_channel_by_id(pool: &DbPool, id: &Uuid) -> Result<Channel, Po
   Ok(channel)
 }
 
-pub async fn update_channel(pool: &DbPool, channel: &Channel) -> Result<(), PolestarError> {
-  let cfg = serde_json::to_string(channel.cfg())?;
+pub async fn update_channel(
+  pool: &DbPool,
+  id: &ChannelId,
+  name: &str,
+  desc: Option<&str>,
+  cfg: &ChannelCfg,
+) -> Result<(), PolestarError> {
+  let cfg = serde_json::to_string(cfg)?;
   let res = sqlx::query(
     r#"
     UPDATE channel
@@ -86,10 +102,10 @@ pub async fn update_channel(pool: &DbPool, channel: &Channel) -> Result<(), Pole
     WHERE id = ?4
     "#,
   )
-  .bind(channel.name())
-  .bind(channel.desc())
+  .bind(name)
+  .bind(desc)
   .bind(cfg)
-  .bind(channel.id())
+  .bind(id)
   .execute(pool)
   .await?;
 

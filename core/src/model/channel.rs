@@ -101,7 +101,7 @@ impl Channel {
     let channel_id = *self.id();
     self.db.as_mut().map(|db| unsafe {
       db.as_mut()
-        .add_persist(ActionPersist::AddMsg { channel_id, msg })
+        .persist_async(ActionPersist::AddMsg { channel_id, msg })
     });
   }
 
@@ -115,7 +115,7 @@ impl Channel {
         self
           .db
           .as_mut()
-          .map(|db| unsafe { db.as_mut().add_persist(ActionPersist::UpdateMsg { msg }) });
+          .map(|db| unsafe { db.as_mut().persist_async(ActionPersist::UpdateMsg { msg }) });
       }
     }
   }

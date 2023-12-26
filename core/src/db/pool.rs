@@ -1,11 +1,11 @@
 use std::marker::PhantomPinned;
-use std::pin::Pin;
-use std::time::Duration;
 
 use crate::model::Msg;
 use crate::utils::user_data_path;
 use crate::{error::PolestarResult, model::Channel};
+use once_cell::sync::Lazy;
 use sqlx::{migrate::MigrateDatabase, sqlite::SqlitePool, Sqlite};
+use tokio::{runtime::Handle, sync::mpsc::UnboundedSender};
 use uuid::Uuid;
 
 use super::executor::{ActionPersist, Persist};
@@ -21,6 +21,17 @@ pub fn db_path() -> String {
   )
 }
 
+pub fn runtime() -> Handle {
+  static RT: Lazy<tokio::runtime::Runtime> = Lazy::new(|| {
+    tokio::runtime::Builder::new_multi_thread()
+      .worker_threads(2)
+      .enable_all()
+      .build()
+      .unwrap()
+  });
+  RT.handle().clone()
+}
+
 pub async fn init_db(db_path: &str) -> PolestarResult<DbPool> {
   Sqlite::create_database(db_path).await?;
   log::info!("Init user database success!");
@@ -31,94 +42,48 @@ pub async fn init_db(db_path: &str) -> PolestarResult<DbPool> {
   Ok(pool)
 }
 
-#[derive(PartialEq, Eq)]
-pub enum PersistStatus {
-  Doing,
-  Done,
-}
-
 pub struct PersistenceDB {
-  rt: tokio::runtime::Runtime,
   inner: DbPool,
-  list: Vec<ActionPersist>,
-  status: PersistStatus,
-  timeout: Duration,
+  sender: UnboundedSender<ActionPersist>,
   _marker: PhantomPinned,
 }
 
 impl PersistenceDB {
   pub fn connect(
     init_db: impl std::future::Future<Output = PolestarResult<DbPool>>,
-    timeout: Duration,
   ) -> PolestarResult<Self> {
-    let rt = tokio::runtime::Builder::new_multi_thread()
-      .worker_threads(2)
-      .enable_all()
-      .build()?;
-    let inner = rt.block_on(init_db)?;
+    let inner = runtime().block_on(init_db)?;
+    let db = inner.clone();
+    let (sender, mut receiver) = tokio::sync::mpsc::unbounded_channel::<ActionPersist>();
+    runtime().spawn(async move {
+      while let Some(msg) = receiver.recv().await {
+        msg.write(&db).await.expect("Failed to write persist");
+      }
+    });
     Ok(Self {
-      rt,
       inner,
-      list: vec![],
-      status: PersistStatus::Done,
-      timeout,
+      sender,
       _marker: PhantomPinned,
     })
   }
 
-  pub fn run_batch_timeout(&mut self, timeout: Duration) {
-    self.status = PersistStatus::Doing;
-    self.rt.block_on(async {
-      tokio::time::sleep(timeout).await;
-      while let Some(persist) = self.list.pop() {
-        persist
-          .write(&self.inner)
-          .await
-          .expect("Failed to write persist");
-      }
-      self.status = PersistStatus::Done;
-    })
+  pub fn persist_async(&self, persist: ActionPersist) { let _ = self.sender.send(persist); }
+
+  pub async fn query_channels(&self) -> PolestarResult<Vec<Channel>> {
+    super::executor::channel::query_channels(&self.inner).await
   }
 
-  pub fn pin_add_persist(self: Pin<&mut Self>, persist: ActionPersist) {
-    let db = unsafe { self.get_unchecked_mut() };
-    db.list.push(persist);
-    if db.status == PersistStatus::Done {
-      db.run_batch_timeout(db.timeout);
-    }
-  }
-
-  pub fn add_persist(&mut self, persist: ActionPersist) {
-    self.list.push(persist);
-    if self.status == PersistStatus::Done {
-      self.run_batch_timeout(self.timeout);
-    }
-  }
-
-  pub fn query_channels(&self) -> PolestarResult<Vec<Channel>> {
-    self
-      .rt
-      .block_on(super::executor::channel::query_channels(&self.inner))
-  }
-
-  pub fn query_msgs_by_channel_id(
+  pub async fn query_msgs_by_channel_id(
     &self,
     channel_id: &uuid::Uuid,
   ) -> PolestarResult<Vec<Msg>> {
-    self
-      .rt
-      .block_on(super::executor::msg::query_msgs_by_channel_id(
-        &self.inner,
-        channel_id,
-      ))
+    super::executor::msg::query_msgs_by_channel_id(&self.inner, channel_id).await
   }
 
-  pub fn query_attachment_by_name(&self, name: &Uuid) -> PolestarResult<crate::model::Attachment> {
-    self
-      .rt
-      .block_on(super::executor::attachment::query_attachment_by_name(
-        &self.inner,
-        name,
-      ))
+  pub async fn query_attachment_by_name(
+    &self,
+    name: &Uuid,
+  ) -> PolestarResult<crate::model::Attachment> {
+    super::executor::attachment::query_attachment_by_name(&self.inner, name).await
   }
 }
