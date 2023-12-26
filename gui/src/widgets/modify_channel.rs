@@ -92,12 +92,14 @@ pub fn w_modify_channel_modal(
 
     let bot_list = @BotList {
       bots: $app.data.info().bots_rc(),
+      selected_id: $channel.cfg().def_bot_id().cloned(),
     };
 
     let mut selected_bot_box = @LayoutBox {};
 
     let channel_state = State::value(ChannelState {
       channel_mode: $channel.cfg().mode(),
+      selected_bot: $channel.cfg().def_bot_id().cloned(),
       ..Default::default()
     });
 

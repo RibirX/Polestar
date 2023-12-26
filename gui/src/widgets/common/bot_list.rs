@@ -17,16 +17,26 @@ pub struct BotList {
 
 type BotName = String;
 impl BotList {
-  pub fn set_filter(&mut self, filter: String) { self.filter = filter; }
+  pub fn set_filter(&mut self, filter: String, reset_select: bool) {
+    self.filter = filter;
+    if reset_select
+      || !self
+        .selected_bot()
+        .map(|(_, name)| name.contains(&self.filter))
+        .unwrap_or_default()
+    {
+      self.init_select(true);
+    }
+  }
 
   pub fn move_up(&mut self) {
     let selected_id = self.next_selected(&self.selected_id, |this| this.get_bots().rev());
-    self.select(selected_id)
+    self.set_selected_bot(selected_id)
   }
 
   pub fn move_down(&mut self) {
     let selected_id = self.next_selected(&self.selected_id, |this| this.get_bots());
-    self.select(selected_id)
+    self.set_selected_bot(selected_id)
   }
 
   fn next_selected<'a, I>(
@@ -67,9 +77,12 @@ impl BotList {
       .filter(|bot| self.filter.is_empty() || bot.name().contains(&self.filter))
   }
 
-  fn select(&mut self, bot_id: Option<Uuid>) { self.selected_id = bot_id; }
+  pub fn set_selected_bot(&mut self, bot_id: Option<Uuid>) { self.selected_id = bot_id; }
 
-  fn init_select(&mut self) {
+  fn init_select(&mut self, force: bool) {
+    if self.selected_id.is_some() && !force {
+      return;
+    }
     let selected_id = { self.get_bots().next().map(|bot| *bot.id()) };
     self.selected_id = selected_id;
   }
@@ -88,11 +101,7 @@ impl Compose for BotList {
         }).value_chain(|s| s.distinct_until_changed().box_it()),
       };
 
-      this.silent().init_select();
-      watch!($this.filter.clone())
-        .distinct_until_changed()
-        .subscribe(move |_| $this.silent().init_select());
-
+      this.silent().init_select(false);
       @$list {
         @ {
           pipe!($this.filter.clone())
@@ -102,7 +111,7 @@ impl Compose for BotList {
                 let bot_id = *bot.id();
                 @ListItem {
                   on_tap: move |_| {
-                    $this.write().select(Some(bot_id));
+                    $this.write().set_selected_bot(Some(bot_id));
                   },
                   @Leading {
                     @ {

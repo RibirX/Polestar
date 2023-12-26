@@ -39,7 +39,7 @@ pub fn w_editor(
         .distinct_until_changed()
         .subscribe(move |hint| {
           if let Some(mut hint) = hint {
-            $bots.write().set_filter(hint.split_off(1));
+            $bots.write().set_filter(hint.split_off(1), true);
             $bots.write().visible = $bots.get_bots().count() > 0;
           } else {
             $bots.write().visible = false;
