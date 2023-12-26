@@ -1,6 +1,8 @@
 use derive_builder::Builder;
 use serde::Deserialize;
 
+use super::GLOBAL_VARS;
+
 #[derive(Builder, Debug, Default)]
 #[builder(name = "UserBuilder")]
 #[builder(pattern = "owned")]
@@ -18,7 +20,15 @@ impl User {
   pub fn token(&self) -> Option<&String> { self.token.as_ref() }
 
   #[inline]
-  pub fn set_token(&mut self, token: Option<String>) { self.token = token; }
+  pub fn set_token(&mut self, token: Option<String>) {
+    self.token = token.clone();
+    if let Some(token) = token {
+      GLOBAL_VARS
+        .try_lock()
+        .unwrap()
+        .insert(super::GlbVar::PolestarKey, token);
+    }
+  }
 
   #[inline]
   pub fn nick_name(&self) -> Option<&String> { self.nick_name.as_ref() }

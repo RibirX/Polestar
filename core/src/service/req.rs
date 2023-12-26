@@ -1,8 +1,9 @@
 use futures_util::StreamExt;
+use regex::Regex;
 use reqwest::{header::HeaderMap, Method, RequestBuilder};
 use reqwest_eventsource::EventSource;
 
-use crate::error::PolestarError;
+use crate::{error::PolestarError, model::GLOBAL_VARS};
 
 pub fn req_builder(
   url: &str,
@@ -12,7 +13,25 @@ pub fn req_builder(
 ) -> RequestBuilder {
   let client = reqwest::Client::new();
   let mut req_builder = client.request(method, url);
-  req_builder = req_builder.headers(headers);
+  for (key, value) in headers.iter() {
+    if let Ok(str) = value.to_str() {
+      let value =
+        GLOBAL_VARS
+          .try_lock()
+          .unwrap()
+          .iter()
+          .fold(String::from(str), |str, (key, value)| {
+            let regex = Regex::new(&format!(r"\$\{{{}\}}", key.to_string())).unwrap();
+            regex
+              .replace_all(&str, format!("${{1}}{}", value))
+              .to_string()
+          });
+      req_builder = req_builder.header(key, value);
+      continue;
+    }
+
+    req_builder = req_builder.header(key, value);
+  }
   if let Some(body) = body {
     req_builder = req_builder.body(body);
   }
