@@ -99,10 +99,12 @@ impl Channel {
   pub fn add_msg(&mut self, msg: Msg) {
     self.msgs_coll.msgs.push(msg.clone());
     let channel_id = *self.id();
-    self.db.as_mut().map(|db| unsafe {
-      db.as_mut()
-        .persist_async(ActionPersist::AddMsg { channel_id, msg })
-    });
+    if let Some(db) = self.db.as_mut() {
+      unsafe {
+        db.as_mut()
+          .persist_async(ActionPersist::AddMsg { channel_id, msg })
+      }
+    }
   }
 
   pub fn update_msg(&mut self, msg_id: &Uuid, idx: usize, act: MsgAction) {
@@ -112,10 +114,9 @@ impl Channel {
       msg.cont_mut(idx).action(act);
       if is_need_persist {
         let msg = msg.clone();
-        self
-          .db
-          .as_mut()
-          .map(|db| unsafe { db.as_mut().persist_async(ActionPersist::UpdateMsg { msg }) });
+        if let Some(db) = self.db.as_mut() {
+          unsafe { db.as_mut().persist_async(ActionPersist::UpdateMsg { msg }) }
+        }
       }
     }
   }

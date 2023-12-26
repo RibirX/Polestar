@@ -1,5 +1,5 @@
 #[cfg(target_os = "windows")]
-pub fn app_init_hook() -> bool { return windows_singleton_guard(); }
+pub fn app_init_hook() -> bool { windows_singleton_guard() }
 
 #[cfg(target_os = "windows")]
 pub fn app_run_before_hook() {}
@@ -87,14 +87,13 @@ fn windows_singleton_guard() -> bool {
             std::ptr::null_mut(),
           )
         } != 0)
+          && readed != 0
         {
-          if readed != 0 {
-            unsafe {
-              bytes.set_len(readed as usize);
-            }
-            let msg = String::from_utf8_lossy(&bytes).to_string();
-            event_sender.send(AppEvent::OpenUrl(msg.clone()));
+          unsafe {
+            bytes.set_len(readed as usize);
           }
+          let msg = String::from_utf8_lossy(&bytes).to_string();
+          event_sender.send(AppEvent::OpenUrl(msg.clone()));
         }
         unsafe { DisconnectNamedPipe(h_pipe) };
       }
