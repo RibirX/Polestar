@@ -91,7 +91,7 @@ impl AppInfo {
 
 pub struct AppData {
   channels: Vec<Channel>,
-  db: Option<Pin<Box<PersistenceDB>>>,
+  db: Option<Box<PersistenceDB>>,
   info: Pin<Box<AppInfo>>,
 }
 
@@ -172,23 +172,23 @@ pub fn init_app_data() -> AppData {
 }
 
 #[cfg(feature = "persistence")]
-fn init_db() -> (Option<Pin<Box<PersistenceDB>>>, Vec<Channel>) {
-  use crate::db::pool::{db_path, init_db};
-  use std::time::Duration;
+fn init_db() -> (Option<Box<PersistenceDB>>, Vec<Channel>) {
+  use crate::db::pool::{db_path, init_db, runtime};
+  let db = PersistenceDB::connect(init_db(&db_path())).expect("Failed to connect db");
 
-  let db = PersistenceDB::connect(init_db(&db_path()), Duration::from_secs(1))
-    .expect("Failed to connect db");
-
-  let mut channels = db.query_channels().expect("Failed to query channels");
+  let mut channels =
+    runtime().block_on(async { db.query_channels().await.expect("Failed to query channels") });
 
   channels.iter_mut().for_each(|channel| {
-    let msgs = db
-      .query_msgs_by_channel_id(channel.id())
-      .expect("Failed to query msgs");
+    let msgs = runtime().block_on(async {
+      db.query_msgs_by_channel_id(channel.id())
+        .await
+        .expect("Failed to query msgs")
+    });
     channel.load_msgs(msgs);
   });
 
-  let mut db_pin = Box::pin(db);
+  let db = Box::new(db);
 
   // if channels is empty, create a default channel.
   if channels.is_empty() {
@@ -201,17 +201,20 @@ fn init_db() -> (Option<Pin<Box<PersistenceDB>>>, Vec<Channel>) {
       None,
       None,
     );
-    db_pin
-      .as_mut()
-      .pin_add_persist(ActionPersist::AddChannel { channel: channel.clone() });
+    db.persist_async(ActionPersist::AddChannel {
+      id: channel_id,
+      name: "Untitled".to_owned(),
+      desc: None,
+      cfg: ChannelCfg::default(),
+    });
     channels.push(channel);
   }
 
-  let ptr = NonNull::from(&*db_pin);
+  let ptr = NonNull::from(&*db);
   channels.iter_mut().for_each(|channel| {
     channel.set_db(ptr);
   });
-  (Some(db_pin), channels)
+  (Some(db), channels)
 }
 
 #[cfg(not(feature = "persistence"))]
@@ -230,7 +233,7 @@ fn init_db() -> (Option<Pin<Box<PersistenceDB>>>, Vec<Channel>) {
 impl AppData {
   pub(crate) fn new(
     channels: Vec<Channel>,
-    db: Option<Pin<Box<PersistenceDB>>>,
+    db: Option<Box<PersistenceDB>>,
     info: Pin<Box<AppInfo>>,
   ) -> Self {
     Self { channels, db, info }
@@ -289,8 +292,12 @@ impl AppData {
     let p_channel = channel.clone();
 
     if let Some(db) = self.db.as_mut() {
-      db.as_mut()
-        .pin_add_persist(ActionPersist::AddChannel { channel: p_channel.clone() })
+      db.persist_async(ActionPersist::AddChannel {
+        id: channel_id,
+        name: p_channel.name().to_owned(),
+        desc: p_channel.desc().map(String::from),
+        cfg: p_channel.cfg().clone(),
+      });
     }
 
     self.channels.push(channel);
@@ -300,14 +307,12 @@ impl AppData {
   }
 
   pub fn remove_channel(&mut self, channel_id: &Uuid) {
-    if let Some(db) = self.db.as_mut() {
-      db.as_mut()
-        .pin_add_persist(ActionPersist::RemoveChannel { channel_id: *channel_id })
-    }
-
     // guard channels is empty after remove channel
     if self.channels.len() == 1 {
       self.new_channel("Untitled".to_owned(), None, ChannelCfg::default());
+    }
+    if let Some(db) = self.db.as_mut() {
+      db.persist_async(ActionPersist::RemoveChannel { channel_id: *channel_id })
     }
 
     // if current channel is removed, switch to nearest channel.
