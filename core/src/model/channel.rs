@@ -87,14 +87,22 @@ impl Channel {
   #[inline]
   pub fn cfg(&self) -> &ChannelCfg { &self.cfg }
 
-  #[inline]
-  pub fn cfg_mut(&mut self) -> &mut ChannelCfg { &mut self.cfg }
+  pub fn set_cfg(&mut self, cfg: ChannelCfg) {
+    self.cfg = cfg;
+    self.update();
+  }
 
   #[inline]
-  pub fn set_name(&mut self, name: String) { self.name = name; }
+  pub fn set_name(&mut self, name: String) {
+    self.name = name;
+    self.update();
+  }
 
   #[inline]
-  pub fn set_desc(&mut self, desc: Option<String>) { self.desc = desc; }
+  pub fn set_desc(&mut self, desc: Option<String>) {
+    self.desc = desc;
+    self.update();
+  }
 
   pub fn add_msg(&mut self, msg: Msg) {
     self.msgs_coll.msgs.push(msg.clone());
@@ -150,6 +158,19 @@ impl Channel {
   pub fn bots(&self) -> Option<&[Bot]> { self.app_info().map(|info| info.bots()) }
 
   pub fn is_feedback(&self) -> bool { self.cfg.kind == ChannelKind::Feedback }
+
+  fn update(&mut self) {
+    if let Some(db) = self.db.as_mut() {
+      unsafe {
+        db.as_mut().persist_async(ActionPersist::UpdateChannel {
+          id: *self.id(),
+          name: self.name.clone(),
+          desc: self.desc.clone(),
+          cfg: self.cfg.clone(),
+        })
+      }
+    }
+  }
 }
 
 #[derive(Debug, Deserialize, Serialize, Default, Clone)]

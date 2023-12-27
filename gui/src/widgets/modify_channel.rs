@@ -124,11 +124,15 @@ pub fn w_modify_channel_modal(
         $channel.write().set_name(rename.text().to_string());
 
         if let Some(bot_id) = $channel_state.selected_bot {
-          $channel.write().cfg_mut().set_def_bot_id(Some(bot_id));
+          let mut cfg = $channel.cfg().clone();
+          cfg.set_def_bot_id(Some(bot_id));
+          $channel.write().set_cfg(cfg);
         }
 
         if $channel_state.channel_mode != $channel.cfg().mode() {
-          $channel.write().cfg_mut().set_mode($channel_state.channel_mode);
+          let mut cfg = $channel.cfg().clone();
+          cfg.set_mode($channel_state.channel_mode);
+          $channel.write().set_cfg(cfg);
         }
 
         app_writer_confirm_ref.write().set_modify_channel_id(None);

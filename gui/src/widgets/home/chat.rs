@@ -17,14 +17,14 @@ pub fn w_chat(
   def_bot_id: Uuid,
 ) -> impl WidgetBuilder {
   fn_widget! {
-    let quote_id = State::value(None) as State<Option<Uuid>>;
+    let quote_id: State<Option<Uuid>> = State::value(None);
     @Stack {
       @Column {
         @Expanded {
           flex: 1.,
           @ { w_msg_list(channel.clone_writer(), quote_id.clone_writer()) }
         }
-        @ { w_editor(channel, bots, def_bot_id, quote_id.clone_writer()) }
+        @ { w_editor(channel, bots, def_bot_id, quote_id) }
       }
     }
   }
