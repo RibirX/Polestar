@@ -15,6 +15,8 @@ use super::{
   ChannelId, User, UserBuilder,
 };
 
+pub static FEEDBACK_TIMESTAMP: Lazy<Mutex<Option<u64>>> = Lazy::new(|| Mutex::new(None));
+
 pub struct AppInfo {
   bots: Rc<Vec<Bot>>,
   user: Option<User>,
@@ -29,6 +31,7 @@ pub struct AppInfo {
 pub enum GlbVar {
   Version,
   PolestarKey,
+  UserAgent,
 }
 
 impl ToString for GlbVar {
@@ -36,6 +39,7 @@ impl ToString for GlbVar {
     match self {
       GlbVar::Version => "Version".to_owned(),
       GlbVar::PolestarKey => "PolestarKey".to_owned(),
+      GlbVar::UserAgent => "UserAgent".to_owned(),
     }
   }
 }
@@ -43,6 +47,10 @@ impl ToString for GlbVar {
 pub(crate) static GLOBAL_VARS: Lazy<Mutex<HashMap<GlbVar, String>>> = Lazy::new(|| {
   let mut vars = HashMap::new();
   vars.insert(GlbVar::Version, env!("CARGO_PKG_VERSION").to_owned());
+  vars.insert(
+    GlbVar::UserAgent,
+    format!("PoleStarChat/{}", env!("CARGO_PKG_VERSION")),
+  );
   Mutex::new(vars)
 });
 
@@ -338,6 +346,13 @@ impl AppData {
     }
     if let Some(db) = self.db.as_mut() {
       db.persist_async(ActionPersist::RemoveChannel { channel_id: *channel_id })
+    }
+
+    // if current channel is feedback, need clear feedback timestamp.
+    if let Some(channel) = self.get_channel(channel_id) {
+      if channel.is_feedback() {
+        *FEEDBACK_TIMESTAMP.lock().unwrap() = None;
+      }
     }
 
     // if current channel is removed, switch to nearest channel.

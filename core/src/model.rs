@@ -15,3 +15,6 @@ pub use msg::*;
 
 mod user;
 pub use user::*;
+
+mod feedback;
+pub use feedback::*;
