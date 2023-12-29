@@ -1,4 +1,4 @@
-use crate::{widgets::{helper::send_msg, common::BotList}, style::WHITE};
+use crate::{widgets::{helper::send_msg, common::BotList}, style::WHITE, req::query_feedback};
 use polestar_core::model::{Bot, Channel, Msg, MsgMeta};
 use ribir::{core::ticker::FrameMsg, prelude::*};
 use std::ops::Range;
@@ -144,8 +144,13 @@ fn send_feedback(
   let user_msg = Msg::new_user_text(&text, MsgMeta::default());
   channel.write().add_msg(user_msg);
 
-  let system_msg = Msg::new_system_text("Thanks for your feedback!");
-  channel.write().add_msg(system_msg);
+  submit_feedback(text);
+}
+
+fn submit_feedback(content: String) {
+  let _ = AppCtx::spawn_local(async move {
+    query_feedback(content).await;
+  });
 }
 
 fn send_question(

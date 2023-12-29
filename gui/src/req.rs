@@ -1,4 +1,11 @@
-use polestar_core::service::open_ai::{deal_open_ai_stream, open_ai_stream};
+use polestar_core::{
+  error::PolestarError,
+  model::FeedbackMessageListForServer,
+  service::{
+    open_ai::{deal_open_ai_stream, open_ai_stream},
+    req::{fetch_feedback, req_feedback},
+  },
+};
 use reqwest::header::HeaderMap;
 use ribir::prelude::*;
 
@@ -15,4 +22,12 @@ pub async fn query_open_ai(
     .to_ribir_stream();
 
   let _ = deal_open_ai_stream(&mut stream, delta_op).await;
+}
+
+pub async fn query_feedback(content: String) {
+  let _ = req_feedback(content).to_ribir_future().await;
+}
+
+pub async fn query_fetch_feedback() -> Result<FeedbackMessageListForServer, PolestarError> {
+  fetch_feedback().to_ribir_future().await
 }

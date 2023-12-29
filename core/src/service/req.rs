@@ -1,9 +1,18 @@
 use futures_util::StreamExt;
 use regex::Regex;
-use reqwest::{header::HeaderMap, Method, RequestBuilder};
+use reqwest::{
+  header::{HeaderMap, AUTHORIZATION, CONTENT_TYPE, USER_AGENT},
+  Method, RequestBuilder,
+};
 use reqwest_eventsource::EventSource;
 
-use crate::{error::PolestarError, model::GLOBAL_VARS};
+use crate::{
+  error::PolestarError,
+  model::{
+    FeedbackMessageListForServer, FeedbackTimestamp, GlbVar, UserFeedbackMessageForServer,
+    FEEDBACK_TIMESTAMP, GLOBAL_VARS,
+  },
+};
 
 pub fn req_builder(
   url: &str,
@@ -51,4 +60,68 @@ pub async fn req_stream(
     return Err(PolestarError::EventSource(err));
   }
   Ok(stream)
+}
+
+pub async fn fetch_feedback() -> Result<FeedbackMessageListForServer, PolestarError> {
+  let query = if let Some(timestamp) = *FEEDBACK_TIMESTAMP.lock().unwrap() {
+    format!(
+      "https://api.ribir.org/feedback/messages/?after={}&limit=100",
+      timestamp
+    )
+  } else {
+    format!("https://api.ribir.org/feedback/messages/?limit=100")
+  };
+
+  let client = reqwest::Client::new();
+  let glb = GLOBAL_VARS.lock().unwrap();
+
+  let res = client
+    .get(&query)
+    .header(AUTHORIZATION, glb.get(&GlbVar::PolestarKey).unwrap())
+    .header(CONTENT_TYPE, "application/json")
+    .header("Version", glb.get(&GlbVar::Version).unwrap())
+    .header(USER_AGENT, glb.get(&GlbVar::UserAgent).unwrap())
+    .send()
+    .await;
+
+  match res {
+    Ok(res) => {
+      let rst = res.json::<FeedbackMessageListForServer>().await;
+      match rst {
+        Ok(data) => Ok(data),
+        Err(err) => Err(PolestarError::Reqwest(err)),
+      }
+    }
+    Err(err) => Err(PolestarError::Reqwest(err)),
+  }
+}
+
+pub async fn req_feedback(content: String) -> Result<(), PolestarError> {
+  let client = reqwest::Client::new();
+  let data = UserFeedbackMessageForServer { message: content };
+  let params = serde_json::to_string(&data).unwrap();
+  let glb = GLOBAL_VARS.lock().unwrap();
+  let res = client
+    .post("https://api.ribir.org/feedback/ask")
+    .header(AUTHORIZATION, glb.get(&GlbVar::PolestarKey).unwrap())
+    .header(CONTENT_TYPE, "application/json")
+    .header("Version", glb.get(&GlbVar::Version).unwrap())
+    .header(USER_AGENT, glb.get(&GlbVar::UserAgent).unwrap())
+    .body(params)
+    .send()
+    .await;
+
+  match res {
+    Ok(res) => {
+      let rst = res.json::<FeedbackTimestamp>().await;
+      match rst {
+        Ok(data) => {
+          *FEEDBACK_TIMESTAMP.lock().unwrap() = Some(data.create_time);
+          Ok(())
+        }
+        Err(err) => Err(PolestarError::Reqwest(err)),
+      }
+    }
+    Err(err) => Err(PolestarError::Reqwest(err)),
+  }
 }
