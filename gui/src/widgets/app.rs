@@ -182,8 +182,6 @@ fn gen_handler(app: impl StateWriter<Value = AppGUI>) -> impl for<'a> FnMut(&'a 
       let route = handle_open_url(url);
       match route {
         Some(AppRoute::Login { token, uid }) => {
-          println!("token: {}, uid: {}", token, uid);
-
           let _ = polestar_core::token::encrypt_token(token.as_bytes());
 
           // create uid user folder.
@@ -193,11 +191,11 @@ fn gen_handler(app: impl StateWriter<Value = AppGUI>) -> impl for<'a> FnMut(&'a 
           let _ = polestar_core::write_current_user(&uid.to_string());
 
           // create `User`
-          let user = polestar_core::model::UserBuilder::default()
+          let mut user = polestar_core::model::UserBuilder::default()
             .uid(uid)
-            .token(token)
             .build()
             .expect("Failed to build user");
+          user.set_token(Some(token));
           app.write().data.info_mut().set_user(Some(user));
 
           app.write().navigate_to("/home/chat");
