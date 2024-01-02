@@ -13,7 +13,8 @@ Ribir is a Rust GUI framework that helps you build beautiful and native multi-pl
 Experience a novel approach to UI development that's directly based on your data structure APIs. Any data mutation will trigger a precise UI update. Your focus should be on designing your data structure and its APIs. Then, you can describe your data's UI without intruding on its logic.
 
 <h2> 🔥 Open source</h2>
-As the Chinese old saying goes, many hands make light work. We can't get more people to use AI by our efforts alone, so we decided to open source 
+As the Chinese old saying goes, many hands make light work. We can't get more people to use AI by our efforts alone, so we decided to open source PoleStar Chat. We hope that more people can join us to make PoleStar Chat better and better.
+
 <h2> 🤖 More than 100 AI Bot </h2>
 <p>You can quickly use AI commands in the same way as other IM software, using @, which is as convenient as @ing people in a group chat. We currently support more than 100 AI Bot, covering topics such as education, writing, entertainment, etc. For example, you can use a tarot card master to give you a test of today's fortune, so you don't have to learn and set up a tedious AI Prompt:</p>
 
