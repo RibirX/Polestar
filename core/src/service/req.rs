@@ -73,16 +73,17 @@ pub async fn fetch_feedback() -> Result<FeedbackMessageListForServer, PolestarEr
   };
 
   let client = reqwest::Client::new();
-  let glb = GLOBAL_VARS.lock().unwrap();
+  let req = {
+    let glb = GLOBAL_VARS.lock().unwrap();
+    client
+      .get(&query)
+      .header(AUTHORIZATION, glb.get(&GlbVar::PolestarKey).unwrap())
+      .header(CONTENT_TYPE, "application/json")
+      .header("Version", glb.get(&GlbVar::Version).unwrap())
+      .header(USER_AGENT, glb.get(&GlbVar::UserAgent).unwrap())
+  };
 
-  let res = client
-    .get(&query)
-    .header(AUTHORIZATION, glb.get(&GlbVar::PolestarKey).unwrap())
-    .header(CONTENT_TYPE, "application/json")
-    .header("Version", glb.get(&GlbVar::Version).unwrap())
-    .header(USER_AGENT, glb.get(&GlbVar::UserAgent).unwrap())
-    .send()
-    .await;
+  let res = req.send().await;
 
   match res {
     Ok(res) => {
@@ -100,16 +101,17 @@ pub async fn req_feedback(content: String) -> Result<(), PolestarError> {
   let client = reqwest::Client::new();
   let data = UserFeedbackMessageForServer { message: content };
   let params = serde_json::to_string(&data).unwrap();
-  let glb = GLOBAL_VARS.lock().unwrap();
-  let res = client
-    .post("https://api.ribir.org/feedback/ask")
-    .header(AUTHORIZATION, glb.get(&GlbVar::PolestarKey).unwrap())
-    .header(CONTENT_TYPE, "application/json")
-    .header("Version", glb.get(&GlbVar::Version).unwrap())
-    .header(USER_AGENT, glb.get(&GlbVar::UserAgent).unwrap())
-    .body(params)
-    .send()
-    .await;
+  let req = {
+    let glb = GLOBAL_VARS.lock().unwrap();
+    client
+      .post("https://api.ribir.org/feedback/ask")
+      .header(AUTHORIZATION, glb.get(&GlbVar::PolestarKey).unwrap())
+      .header(CONTENT_TYPE, "application/json")
+      .header("Version", glb.get(&GlbVar::Version).unwrap())
+      .header(USER_AGENT, glb.get(&GlbVar::UserAgent).unwrap())
+      .body(params)
+  };
+  let res = req.send().await;
 
   match res {
     Ok(res) => {
