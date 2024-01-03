@@ -31,3 +31,9 @@ pub fn decrypt_token(key: &[u8]) -> PolestarResult<String> {
   let token = String::from_utf8(buffer.to_vec())?;
   Ok(token)
 }
+
+pub fn del_token() -> PolestarResult<()> {
+  let _ = super::encrypt::del_token();
+  let _ = super::encrypt::del_nonce();
+  Ok(())
+}

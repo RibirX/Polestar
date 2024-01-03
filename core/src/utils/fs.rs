@@ -62,6 +62,13 @@ pub fn write_current_user(uid: &str) -> PolestarResult<()> {
   Ok(())
 }
 
+pub fn del_current_user() -> PolestarResult<()> {
+  let mut path = project_home_path();
+  path.push(CURRENT_USER);
+  std::fs::remove_file(&path)?;
+  Ok(())
+}
+
 pub fn read_local_state(uid: &str) -> PolestarResult<LocalState> {
   let mut path = user_data_path(uid);
   path.push(LOCAL_STATE);
