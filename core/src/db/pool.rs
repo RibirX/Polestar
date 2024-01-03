@@ -1,6 +1,6 @@
 use std::marker::PhantomPinned;
 
-use crate::model::Msg;
+use crate::model::{Msg, ANONYMOUS_USER};
 use crate::utils::user_data_path;
 use crate::{error::PolestarResult, model::Channel};
 use once_cell::sync::Lazy;
@@ -12,9 +12,11 @@ use super::executor::{ActionPersist, Persist};
 
 pub type DbPool = SqlitePool;
 
-pub fn db_path() -> String {
-  // TODO: user id
-  let user_data_path = user_data_path("anonymous");
+pub fn db_path(uid: Option<u64>) -> String {
+  let uid = uid
+    .map(|uid| uid.to_string())
+    .unwrap_or(ANONYMOUS_USER.to_owned());
+  let user_data_path = user_data_path(&uid);
   format!(
     "sqlite://{}/data.db?mode=rwc",
     user_data_path.to_str().unwrap()

@@ -196,7 +196,9 @@ fn gen_handler(app: impl StateWriter<Value = AppGUI>) -> impl for<'a> FnMut(&'a 
             .build()
             .expect("Failed to build user");
           user.set_token(Some(token));
-          app.write().data.info_mut().set_user(Some(user));
+          app.write().data.info_mut().set_user(Some(user.clone()));
+
+          app.write().data.login(user);
 
           app.write().navigate_to("/home/chat");
 

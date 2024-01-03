@@ -37,18 +37,20 @@ pub(super) fn w_email(app: &impl StateWriter<Value = AppGUI>) -> impl WidgetBuil
         @Text {
           text: $app.data.info().user().and_then(|u| u.email()).cloned().unwrap_or("Anonymous".to_string()),
         }
-        // TODO: ID show is optional.
         @TextSelectable {
           @Text {
-            text: $app.data.info().user().and_then(|u| u.uid()).map(|id| format!("ID: {}",id.to_string())).unwrap_or_default(),
+            text: $app.data.info().user().map(|user| format!("ID: {}", user.uid().to_string())).unwrap_or_default(),
             foreground: Palette::of(ctx!()).outline(),
           }
         }
       }
       @Button {
         cursor: CursorIcon::Pointer,
-        // TODO: check here UI design color.
         color: Color::RED,
+        on_tap: move |_| {
+          $app.write().data.logout();
+          $app.write().navigate_to("/login");
+        },
         @ { Label::new("Logout") }
       }
     }

@@ -3,7 +3,7 @@ use serde::Deserialize;
 
 use super::GLOBAL_VARS;
 
-#[derive(Builder, Debug, Default)]
+#[derive(Builder, Debug, Default, Clone)]
 #[builder(name = "UserBuilder")]
 #[builder(pattern = "owned")]
 #[builder(setter(into, strip_option), default)]
@@ -11,7 +11,7 @@ pub struct User {
   token: Option<String>,
   nick_name: Option<String>,
   email: Option<String>,
-  uid: Option<u64>,
+  uid: u64,
   quota: Option<Quota>,
 }
 
@@ -43,21 +43,13 @@ impl User {
   pub fn set_email(&mut self, email: Option<String>) { self.email = email; }
 
   #[inline]
-  pub fn uid(&self) -> Option<&u64> { self.uid.as_ref() }
+  pub fn uid(&self) -> u64 { self.uid }
 
   #[inline]
   pub fn quota(&self) -> Option<&Quota> { self.quota.as_ref() }
 
   #[inline]
   pub fn set_quota(&mut self, quota: Option<Quota>) { self.quota = quota; }
-
-  pub fn logout(&mut self) {
-    self.token = None;
-    self.nick_name = None;
-    self.email = None;
-    self.uid = None;
-    self.quota = None;
-  }
 }
 
 #[derive(Deserialize, Debug, Clone)]

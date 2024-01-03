@@ -57,11 +57,9 @@ pub(crate) static GLOBAL_VARS: Lazy<Mutex<HashMap<GlbVar, String>>> = Lazy::new(
 impl AppInfo {
   fn save_local(&self) {
     if let Some(user) = &self.user {
-      if let Some(uid) = user.uid() {
-        let local_state = LocalState::new(self.cur_channel_id, self.quick_launcher_id, Some(*uid));
-        utils::write_local_state(&uid.to_string(), &local_state)
-          .expect("Failed to save local state");
-      }
+      let uid = user.uid();
+      let local_state = LocalState::new(self.cur_channel_id, self.quick_launcher_id, Some(uid));
+      utils::write_local_state(&uid.to_string(), &local_state).expect("Failed to save local state");
     }
   }
 
@@ -126,24 +124,24 @@ pub struct AppData {
   info: Pin<Box<AppInfo>>,
 }
 
+pub static ANONYMOUS_USER: &'static str = "anonymous";
+
 pub fn init_app_data() -> AppData {
   utils::launch::setup_project();
   // 1. load bots config from local file.
   let bots = utils::load_bot_cfg_file().expect("Failed to load bot config");
   // 2. judge bot has official server.
   let has_official_server = utils::has_official_server(&bots);
+  // TODO: how to set app default bot
+  let cfg = AppCfg::new(None, *bots[0].id());
   // 3. if has official server, load user info from local file.
-  let cur_user = utils::read_current_user().unwrap_or_default();
+  let cur_user = utils::read_current_user().unwrap_or(ANONYMOUS_USER.to_owned());
   let local_state = utils::read_local_state(&cur_user).unwrap_or_default();
   let (user_data_path, user) = if has_official_server {
     local_state.uid().map_or_else(
-      || {
-        let anonymous_data_path = utils::user_data_path("anonymous");
-        (anonymous_data_path, None)
-      },
+      || (None, None),
       |uid| {
         let user_data_path = utils::user_data_path(&uid.to_string());
-        // TODO: get token from local file.
         let token = utils::token::decrypt_token(crate::KEY).ok();
         let mut user_builder = UserBuilder::default();
         user_builder = user_builder.uid(uid);
@@ -155,21 +153,22 @@ pub fn init_app_data() -> AppData {
           user_builder = user_builder.token(token);
         }
         (
-          user_data_path,
+          Some(user_data_path),
           Some(user_builder.build().expect("Failed to build user")),
         )
       },
     )
   } else {
-    let anonymous_data_path = utils::user_data_path("anonymous");
-    (anonymous_data_path, None)
+    let anonymous_data_path = utils::user_data_path(ANONYMOUS_USER);
+    (Some(anonymous_data_path), None)
   };
 
-  utils::create_if_not_exist_dir(user_data_path);
-
-  // TODO: how to set app default bot
-  let cfg = AppCfg::new(None, *bots[0].id());
-  let (db, mut channels) = init_db();
+  let (db, mut channels) = if let Some(user_data_path) = user_data_path {
+    utils::create_if_not_exist_dir(user_data_path);
+    init_db(user.as_ref().map(|user| user.uid()))
+  } else {
+    (None, vec![])
+  };
 
   let cur_channel_id = local_state.cur_channel_id();
 
@@ -205,9 +204,9 @@ pub fn init_app_data() -> AppData {
 }
 
 #[cfg(feature = "persistence")]
-fn init_db() -> (Option<Box<PersistenceDB>>, Vec<Channel>) {
+fn init_db(uid: Option<u64>) -> (Option<Box<PersistenceDB>>, Vec<Channel>) {
   use crate::db::pool::{db_path, init_db, runtime};
-  let db = PersistenceDB::connect(init_db(&db_path())).expect("Failed to connect db");
+  let db = PersistenceDB::connect(init_db(&db_path(uid))).expect("Failed to connect db");
 
   let mut channels =
     runtime().block_on(async { db.query_channels().await.expect("Failed to query channels") });
@@ -251,7 +250,7 @@ fn init_db() -> (Option<Box<PersistenceDB>>, Vec<Channel>) {
 }
 
 #[cfg(not(feature = "persistence"))]
-fn init_db() -> (Option<Pin<Box<PersistenceDB>>>, Vec<Channel>) {
+fn init_db(_uid: Option<u64>) -> (Option<Pin<Box<PersistenceDB>>>, Vec<Channel>) {
   use crate::db::executor::channel;
 
   let mut channels = serde_json::from_str::<Vec<Channel>>(include_str!(concat!(
@@ -278,7 +277,7 @@ impl AppData {
   pub fn info_mut(&mut self) -> Pin<&mut AppInfo> { self.info.as_mut() }
 
   #[inline]
-  pub fn channels(&self) -> &Vec<Channel> { &self.channels }
+  pub fn channels(&self) -> &[Channel] { &self.channels }
 
   #[inline]
   pub fn channels_mut(&mut self) -> &mut Vec<Channel> { &mut self.channels }
@@ -372,6 +371,49 @@ impl AppData {
     }
 
     self.channels.retain(|channel| channel.id() != channel_id);
+  }
+
+  pub fn login(&mut self, user: User) {
+    let uid = user.uid();
+    self.info.as_mut().set_user(Some(user));
+    let local_state = utils::read_local_state(&uid.to_string()).unwrap_or_default();
+    self
+      .info
+      .as_mut()
+      .set_quick_launcher_id(*local_state.quick_launcher_id());
+
+    let (db, mut channels) = init_db(Some(uid));
+    self.db = db;
+
+    let cur_channel_id = local_state.cur_channel_id();
+
+    let cur_channel = channels
+      .iter()
+      .find(|channel| Some(*channel.id()) == cur_channel_id.map(|id| id));
+
+    let cur_channel_id = if cur_channel.is_some() {
+      *cur_channel_id
+    } else {
+      // channels reverse display
+      channels.last().map(|channel| *channel.id())
+    };
+
+    self.info.as_mut().set_cur_channel_id(cur_channel_id);
+
+    let ptr = NonNull::from(&*self.info);
+    channels.iter_mut().for_each(|channel| {
+      channel.set_app_info(ptr);
+    });
+
+    self.channels = channels;
+  }
+
+  pub fn logout(&mut self) {
+    self.info.as_mut().set_user(None);
+    self.info.as_mut().set_quick_launcher_id(None);
+    self.db = None;
+    utils::del_current_user().expect("Failed to delete current user");
+    utils::token::del_token().expect("Failed to delete token");
   }
 }
 
