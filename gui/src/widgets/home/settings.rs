@@ -22,11 +22,12 @@ pub fn w_settings(app: impl StateWriter<Value = AppGUI>) -> impl WidgetBuilder {
       @VScrollBar {
         h_align: HAlign::Center,
         @Column {
+          margin: EdgeInsets::all(20.),
           @SettingItem {
             name: "Account",
             @AccountItem {
               name: "Email",
-              @ { w_email() }
+              @ { w_email(&app) }
             }
             @AccountItem {
               name: "Subscription",

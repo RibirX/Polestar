@@ -5,10 +5,6 @@ use crate::style::{BRIGHT_GRAY_EAE9E9_FF, CHINESE_WHITE, CULTURED_F7F7F5_FF};
 pub(super) fn w_network_settings() -> impl WidgetBuilder {
   fn_widget! {
     @Column {
-      @Text {
-        text: "Network Settings",
-        text_style: TypographyTheme::of(ctx!()).title_medium.text.clone(),
-      }
       @Row {
         padding: EdgeInsets::only_bottom(5.),
         @Text {

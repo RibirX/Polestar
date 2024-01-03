@@ -1,6 +1,7 @@
 use ribir::prelude::*;
 
 use crate::style::{BLACK, CHINESE_WHITE, COMMON_RADIUS, ISABELLINE, WHITE};
+use crate::widgets::app::AppGUI;
 use crate::widgets::common::ProgressBar;
 
 #[derive(Declare)]
@@ -24,7 +25,8 @@ impl ComposeChild for AccountItem {
   }
 }
 
-pub(super) fn w_email() -> impl WidgetBuilder {
+pub(super) fn w_email(app: &impl StateWriter<Value = AppGUI>) -> impl WidgetBuilder {
+  let app = app.clone_writer();
   fn_widget! {
     @Row {
       justify_content: JustifyContent::SpaceBetween,
@@ -33,12 +35,12 @@ pub(super) fn w_email() -> impl WidgetBuilder {
       @Row {
         item_gap: 10.,
         @Text {
-          text: "Anonymous",
+          text: $app.data.info().user().and_then(|u| u.email()).cloned().unwrap_or("Anonymous".to_string()),
         }
         // TODO: ID show is optional.
         @TextSelectable {
           @Text {
-            text: "ID: 123456",
+            text: $app.data.info().user().and_then(|u| u.uid()).map(|id| format!("ID: {}",id.to_string())).unwrap_or_default(),
             foreground: Palette::of(ctx!()).outline(),
           }
         }
@@ -190,7 +192,7 @@ fn w_plan_desc(name: String, tag: String, fg: Color, bg: Color) -> impl WidgetBu
 fn w_subscription_plan() -> impl WidgetBuilder {
   fn_widget! {
     @Row {
-      margin: EdgeInsets::only_top(20.),
+      margin: EdgeInsets::only_left(20.),
       item_gap: 16.,
       @Avatar {
         @ { Label::new("🚀") }
