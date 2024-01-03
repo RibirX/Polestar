@@ -63,6 +63,7 @@ where
                 let _ = || $channel.write();
                 let channel_cloned = channel.clone_writer();
                 let quote_id = quote_id.clone_writer();
+
                 $channel.msgs().iter().map(move |m| {
                   let id = *m.id();
                   let msg = channel_cloned.split_writer(
@@ -150,11 +151,9 @@ where
   <<<S::Writer as StateWriter>::Writer as StateWriter>::Writer as StateWriter>::OriginWriter:
     StateWriter<Value = Channel>,
 {
-  let channel = msg.origin_writer().clone_writer();
-  let channel2 = channel.clone_writer();
   fn_widget! {
     @ {
-      pipe! {
+      pipe!($msg;).map(move |_| {
         let mut stack = @Stack {};
 
         let role = *$msg.role();
@@ -164,7 +163,7 @@ where
         };
 
         let msg_ops_anchor = {
-          match $msg.role() {
+          match role {
             MsgRole::User => @RelativeAnchor {
               anchor: pipe!(Anchor::right($row.layout_width() + 4.))
             },
@@ -178,11 +177,12 @@ where
 
         let msg_ops = @$msg_ops_anchor {
           visible: pipe! {
-            $stack.mouse_hover() && !$msg.role().is_system()
+            $stack.mouse_hover() && !role.is_system()
           },
           @ {
-            match $msg.role() {
+            match role {
               MsgRole::User | MsgRole::Bot(_) => {
+                let channel = msg.origin_writer();
                 @MsgOps {
                   @ {
                     let quote_id = quote_id.clone_writer();
@@ -214,9 +214,8 @@ where
                     }
                   }
                   @ {
-                    let _ = || $channel.write();
                     let retry_msg = retry_msg.clone_writer();
-                    let channel = channel.clone_writer();
+                    let channel = msg.origin_writer().clone_writer();
                     ($msg.role().is_bot()).then(move || {
                       @MsgOp {
                         // TODO: cb code is messy, need to refactor.
@@ -270,8 +269,9 @@ where
               }
               @Column {
                 @ {
+                  let channel = msg.origin_writer().clone_writer();
                   $msg.role().bot().and_then(move |bot_id| {
-                    $channel2.app_info().map(|info| {
+                    $channel.app_info().map(|info| {
                       let bot = info.get_bot_or_default(Some(*bot_id));
                       @Text { text: bot.name().to_owned() }
                     })
@@ -321,7 +321,7 @@ where
           }
           @ { msg_ops }
         }
-      }
+      })
     }
   }
 }
