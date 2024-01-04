@@ -1,7 +1,5 @@
 use once_cell::sync::Lazy;
-use std::{
-  collections::HashMap, marker::PhantomPinned, pin::Pin, ptr::NonNull, rc::Rc, sync::Mutex,
-};
+use std::{collections::HashMap, ptr::NonNull, rc::Rc, sync::Mutex};
 use uuid::Uuid;
 
 use crate::{
@@ -24,7 +22,6 @@ pub struct AppInfo {
   cur_channel_id: Option<Uuid>,
   quick_launcher_id: Option<Uuid>,
   has_official_server: bool,
-  _marker: PhantomPinned,
 }
 
 #[derive(Clone, Copy, Eq, PartialEq, Hash, Debug)]
@@ -65,26 +62,23 @@ impl AppInfo {
 
   pub fn user(&self) -> Option<&User> { self.user.as_ref() }
 
-  pub fn set_user(self: Pin<&mut Self>, user: Option<User>) {
-    let info = unsafe { self.get_unchecked_mut() };
-    info.user = user;
-    info.save_local();
+  pub fn set_user(&mut self, user: Option<User>) {
+    self.user = user;
+    self.save_local();
   }
 
   pub fn cur_channel_id(&self) -> Option<&Uuid> { self.cur_channel_id.as_ref() }
 
-  pub fn set_cur_channel_id(self: Pin<&mut Self>, cur_channel_id: Option<Uuid>) {
-    let info = unsafe { self.get_unchecked_mut() };
-    info.cur_channel_id = cur_channel_id;
-    info.save_local();
+  pub fn set_cur_channel_id(&mut self, cur_channel_id: Option<Uuid>) {
+    self.cur_channel_id = cur_channel_id;
+    self.save_local();
   }
 
   pub fn quick_launcher_id(&self) -> Option<&Uuid> { self.quick_launcher_id.as_ref() }
 
-  pub fn set_quick_launcher_id(self: Pin<&mut Self>, quick_launcher_id: Option<Uuid>) {
-    let info = unsafe { self.get_unchecked_mut() };
-    info.quick_launcher_id = quick_launcher_id;
-    info.save_local();
+  pub fn set_quick_launcher_id(&mut self, quick_launcher_id: Option<Uuid>) {
+    self.quick_launcher_id = quick_launcher_id;
+    self.save_local();
   }
 
   pub fn bots(&self) -> &[Bot] { &self.bots }
@@ -121,7 +115,7 @@ impl AppInfo {
 pub struct AppData {
   channels: Vec<Channel>,
   db: Option<Box<PersistenceDB>>,
-  info: Pin<Box<AppInfo>>,
+  info: Box<AppInfo>,
 }
 
 pub static ANONYMOUS_USER: &'static str = "anonymous";
@@ -190,17 +184,16 @@ pub fn init_app_data() -> AppData {
     cur_channel_id,
     quick_launcher_id: *local_state.quick_launcher_id(),
     has_official_server,
-    _marker: PhantomPinned,
   };
 
-  let pin_info = Box::pin(info);
-  let ptr = NonNull::from(&*pin_info);
+  let info = Box::new(info);
+  let ptr = NonNull::from(&*info);
 
   channels.iter_mut().for_each(|channel| {
     channel.set_app_info(ptr);
   });
 
-  AppData::new(channels, db, pin_info)
+  AppData::new(channels, db, info)
 }
 
 #[cfg(feature = "persistence")]
@@ -250,7 +243,7 @@ fn init_db(uid: Option<u64>) -> (Option<Box<PersistenceDB>>, Vec<Channel>) {
 }
 
 #[cfg(not(feature = "persistence"))]
-fn init_db(_uid: Option<u64>) -> (Option<Pin<Box<PersistenceDB>>>, Vec<Channel>) {
+fn init_db(_uid: Option<u64>) -> (Option<Box<PersistenceDB>>, Vec<Channel>) {
   use crate::db::executor::channel;
 
   let mut channels = serde_json::from_str::<Vec<Channel>>(include_str!(concat!(
@@ -266,7 +259,7 @@ impl AppData {
   pub(crate) fn new(
     channels: Vec<Channel>,
     db: Option<Box<PersistenceDB>>,
-    info: Pin<Box<AppInfo>>,
+    info: Box<AppInfo>,
   ) -> Self {
     Self { channels, db, info }
   }
@@ -274,7 +267,7 @@ impl AppData {
   #[inline]
   pub fn info(&self) -> &AppInfo { &self.info }
 
-  pub fn info_mut(&mut self) -> Pin<&mut AppInfo> { self.info.as_mut() }
+  pub fn info_mut(&mut self) -> &mut AppInfo { &mut self.info }
 
   #[inline]
   pub fn channels(&self) -> &[Channel] { &self.channels }
