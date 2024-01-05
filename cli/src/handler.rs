@@ -85,7 +85,12 @@ pub fn msg_handler(args: ArgMatches, app_data: &mut AppData) -> ReplResult<Optio
         msg_cont.action(MsgAction::Receiving(MsgBody::Text(
           content.map(|s| s.to_owned()),
         )));
-        cur_channel.add_msg(Msg::new(MsgRole::User, vec![msg_cont], MsgMeta::default()));
+        cur_channel.add_msg(Msg::new(
+          MsgRole::User,
+          vec![msg_cont],
+          MsgMeta::default(),
+          None,
+        ));
       }
 
       let mut ret_msg = String::new();
@@ -118,6 +123,7 @@ pub fn msg_handler(args: ArgMatches, app_data: &mut AppData) -> ReplResult<Optio
           MsgRole::Bot(Uuid::nil()),
           vec![msg_cont],
           MsgMeta::default(),
+          None,
         ));
       }
 

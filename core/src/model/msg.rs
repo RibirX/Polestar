@@ -1,4 +1,6 @@
+use chrono::{DateTime, NaiveDateTime, Utc};
 use serde::{Deserialize, Serialize};
+
 use uuid::Uuid;
 
 pub type MsgId = Uuid;
@@ -19,6 +21,8 @@ pub struct Msg {
   // `meta` is the message meta data.
   #[sqlx(json)]
   meta: MsgMeta,
+
+  created_at: DateTime<Utc>,
 }
 
 impl Msg {
@@ -45,6 +49,8 @@ impl Msg {
 
   #[inline]
   pub fn cont_list(&self) -> &Vec<MsgCont> { &self.cont_list }
+
+  pub fn create_at(&self) -> &DateTime<Utc> { &self.created_at }
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone, Default)]
@@ -74,13 +80,25 @@ impl MsgMeta {
 }
 
 impl Msg {
-  pub fn new(role: MsgRole, cont_list: Vec<MsgCont>, meta: MsgMeta) -> Self {
+  pub fn new(
+    role: MsgRole,
+    cont_list: Vec<MsgCont>,
+    meta: MsgMeta,
+    created_at: Option<i64>,
+  ) -> Self {
     Self {
       id: Uuid::new_v4(),
       role,
       cur_idx: 0,
       cont_list,
       meta,
+      created_at: created_at.map_or_else(
+        || Utc::now(),
+        |t| {
+          let dt = NaiveDateTime::from_timestamp_millis(t).unwrap();
+          DateTime::from_naive_utc_and_offset(dt, Utc)
+        },
+      ),
     }
   }
 
@@ -93,6 +111,7 @@ impl Msg {
       cur_idx: 0,
       cont_list,
       meta,
+      created_at: Utc::now(),
     }
   }
 
@@ -104,6 +123,7 @@ impl Msg {
       cur_idx: 0,
       cont_list,
       meta,
+      created_at: Utc::now(),
     }
   }
 
@@ -115,6 +135,7 @@ impl Msg {
       cur_idx: 0,
       cont_list,
       meta: MsgMeta::default(),
+      created_at: Utc::now(),
     }
   }
 
@@ -128,6 +149,7 @@ impl Msg {
       cur_idx: 0,
       cont_list,
       meta,
+      created_at: Utc::now(),
     }
   }
 
@@ -442,34 +464,53 @@ mod test {
 
     let mut rejected_msg_cont = MsgCont::init_text();
     rejected_msg_cont.action(MsgAction::Rejected);
-    let _rejected_msg = Msg::new(MsgRole::User, vec![rejected_msg_cont], MsgMeta::default());
+    let _rejected_msg = Msg::new(
+      MsgRole::User,
+      vec![rejected_msg_cont],
+      MsgMeta::default(),
+      None,
+    );
 
     let _pend_msg = Msg::new(
       MsgRole::User,
       vec![MsgCont::init_text()],
       MsgMeta::default(),
+      None,
     );
 
     let mut fulfilled_msg_cont = MsgCont::init_text();
     fulfilled_msg_cont.action(MsgAction::Fulfilled);
-    let _wrong_fulfilled_msg =
-      Msg::new(MsgRole::User, vec![fulfilled_msg_cont], MsgMeta::default());
+    let _wrong_fulfilled_msg = Msg::new(
+      MsgRole::User,
+      vec![fulfilled_msg_cont],
+      MsgMeta::default(),
+      None,
+    );
 
     let mut rejected_msg_cont = MsgCont::init_text();
     rejected_msg_cont.action(MsgAction::Receiving(MsgBody::Text(Some("123".to_owned()))));
     rejected_msg_cont.action(MsgAction::Rejected);
-    let _wrong_rejected_msg = Msg::new(MsgRole::User, vec![rejected_msg_cont], MsgMeta::default());
+    let _wrong_rejected_msg = Msg::new(
+      MsgRole::User,
+      vec![rejected_msg_cont],
+      MsgMeta::default(),
+      None,
+    );
 
     let mut pend_msg_cont = MsgCont::init_text();
     pend_msg_cont.action(MsgAction::Receiving(MsgBody::Text(Some("123".to_owned()))));
     pend_msg_cont.action(MsgAction::Pending);
-    let _wrong_pend_msg = Msg::new(MsgRole::User, vec![pend_msg_cont], MsgMeta::default());
+    let _wrong_pend_msg = Msg::new(MsgRole::User, vec![pend_msg_cont], MsgMeta::default(), None);
 
     let mut receiving_msg_cont = MsgCont::init_text();
     receiving_msg_cont.action(MsgAction::Rejected);
     receiving_msg_cont.action(MsgAction::Receiving(MsgBody::Text(Some("123".to_owned()))));
-    let _wrong_receiving_msg =
-      Msg::new(MsgRole::User, vec![receiving_msg_cont], MsgMeta::default());
+    let _wrong_receiving_msg = Msg::new(
+      MsgRole::User,
+      vec![receiving_msg_cont],
+      MsgMeta::default(),
+      None,
+    );
 
     testing_logger::validate(|captured_logs| {
       assert_eq!(captured_logs.len(), 4);

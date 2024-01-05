@@ -13,8 +13,6 @@ use super::{
   ChannelId, User, UserBuilder,
 };
 
-pub static FEEDBACK_TIMESTAMP: Lazy<Mutex<Option<u64>>> = Lazy::new(|| Mutex::new(None));
-
 pub struct AppInfo {
   bots: Rc<Vec<Bot>>,
   user: Option<User>,
@@ -338,13 +336,6 @@ impl AppData {
     }
     if let Some(db) = self.db.as_mut() {
       db.persist_async(ActionPersist::RemoveChannel { channel_id: *channel_id })
-    }
-
-    // if current channel is feedback, need clear feedback timestamp.
-    if let Some(channel) = self.get_channel(channel_id) {
-      if channel.is_feedback() {
-        *FEEDBACK_TIMESTAMP.lock().unwrap() = None;
-      }
     }
 
     // if current channel is removed, switch to nearest channel.
