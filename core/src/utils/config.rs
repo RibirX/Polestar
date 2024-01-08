@@ -71,6 +71,8 @@ fn bot_vars_parser(file: &str) -> PolestarResult<Vec<Bot>> {
   if let Some(vars) = serde_json::from_str::<CfgVars>(file)?.vars {
     let bots_str = String::from(file);
     let replaced_str = vars.iter().fold(bots_str, |str, (key, value)| {
+      // ${xx} is dynamic value which will be replaced in runtime
+      // only {xx} will be replaced to correspond vars when parsing
       let regex = Regex::new(&format!(r"([^$])\{{{}\}}", key)).unwrap();
       regex
         .replace_all(&str, format!("${{1}}{}", value))
@@ -153,8 +155,12 @@ mod test {
     let bots = bots.expect("can't parse bots");
     assert_eq!(bots.len(), 2);
     assert_eq!(
-      bots[1].headers().get("Authorization"),
+      bots[0].headers().get("Authorization"),
       Some(&String::from("abc"))
+    );
+    assert_eq!(
+      bots[1].headers().get("Authorization"),
+      Some(&String::from("${token}"))
     );
   }
 }

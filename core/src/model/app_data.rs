@@ -242,9 +242,7 @@ fn init_db(uid: Option<u64>) -> (Option<Box<PersistenceDB>>, Vec<Channel>) {
 
 #[cfg(not(feature = "persistence"))]
 fn init_db(_uid: Option<u64>) -> (Option<Box<PersistenceDB>>, Vec<Channel>) {
-  use crate::db::executor::channel;
-
-  let mut channels = serde_json::from_str::<Vec<Channel>>(include_str!(concat!(
+  let channels = serde_json::from_str::<Vec<Channel>>(include_str!(concat!(
     env!("CARGO_MANIFEST_DIR"),
     "/..",
     "/gui/channels_mock.json"
