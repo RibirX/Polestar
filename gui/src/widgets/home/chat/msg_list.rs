@@ -176,12 +176,13 @@ where
         let retry_msg = msg.clone_writer();
 
         let role_2 = role.clone();
+        let role_3 = role.clone();
         let msg_ops = @$msg_ops_anchor {
           visible: pipe! {
             $stack.mouse_hover() && !role_2.is_system()
           },
           @ {
-            match role.clone() {
+            match role_3.clone() {
               MsgRole::User | MsgRole::Bot(_) => {
                 let channel = msg.origin_writer();
                 @MsgOps {

@@ -1,5 +1,6 @@
 use serde::Deserialize;
 use std::collections::HashMap;
+
 pub type BotId = String;
 
 /// Bot is Polestar basic widget, user need talk to bot to get AI response.
