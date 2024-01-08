@@ -1,14 +1,15 @@
 use serde::Deserialize;
 use std::collections::HashMap;
-use uuid::Uuid;
 
 use crate::service::service_provider::{get_service, Service, ServiceModel};
+
+pub type BotId = String;
 
 /// Bot is Polestar basic widget, user need talk to bot to get AI response.
 #[derive(Deserialize, Debug)]
 pub struct Bot {
   // A unique id for bot
-  id: Uuid,
+  id: BotId,
   // A name for bot
   name: String,
   // This bot support languages version
@@ -33,7 +34,7 @@ pub struct Bot {
 }
 
 impl Bot {
-  pub fn id(&self) -> &Uuid { &self.id }
+  pub fn id(&self) -> &BotId { &self.id }
 
   pub fn name(&self) -> &str { &self.name }
 

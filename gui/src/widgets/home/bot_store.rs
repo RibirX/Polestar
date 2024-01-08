@@ -55,7 +55,8 @@ fn w_bot_list(app: impl StateWriter<Value = AppGUI>) -> impl WidgetBuilder {
               @ {
                 $app.data.info().bots().iter().filter(|bot| bot.cat() == Some(cat)).map(move |bot| {
                   let bot_name = bot.name().to_owned();
-                  let bot_id = *bot.id();
+                  let bot_id = bot.id().clone();
+                  let bot_id_2 = bot_id.clone();
                   let bot_onboarding = bot.onboarding().map_or(format!("@{bot_name}"), |str| {
                     format!("@{bot_name} {str}")
                   });
@@ -63,12 +64,12 @@ fn w_bot_list(app: impl StateWriter<Value = AppGUI>) -> impl WidgetBuilder {
                     on_tap: move |_| {
                       let (channel_id, bot_msg_id) = {
                         let mut app_write = $app.write();
-                        let channel_id = app_write.data.new_channel(bot_name.clone(), None, ChannelCfg::def_bot_id_cfg(bot_id));
+                        let channel_id = app_write.data.new_channel(bot_name.clone(), None, ChannelCfg::def_bot_id_cfg(bot_id_2.clone()));
                         let channel = app_write.data.get_channel_mut(&channel_id).unwrap();
                         let msg = Msg::new_user_text(&bot_onboarding, MsgMeta::default());
                         let user_msg_id = *msg.id();
                         channel.add_msg(msg);
-                        let bot_msg = Msg::new_bot_text(bot_id, MsgMeta::reply(user_msg_id));
+                        let bot_msg = Msg::new_bot_text(bot_id_2.clone(), MsgMeta::reply(user_msg_id));
                         let bot_msg_id = *bot_msg.id();
                         channel.add_msg(bot_msg);
                         app_write.data.switch_channel(&channel_id);
@@ -81,7 +82,7 @@ fn w_bot_list(app: impl StateWriter<Value = AppGUI>) -> impl WidgetBuilder {
                         move |app| { app.data.get_channel_mut(&channel_id).unwrap() },
                       );
 
-                      send_msg(channel_writer, bot_onboarding.clone(), 0, bot_msg_id, bot_id);
+                      send_msg(channel_writer, bot_onboarding.clone(), 0, bot_msg_id, bot_id_2.clone());
                     },
                     @SizedBox {
                       size: Size::new(200., 110.),

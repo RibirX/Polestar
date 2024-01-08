@@ -3,6 +3,8 @@ use serde::{Deserialize, Serialize};
 
 use uuid::Uuid;
 
+use super::BotId;
+
 pub type MsgId = Uuid;
 
 /// `Message` is the message struct.
@@ -115,7 +117,7 @@ impl Msg {
     }
   }
 
-  pub fn new_bot_text(bot_id: Uuid, meta: MsgMeta) -> Self {
+  pub fn new_bot_text(bot_id: BotId, meta: MsgMeta) -> Self {
     let cont_list = vec![MsgCont::init_text()];
     Self {
       id: Uuid::new_v4(),
@@ -392,13 +394,13 @@ pub enum MsgStatus {
   Fulfilled,
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy, Serialize, Deserialize, Default)]
+#[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize, Default)]
 pub enum MsgRole {
   #[default]
   #[serde(rename = "user")]
   User,
   #[serde(rename = "bot")]
-  Bot(Uuid),
+  Bot(BotId),
   #[serde(rename = "system")]
   System(u64),
 }
@@ -410,7 +412,7 @@ impl MsgRole {
 
   pub fn is_user(&self) -> bool { matches!(self, Self::User) }
 
-  pub fn bot(&self) -> Option<&Uuid> {
+  pub fn bot(&self) -> Option<&BotId> {
     match self {
       Self::Bot(id) => Some(id),
       _ => None,

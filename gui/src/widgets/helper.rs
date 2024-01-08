@@ -1,7 +1,7 @@
 use std::{cell::RefCell, rc::Rc};
 
 use crate::req::query_open_ai;
-use polestar_core::model::{Bot, Channel, MsgAction, MsgBody};
+use polestar_core::model::{Bot, BotId, Channel, MsgAction, MsgBody};
 use ribir::prelude::*;
 use uuid::Uuid;
 
@@ -10,7 +10,7 @@ pub fn send_msg(
   content: String,
   idx: usize,
   msg_id: Uuid,
-  bot_id: Uuid,
+  bot_id: BotId,
 ) {
   let (url, headers) = {
     let channel = channel.read();

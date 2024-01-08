@@ -10,7 +10,7 @@ use crate::{
 use super::{
   bot::Bot,
   channel::{Channel, ChannelCfg},
-  ChannelId, User, UserBuilder,
+  BotId, ChannelId, User, UserBuilder,
 };
 
 pub struct AppInfo {
@@ -83,13 +83,13 @@ impl AppInfo {
 
   pub fn bots_rc(&self) -> Rc<Vec<Bot>> { self.bots.clone() }
 
-  pub fn bot(&self, bot_id: &Uuid) -> Option<&Bot> {
+  pub fn bot(&self, bot_id: &BotId) -> Option<&Bot> {
     self.bots.iter().find(|bot| bot.id() == bot_id)
   }
 
-  pub fn get_bot_or_default(&self, bot_id: Option<Uuid>) -> &Bot {
+  pub fn get_bot_or_default(&self, bot_id: Option<&BotId>) -> &Bot {
     bot_id
-      .and_then(|bot_id| self.bot(&bot_id))
+      .and_then(|bot_id| self.bot(bot_id))
       .unwrap_or_else(|| self.def_bot())
   }
 
@@ -116,7 +116,7 @@ pub struct AppData {
   info: Box<AppInfo>,
 }
 
-pub static ANONYMOUS_USER: &'static str = "anonymous";
+pub static ANONYMOUS_USER: &str = "anonymous";
 
 pub fn init_app_data() -> AppData {
   utils::launch::setup_project();
@@ -125,7 +125,7 @@ pub fn init_app_data() -> AppData {
   // 2. judge bot has official server.
   let has_official_server = utils::has_official_server(&bots);
   // TODO: how to set app default bot
-  let cfg = AppCfg::new(None, *bots[0].id());
+  let cfg = AppCfg::new(None, bots[0].id().clone());
   // 3. if has official server, load user info from local file.
   let cur_user = utils::read_current_user().unwrap_or(ANONYMOUS_USER.to_owned());
   let local_state = utils::read_local_state(&cur_user).unwrap_or_default();
@@ -402,11 +402,11 @@ impl AppData {
 #[derive(Debug, Default)]
 pub struct AppCfg {
   proxy: Option<String>,
-  def_bot_id: Uuid,
+  def_bot_id: String,
 }
 
 impl AppCfg {
-  pub fn new(proxy: Option<String>, def_bot_id: Uuid) -> Self { Self { proxy, def_bot_id } }
+  pub fn new(proxy: Option<String>, def_bot_id: BotId) -> Self { Self { proxy, def_bot_id } }
 
   #[inline]
   pub fn proxy(&self) -> Option<&str> { self.proxy.as_deref() }
@@ -415,5 +415,5 @@ impl AppCfg {
   pub fn set_proxy(&mut self, proxy: Option<String>) { self.proxy = proxy; }
 
   #[inline]
-  pub fn def_bot_id(&self) -> &Uuid { &self.def_bot_id }
+  pub fn def_bot_id(&self) -> &BotId { &self.def_bot_id }
 }

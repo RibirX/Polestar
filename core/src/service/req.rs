@@ -71,7 +71,7 @@ pub async fn fetch_feedback(
       time_stamp
     )
   } else {
-    format!("https://api.ribir.org/feedback/messages/?limit=100")
+    "https://api.ribir.org/feedback/messages/?limit=100".to_string()
   };
 
   let client = reqwest::Client::new();

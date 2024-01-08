@@ -120,7 +120,7 @@ pub fn msg_handler(args: ArgMatches, app_data: &mut AppData) -> ReplResult<Optio
         let mut msg_cont = MsgCont::init_text();
         msg_cont.action(MsgAction::Receiving(MsgBody::Text(Some(ret_msg.clone()))));
         cur_channel.add_msg(Msg::new(
-          MsgRole::Bot(Uuid::nil()),
+          MsgRole::Bot(String::new()),
           vec![msg_cont],
           MsgMeta::default(),
           None,
