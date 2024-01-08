@@ -1,8 +1,6 @@
 use serde::Deserialize;
 use std::collections::HashMap;
 
-use crate::service::service_provider::{get_service, Service, ServiceModel};
-
 pub type BotId = String;
 
 /// Bot is Polestar basic widget, user need talk to bot to get AI response.
@@ -50,8 +48,6 @@ impl Bot {
 
   pub fn sp(&self) -> &ServiceModel { &self.sp }
 
-  pub fn service(&self) -> Box<dyn Service> { get_service(*self.sp()) }
-
   pub fn url(&self) -> &str { &self.url }
 
   pub fn params(&self) -> &serde_json::Value { &self.params }
@@ -74,4 +70,9 @@ pub enum Lang {
 pub enum BotAvatar {
   Text { name: String, color: String },
   Image { url: String },
+}
+
+#[derive(Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ServiceModel {
+  OpenAI,
 }

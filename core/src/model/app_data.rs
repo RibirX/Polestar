@@ -19,7 +19,6 @@ pub struct AppInfo {
   cfg: AppCfg,
   cur_channel_id: Option<Uuid>,
   quick_launcher_id: Option<Uuid>,
-  has_official_server: bool,
 }
 
 #[derive(Clone, Copy, Eq, PartialEq, Hash, Debug)]
@@ -105,9 +104,7 @@ impl AppInfo {
 
   pub fn cfg_mut(&mut self) -> &mut AppCfg { &mut self.cfg }
 
-  pub fn has_official_server(&self) -> bool { self.has_official_server }
-
-  pub fn need_login(&self) -> bool { self.has_official_server && self.user.is_none() }
+  pub fn need_login(&self) -> bool { self.user.is_none() }
 }
 
 pub struct AppData {
@@ -122,38 +119,31 @@ pub fn init_app_data() -> AppData {
   utils::launch::setup_project();
   // 1. load bots config from local file.
   let bots = utils::load_bot_cfg_file().expect("Failed to load bot config");
-  // 2. judge bot has official server.
-  let has_official_server = utils::has_official_server(&bots);
   // TODO: how to set app default bot
   let cfg = AppCfg::new(None, bots[0].id().clone());
-  // 3. if has official server, load user info from local file.
+  // 2. load user info from local file.
   let cur_user = utils::read_current_user().unwrap_or(ANONYMOUS_USER.to_owned());
   let local_state = utils::read_local_state(&cur_user).unwrap_or_default();
-  let (user_data_path, user) = if has_official_server {
-    local_state.uid().map_or_else(
-      || (None, None),
-      |uid| {
-        let user_data_path = utils::user_data_path(&uid.to_string());
-        let token = utils::token::decrypt_token(crate::KEY).ok();
-        let mut user_builder = UserBuilder::default();
-        user_builder = user_builder.uid(uid);
-        if let Some(token) = token {
-          GLOBAL_VARS
-            .try_lock()
-            .unwrap()
-            .insert(GlbVar::PolestarKey, token.to_owned());
-          user_builder = user_builder.token(token);
-        }
-        (
-          Some(user_data_path),
-          Some(user_builder.build().expect("Failed to build user")),
-        )
-      },
-    )
-  } else {
-    let anonymous_data_path = utils::user_data_path(ANONYMOUS_USER);
-    (Some(anonymous_data_path), None)
-  };
+  let (user_data_path, user) = local_state.uid().map_or_else(
+    || (None, None),
+    |uid| {
+      let user_data_path = utils::user_data_path(&uid.to_string());
+      let token = utils::token::decrypt_token(crate::KEY).ok();
+      let mut user_builder = UserBuilder::default();
+      user_builder = user_builder.uid(uid);
+      if let Some(token) = token {
+        GLOBAL_VARS
+          .try_lock()
+          .unwrap()
+          .insert(GlbVar::PolestarKey, token.to_owned());
+        user_builder = user_builder.token(token);
+      }
+      (
+        Some(user_data_path),
+        Some(user_builder.build().expect("Failed to build user")),
+      )
+    },
+  );
 
   let (db, mut channels) = if let Some(user_data_path) = user_data_path {
     utils::create_if_not_exist_dir(user_data_path);
@@ -181,7 +171,6 @@ pub fn init_app_data() -> AppData {
     cfg,
     cur_channel_id,
     quick_launcher_id: *local_state.quick_launcher_id(),
-    has_official_server,
   };
 
   let info = Box::new(info);
