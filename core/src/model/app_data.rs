@@ -117,16 +117,16 @@ pub static ANONYMOUS_USER: &str = "anonymous";
 
 pub fn init_app_data() -> AppData {
   utils::launch::setup_project();
-  // 1. load bots config from local file.
-  let bots = utils::load_bot_cfg_file().expect("Failed to load bot config");
-  // TODO: how to set app default bot
-  let cfg = AppCfg::new(None, bots[0].id().clone());
   // 2. load user info from local file.
   let cur_user = utils::read_current_user().unwrap_or(ANONYMOUS_USER.to_owned());
+  let bots = utils::load_bot_cfg(cur_user.as_str()).expect("Failed to load bot config");
+  // TODO: how to set app default bot
+  let cfg = AppCfg::new(None, bots[0].id().clone());
   let local_state = utils::read_local_state(&cur_user).unwrap_or_default();
   let (user_data_path, user) = local_state.uid().map_or_else(
     || (None, None),
     |uid| {
+      // 1. load bots config from local file.
       let user_data_path = utils::user_data_path(&uid.to_string());
       let token = utils::token::decrypt_token(crate::KEY).ok();
       let mut user_builder = UserBuilder::default();

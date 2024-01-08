@@ -1,32 +1,43 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, fs, io::Read, path::PathBuf};
 
 use regex::Regex;
 use serde::Deserialize;
 
-use crate::{error::PolestarResult, model::Bot, project_bot_config_path, project_config_path};
+use crate::{
+  error::PolestarResult,
+  launch::write_default_bot_config,
+  model::{Bot, BotId},
+  project_config_path, user_cfg_path, user_data_path,
+};
 
 #[derive(Deserialize, Debug)]
-struct BotCfg {
-  bots: Vec<Bot>,
-}
-
-#[derive(Deserialize, Debug)]
-struct CfgVars {
+struct BotFileCfg {
   vars: Option<HashMap<String, String>>,
+  bots: Option<Vec<Bot>>,
 }
 
-pub fn load_bot_cfg_file() -> PolestarResult<Vec<Bot>> {
-  use super::launch::write_default_bot_config;
-  use std::{fs, io::Read};
+#[derive(Deserialize, Debug)]
+struct UserFileCfg {
+  base: Option<UserFileBase>,
+  files: Option<Vec<String>>,
+}
 
-  let path = project_bot_config_path();
+#[derive(Deserialize, Debug)]
+struct UserFileBase {
+  extends: String,
+  includes: Option<Vec<BotId>>,
+  excludes: Option<Vec<BotId>>,
+}
 
-  fs::File::open(path)
+pub fn load_bot_cfg(uid: &str) -> PolestarResult<Vec<Bot>> {
+  let user_cfg_path = user_cfg_path(uid);
+
+  fs::File::open(user_cfg_path)
     .and_then(|mut file| {
       let mut content = String::new();
       file
         .read_to_string(&mut content)
-        .map(|_| bot_vars_parser(&content))
+        .map(|_| user_bot_cfg_parser(user_data_path(uid), &content))
     })
     .map_or_else(
       |_| {
@@ -40,6 +51,57 @@ pub fn load_bot_cfg_file() -> PolestarResult<Vec<Bot>> {
       },
       |bots| bots,
     )
+}
+
+fn need_bot(bot: &Bot, includes: Option<&Vec<BotId>>, excludes: Option<&Vec<BotId>>) -> bool {
+  if let Some(includes) = includes {
+    includes.iter().any(|id| id == bot.id())
+  } else if let Some(excludes) = excludes {
+    excludes.iter().all(|id| id != bot.id())
+  } else {
+    true
+  }
+}
+
+fn user_bot_cfg_parser(user_data_path: PathBuf, file: &str) -> PolestarResult<Vec<Bot>> {
+  let user_file_cfg = serde_json::from_str::<UserFileCfg>(file)?;
+  let mut user_bots = vec![];
+  if let Some(files) = user_file_cfg.files {
+    for file in files {
+      let mut file = fs::File::open(user_data_path.join(file))?;
+      let mut content = String::new();
+      file.read_to_string(&mut content)?;
+      user_bots.extend(bot_vars_parser(&content)?);
+    }
+  }
+
+  let mut official_bots = vec![];
+  if let Some(base) = user_file_cfg.base {
+    let mut base_file = fs::File::open(user_data_path.join(base.extends))?;
+    let mut base_content = String::new();
+    base_file.read_to_string(&mut base_content)?;
+    official_bots.extend(bot_vars_parser(&base_content)?.into_iter().filter(|bot| {
+      user_bots.iter().all(|user_bot| user_bot.id() != bot.id())
+        || need_bot(bot, base.includes.as_ref(), base.excludes.as_ref())
+    }));
+  }
+
+  Ok(
+    official_bots
+      .into_iter()
+      .chain(user_bots.into_iter())
+      .collect(),
+  )
+}
+
+#[derive(Deserialize, Debug)]
+struct BotCfg {
+  bots: Vec<Bot>,
+}
+
+#[derive(Deserialize, Debug)]
+struct CfgVars {
+  vars: Option<HashMap<String, String>>,
 }
 
 pub fn open_user_config_folder() {

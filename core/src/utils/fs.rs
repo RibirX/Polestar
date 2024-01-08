@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{PathBuf, Path};
 
 use home::home_dir;
 
@@ -6,14 +6,15 @@ use crate::error::PolestarResult;
 
 use super::LocalState;
 
-const POLESTAR_FOLDER: &str = ".polestar_v1";
-const USERS_FOLDER: &str = "users";
-const CONFIG_FOLDER: &str = "config";
-const BOT_CONFIG_FILE: &str = "bot.json";
-const CURRENT_USER: &str = "current_user";
-const NONCE_FILE: &str = "nonce";
-const TOKEN_FILE: &str = "token";
-const LOCAL_STATE: &str = "local_state";
+static POLESTAR_FOLDER: &str = ".polestar_v1";
+static USERS_FOLDER: &str = "users";
+static CONFIG_FOLDER: &str = "config";
+static BOT_CONFIG_FILE: &str = "bot.json";
+static USER_CONFIG_FILE: &str = "bot_config.json";
+static CURRENT_USER: &str = "current_user";
+static NONCE_FILE: &str = "nonce";
+static TOKEN_FILE: &str = "token";
+static LOCAL_STATE: &str = "local_state";
 
 pub fn project_home_path() -> PathBuf {
   home_dir()
@@ -27,6 +28,12 @@ pub fn project_home_path() -> PathBuf {
 pub fn user_data_path(uid: &str) -> PathBuf {
   let mut path = project_user_path();
   path.push(uid);
+  path
+}
+
+pub fn user_cfg_path(uid: &str) -> PathBuf {
+  let mut path = user_data_path(uid);
+  path.push(USER_CONFIG_FILE);
   path
 }
 
@@ -166,16 +173,14 @@ pub mod launch {
   pub fn write_default_bot_config() {
     let path = project_bot_config_path();
 
-    if fs::metadata(&path).is_err() {
-      let content = include_str!(concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/..",
-        "/config/bot.json"
-      ));
-      let mut file = fs::File::create(path).expect("can't create bot.json");
-      file
-        .write_all(content.as_bytes())
-        .expect("can't write bot.json");
-    }
+    let content = include_str!(concat!(
+      env!("CARGO_MANIFEST_DIR"),
+      "/..",
+      "/config/bot.json"
+    ));
+    let mut file = fs::File::create(path).expect("can't create bot.json");
+    file
+      .write_all(content.as_bytes())
+      .expect("can't write bot.json");
   }
 }

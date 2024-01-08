@@ -31,6 +31,22 @@ pub struct Bot {
   onboarding: Option<String>,
 }
 
+#[derive(Deserialize, Debug)]
+pub struct PartialBot {
+  id: BotId,
+  name: Option<String>,
+  lang: Option<Vec<Lang>>,
+  desc: Option<String>,
+  avatar: Option<BotAvatar>,
+  cat: Option<String>,
+  tags: Option<Vec<String>>,
+  sp: Option<ServiceModel>,
+  url: Option<String>,
+  headers: Option<HashMap<String, String>>,
+  params: Option<serde_json::Value>,
+  onboarding: Option<String>,
+}
+
 impl Bot {
   pub fn id(&self) -> &BotId { &self.id }
 
