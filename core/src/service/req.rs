@@ -10,7 +10,7 @@ use crate::{
   error::PolestarError,
   model::{
     FeedbackMessageListForServer, FeedbackTimestamp, GlbVar, UserFeedbackMessageForServer,
-    FEEDBACK_TIMESTAMP, GLOBAL_VARS,
+    GLOBAL_VARS,
   },
 };
 
@@ -62,11 +62,13 @@ pub async fn req_stream(
   Ok(stream)
 }
 
-pub async fn fetch_feedback() -> Result<FeedbackMessageListForServer, PolestarError> {
-  let query = if let Some(timestamp) = *FEEDBACK_TIMESTAMP.lock().unwrap() {
+pub async fn fetch_feedback(
+  utc_time: Option<i64>,
+) -> Result<FeedbackMessageListForServer, PolestarError> {
+  let query = if let Some(time_stamp) = utc_time {
     format!(
       "https://api.ribir.org/feedback/messages/?after={}&limit=100",
-      timestamp
+      time_stamp
     )
   } else {
     format!("https://api.ribir.org/feedback/messages/?limit=100")
@@ -84,7 +86,6 @@ pub async fn fetch_feedback() -> Result<FeedbackMessageListForServer, PolestarEr
   };
 
   let res = req.send().await;
-
   match res {
     Ok(res) => {
       let rst = res.json::<FeedbackMessageListForServer>().await;
@@ -117,10 +118,7 @@ pub async fn req_feedback(content: String) -> Result<(), PolestarError> {
     Ok(res) => {
       let rst = res.json::<FeedbackTimestamp>().await;
       match rst {
-        Ok(data) => {
-          *FEEDBACK_TIMESTAMP.lock().unwrap() = Some(data.create_time);
-          Ok(())
-        }
+        Ok(_) => Ok(()),
         Err(err) => Err(PolestarError::Reqwest(err)),
       }
     }

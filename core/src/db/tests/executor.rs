@@ -190,6 +190,7 @@ fn add_msg_test() {
     MsgRole::User,
     vec![MsgCont::init_text()],
     MsgMeta::default(),
+    None,
   );
   persistence_db.persist_async(ActionPersist::AddMsg { channel_id, msg });
 
@@ -235,6 +236,7 @@ fn update_msg_test() {
     MsgRole::User,
     vec![MsgCont::init_text()],
     MsgMeta::default(),
+    None,
   );
   persistence_db.persist_async(ActionPersist::AddMsg { channel_id, msg });
 
@@ -296,6 +298,7 @@ fn query_msgs_by_channel_id_test() {
     MsgRole::User,
     vec![MsgCont::init_text()],
     MsgMeta::default(),
+    None,
   );
   persistence_db.persist_async(ActionPersist::AddMsg { channel_id, msg });
 

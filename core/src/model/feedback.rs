@@ -12,6 +12,7 @@ impl From<FeedbackMessageForServer> for Msg {
       role,
       vec![MsgCont::new_text(&msg.message)],
       MsgMeta::default(),
+      Some(msg.create_time as i64),
     )
   }
 }

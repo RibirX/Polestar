@@ -14,20 +14,22 @@ pub async fn query_open_ai(
   content: String,
   headers: HeaderMap,
   delta_op: impl FnMut(String),
-) {
+) -> Result<String, PolestarError> {
   let mut stream = open_ai_stream(url, content, headers)
     .to_ribir_future()
     .await
     .unwrap()
     .to_ribir_stream();
 
-  let _ = deal_open_ai_stream(&mut stream, delta_op).await;
+  deal_open_ai_stream(&mut stream, delta_op).await
 }
 
 pub async fn query_feedback(content: String) {
   let _ = req_feedback(content).to_ribir_future().await;
 }
 
-pub async fn query_fetch_feedback() -> Result<FeedbackMessageListForServer, PolestarError> {
-  fetch_feedback().to_ribir_future().await
+pub async fn query_fetch_feedback(
+  utc_time: Option<i64>,
+) -> Result<FeedbackMessageListForServer, PolestarError> {
+  fetch_feedback(utc_time).to_ribir_future().await
 }

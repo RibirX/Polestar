@@ -174,7 +174,6 @@ where
         };
 
         let retry_msg = msg.clone_writer();
-
         let msg_ops = @$msg_ops_anchor {
           visible: pipe! {
             $stack.mouse_hover() && !role.is_system()
