@@ -48,6 +48,38 @@ pub struct PartialBot {
   onboarding: Option<String>,
 }
 
+impl PartialBot {
+  pub fn id(&self) -> &BotId { &self.id }
+  
+  pub fn to_bot(self) -> Option<Bot> {
+    self.is_complete().then(|| Bot {
+      id: self.id,
+      name: self.name.unwrap(),
+      lang: self.lang.unwrap(),
+      desc: self.desc,
+      avatar: self.avatar.unwrap(),
+      cat: self.cat,
+      tags: self.tags.unwrap(),
+      sp: self.sp.unwrap(),
+      url: self.url.unwrap(),
+      headers: self.headers.unwrap(),
+      params: self.params.unwrap(),
+      onboarding: self.onboarding,
+    })
+  }
+
+  fn is_complete(&self) -> bool {
+    self.name.is_some()
+      && self.lang.is_some()
+      && self.avatar.is_some()
+      && self.tags.is_some()
+      && self.sp.is_some()
+      && self.url.is_some()
+      && self.headers.is_some()
+      && self.params.is_some()
+  }
+}
+
 impl Bot {
   pub fn id(&self) -> &BotId { &self.id }
 
@@ -72,9 +104,45 @@ impl Bot {
   pub fn lang(&self) -> &[Lang] { &self.lang }
 
   pub fn onboarding(&self) -> Option<&str> { self.onboarding.as_deref() }
+
+  pub fn merge(&mut self, bot: &PartialBot) {
+    if let Some(name) = &bot.name {
+      self.name = name.clone();
+    }
+    if let Some(lang) = &bot.lang {
+      self.lang = lang.clone();
+    }
+    if let Some(desc) = &bot.desc {
+      self.desc = Some(desc.clone());
+    }
+    if let Some(avatar) = &bot.avatar {
+      self.avatar = avatar.clone();
+    }
+    if let Some(cat) = &bot.cat {
+      self.cat = Some(cat.clone());
+    }
+    if let Some(tags) = &bot.tags {
+      self.tags = tags.clone();
+    }
+    if let Some(sp) = &bot.sp {
+      self.sp = sp.clone();
+    }
+    if let Some(url) = &bot.url {
+      self.url = url.clone();
+    }
+    if let Some(headers) = &bot.headers {
+      self.headers = headers.clone();
+    }
+    if let Some(params) = &bot.params {
+      self.params = params.clone();
+    }
+    if let Some(onboarding) = &bot.onboarding {
+      self.onboarding = Some(onboarding.clone());
+    }
+  }
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone, Copy)]
 pub enum Lang {
   #[serde(rename = "en")]
   En,
