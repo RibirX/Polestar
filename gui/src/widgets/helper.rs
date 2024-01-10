@@ -1,7 +1,7 @@
 use std::{cell::RefCell, rc::Rc};
 
 use crate::req::query_open_ai;
-use polestar_core::model::{Bot, BotId, Channel, MsgAction, MsgBody};
+use polestar_core::model::{BotId, Channel, MsgAction, MsgBody};
 use ribir::prelude::*;
 use uuid::Uuid;
 
@@ -12,28 +12,13 @@ pub fn send_msg(
   msg_id: Uuid,
   bot_id: BotId,
 ) {
-  let (url, headers) = {
-    let channel = channel.read();
-    let bot = channel
-      .bots()
-      .and_then(|bots: &[Bot]| bots.iter().find(|bot| bot.id() == &bot_id));
-    bot
-      .map(|bot| {
-        (
-          bot.url().to_string(),
-          bot.headers().try_into().ok().unwrap_or_default(),
-        )
-      })
-      .unwrap_or_default()
-  };
-
   let _ = AppCtx::spawn_local(async move {
     let update_msg = |act| {
       let mut channel = channel.write();
       channel.update_msg(&msg_id, idx, act);
     };
 
-    let _ = query_open_ai(url, content, headers, |delta| {
+    let _ = query_open_ai(channel.clone_reader(), bot_id, content, |delta| {
       update_msg(MsgAction::Receiving(MsgBody::Text(Some(delta))));
     })
     .await;

@@ -1,7 +1,7 @@
 use inquire::Select;
 use polestar_core::{
   model::{AppData, ChannelCfg, Msg, MsgAction, MsgBody, MsgCont, MsgMeta, MsgRole},
-  service::open_ai::{deal_open_ai_stream, open_ai_stream},
+  service::{open_ai::deal_open_ai_stream, req::create_text_request},
 };
 use reedline_repl_rs::{clap::ArgMatches, Result as ReplResult};
 use uuid::Uuid;
@@ -95,12 +95,11 @@ pub fn msg_handler(args: ArgMatches, app_data: &mut AppData) -> ReplResult<Optio
 
       let mut ret_msg = String::new();
       let bot = app_data.info().def_bot();
-      let headers = bot.headers().try_into().unwrap_or_default();
-      let url = bot.url().to_owned();
       let runtime = tokio::runtime::Runtime::new().unwrap();
       runtime.block_on(async {
-        if let Ok(mut stream) =
-          open_ai_stream(url, content.expect("content is required").clone(), headers).await
+        if let Ok(mut stream) = create_text_request(bot, app_data.info())
+          .request(content.expect("content is required").clone())
+          .await
         {
           let res = deal_open_ai_stream(&mut stream, |s| print!("{}", s)).await;
           match res {

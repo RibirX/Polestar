@@ -1,5 +1,12 @@
 {
   "vars": {},
+  "providers": [
+    {
+      "name": "OpenAI",
+      "base_url": "https://api.ribir.org/stream/open_ai",
+      "token": "v1.eyJ1c2VyX2lkIjoxMDAxMTgsImV4cCI6MTcwNTQ2NDI4MSwidmVyIjoidjEifQ.-64yece5gSrdUwjY7sTnwoQ858kX-YyzRM7EuKCTI10"
+    }
+  ],
   "bots": [
     {
       "id": "87cc7e88-fd55-4c01-9a34-d0f1397b1c73",
@@ -10,19 +17,15 @@
         "color": "#EDF7FBFF"
       },
       "cat": "Assistant",
-      "tags": [
-        "AI"
-      ],
-      "lang": [
-        "en"
-      ],
+      "tags": ["AI"],
+      "lang": ["en"],
       "sp": "OpenAI",
-      "url": "https://api.ribir.org/stream/open_ai/v1/chat/completions",
+      "url": "/v1/chat/completions",
       "headers": {
-        "User-Agent": "PolestarChat/${Version}",
+        "User-Agent": "${$.user_agent}",
         "Content-Type": "application/json",
-        "Authorization": "${PolestarKey}",
-        "Version": "${Version}"
+        "Authorization": "${$.sp.token}",
+        "Version": "${$.version}"
       },
       "params": {
         "model": "gpt-3.5-turbo",
@@ -39,19 +42,15 @@
         "color": "#EDF7FBFF"
       },
       "cat": "Assistant",
-      "tags": [
-        "AI"
-      ],
-      "lang": [
-        "en"
-      ],
+      "tags": ["AI"],
+      "lang": ["en"],
       "sp": "OpenAI",
-      "url": "https://api.ribir.org/stream/open_ai/v1/chat/completions",
+      "url": "/v1/chat/completions",
       "headers": {
-        "User-Agent": "PolestarChat/${Version}",
+        "User-Agent": "${$.user_agent}",
         "Content-Type": "application/json",
-        "Authorization": "${PolestarKey}",
-        "Version": "${Version}"
+        "Authorization": "${$.sp.token}",
+        "Version": "${$.version}"
       },
       "params": {
         "model": "gpt-3.5-turbo",
@@ -67,19 +66,15 @@
         "color": "#EDF7FBFF"
       },
       "cat": "Assistant",
-      "tags": [
-        "AI"
-      ],
-      "lang": [
-        "en"
-      ],
+      "tags": ["AI"],
+      "lang": ["en"],
       "sp": "OpenAI",
-      "url": "https://api.ribir.org/stream/open_ai/v1/chat/completions",
+      "url": "/v1/chat/completions",
       "headers": {
-        "User-Agent": "PolestarChat/${Version}",
+        "User-Agent": "${$.user_agent}",
         "Content-Type": "application/json",
-        "Authorization": "${PolestarKey}",
-        "Version": "${Version}"
+        "Authorization": "${$.sp.token}",
+        "Version": "${$.version}"
       },
       "params": {
         "model": "gpt-3.5-turbo",

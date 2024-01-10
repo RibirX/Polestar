@@ -695,7 +695,6 @@ fn deal_delete(this: &impl StateWriter<Value = MessageEditor>, e: &KeyboardEvent
 #[cfg(test)]
 mod tests {
   use ribir::widgets::input::{CaretPosition, CaretState};
-  use uuid::Uuid;
 
   use crate::widgets::home::chat::editor::{
     EditedMessage, MessageEditor, MessageFragment, MoveDirection,

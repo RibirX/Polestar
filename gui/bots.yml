@@ -1,0 +1,74 @@
+# {
+#  "vars: {},
+#  "sps: [
+#     // {
+#  // "OpenAI: {
+#  //   "key: "Bearer xxx"
+#     // }
+#     // }
+#   ],
+
+bots: [
+  {
+    id: 87cc7e88-fd55-4c01-9a34-d0f1397b1c73,
+    name: 'Polestar Assistant',
+    desc: 'Polestar Assistant is a AI assistant powered by OpenAI',
+    avatar: { name: '🌉', color: '#EDF7FBFF' },
+    cat: 'Assistant',
+    tags: ['AI'],
+    lang: ['en']
+    sp: 'OpenAI'
+    url: 'https://api.ribir.org/stream/open_ai/v1/chat/completions'
+    headers:
+      User-Agent: 'PolestarChat/${Version}'
+      Content-Type: 'application/json'
+      Authorization: '${PolestarKey}'
+      Version: '${Version}'
+    params:
+      model: 'gpt-3.5-turbo'
+      prompt: ''
+    onboarding: "Hi, I'm Polestar Assistant. I'm here to help you with your daily tasks. I can help you with your calendar, email, and more. I can also help you with your tasks, and I can even help you with your homework."
+  },
+  { id: 'a7f965e5-b1d1-4e9b-89e4-975f8ef7cd80'
+    name: 'Polestar Assistant 1'
+    desc: 'Polestar Assistant is a AI assistant powered by OpenAI'
+    avatar:
+      name: '🌉'
+      color: '#EDF7FBFF'
+    cat: 'Assistant'
+    tags: ['AI']
+    lang: ['en']
+    sp: 'OpenAI'
+    url: 'https://api.ribir.org/stream/open_ai/v1/chat/completions'
+    headers:
+      User-Agent: 'PolestarChat/${Version}'
+      Content-Type: 'application/json'
+      Authorization: '${PolestarKey}'
+      Version: '${Version}'
+    params:
+      model: 'gpt-3.5-turbo'
+      prompt: ''
+  },
+  {
+  id: 'e1297828-3348-41bc-b457-182db42c6616'
+  name: 'Polestar Assistant 2'
+  desc: 'Polestar Assistant is a AI assistant powered by OpenAI'
+  avatar:
+    name: '🌉'
+    color: '#EDF7FBFF'
+  cat: 'Assistant'
+  tags: ['AI']
+  lang: ['en']
+  sp: 'OpenAI'
+  url: 'https://api.ribir.org/stream/open_ai/v1/chat/completions'
+  headers:
+    User-Agent: 'PolestarChat/${Version}'
+    Content-Type: 'application/json'
+    Authorization: '${PolestarKey}'
+    Version: '${Version}'
+  params:
+    model: 'gpt-3.5-turbo'
+    prompt: ''
+  }
+]
+

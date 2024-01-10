@@ -1,11 +1,13 @@
 use once_cell::sync::Lazy;
+use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, ptr::NonNull, rc::Rc, sync::Mutex};
 use uuid::Uuid;
 
 use crate::{
   db::{executor::ActionPersist, pool::PersistenceDB},
-  utils, LocalState,
+  utils, BotCfg, LocalState,
 };
+use serde_json::Value as JsonValue;
 
 use super::{
   bot::Bot,
@@ -13,8 +15,16 @@ use super::{
   BotId, ChannelId, User, UserBuilder,
 };
 
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct ServerProvider {
+  pub name: String,
+  pub base_url: String,
+  pub token: String,
+  pub extend: Option<JsonValue>,
+}
 pub struct AppInfo {
   bots: Rc<Vec<Bot>>,
+  providers: HashMap<String, ServerProvider>,
   user: Option<User>,
   cfg: AppCfg,
   cur_channel_id: Option<Uuid>,
@@ -105,6 +115,8 @@ impl AppInfo {
   pub fn cfg_mut(&mut self) -> &mut AppCfg { &mut self.cfg }
 
   pub fn need_login(&self) -> bool { self.user.is_none() }
+
+  pub fn providers(&self) -> &HashMap<String, ServerProvider> { &self.providers }
 }
 
 pub struct AppData {
@@ -119,7 +131,8 @@ pub fn init_app_data() -> AppData {
   utils::launch::setup_project();
   // 2. load user info from local file.
   let cur_user = utils::read_current_user().unwrap_or(ANONYMOUS_USER.to_owned());
-  let bots = utils::load_bot_cfg(cur_user.as_str()).expect("Failed to load bot config");
+  let BotCfg { bots, providers } =
+    utils::load_bot_cfg(cur_user.as_str()).expect("Failed to load bot config");
   // TODO: how to set app default bot
   let cfg = AppCfg::new(None, bots[0].id().clone());
   let local_state = utils::read_local_state(&cur_user).unwrap_or_default();
@@ -167,6 +180,7 @@ pub fn init_app_data() -> AppData {
 
   let info = AppInfo {
     bots: Rc::new(bots),
+    providers,
     user,
     cfg,
     cur_channel_id,

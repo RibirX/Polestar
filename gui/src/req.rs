@@ -1,21 +1,32 @@
 use polestar_core::{
   error::PolestarError,
-  model::FeedbackMessageListForServer,
+  model::{BotId, Channel, FeedbackMessageListForServer},
   service::{
-    open_ai::{deal_open_ai_stream, open_ai_stream},
-    req::{fetch_feedback, req_feedback},
+    open_ai::deal_open_ai_stream,
+    req::{create_text_request, fetch_feedback, req_feedback},
   },
 };
-use reqwest::header::HeaderMap;
+
 use ribir::prelude::*;
 
 pub async fn query_open_ai(
-  url: String,
+  channel: impl StateReader<Value = Channel>,
+  bot_id: BotId,
   content: String,
-  headers: HeaderMap,
   delta_op: impl FnMut(String),
 ) -> Result<String, PolestarError> {
-  let mut stream = open_ai_stream(url, content, headers)
+  let req = {
+    let channel = channel.read();
+    let bot = channel
+      .bots()
+      .and_then(|bots| bots.iter().find(|bot| bot.id() == &bot_id))
+      .unwrap();
+    let info = channel.app_info().unwrap();
+    create_text_request(bot, info)
+  };
+
+  let mut stream = req
+    .request(content)
     .to_ribir_future()
     .await
     .unwrap()
