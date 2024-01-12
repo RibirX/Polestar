@@ -156,7 +156,7 @@ where
       pipe!($msg;).map(move |_| {
         let mut stack = @Stack {};
 
-        let role = *$msg.role();
+        let role = $msg.role().clone();
         let mut row = @Row {
           item_gap: 8.,
           reverse: matches!(role, MsgRole::User)
@@ -174,12 +174,14 @@ where
         };
 
         let retry_msg = msg.clone_writer();
+
+        let role_2 = role.clone();
         let msg_ops = @$msg_ops_anchor {
           visible: pipe! {
-            $stack.mouse_hover() && !role.is_system()
+            $stack.mouse_hover() && !role_2.is_system()
           },
           @ {
-            match role {
+            match role.clone() {
               MsgRole::User | MsgRole::Bot(_) => {
                 let channel = msg.origin_writer();
                 @MsgOps {
@@ -235,7 +237,7 @@ where
                             let cont = MsgCont::init_text();
                             retry_msg_write.add_cont(cont);
                             let cur_idx = retry_msg_write.cur_idx();
-                            let bot_id = *retry_msg_write.role().bot().unwrap();
+                            let bot_id = retry_msg_write.role().bot().unwrap().clone();
                             (cur_idx, bot_id)
                           };
                           send_msg(channel.clone_writer(), source_msg_text, cur_idx, msg_id, bot_id);
@@ -271,7 +273,7 @@ where
                   let channel = msg.origin_writer().clone_writer();
                   $msg.role().bot().and_then(move |bot_id| {
                     $channel.app_info().map(|info| {
-                      let bot = info.get_bot_or_default(Some(*bot_id));
+                      let bot = info.get_bot_or_default(Some(bot_id));
                       @Text { text: bot.name().to_owned() }
                     })
                   })
@@ -310,7 +312,7 @@ where
                             }
                           }
                         }.widget_build(ctx!()),
-                        *$msg.role()
+                        $msg.role().clone()
                       )
                     })
                   }

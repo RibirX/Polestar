@@ -1,14 +1,12 @@
 use serde::Deserialize;
 use std::collections::HashMap;
-use uuid::Uuid;
-
-use crate::service::service_provider::{get_service, Service, ServiceModel};
+pub type BotId = String;
 
 /// Bot is Polestar basic widget, user need talk to bot to get AI response.
 #[derive(Deserialize, Debug)]
 pub struct Bot {
   // A unique id for bot
-  id: Uuid,
+  id: BotId,
   // A name for bot
   name: String,
   // This bot support languages version
@@ -21,7 +19,8 @@ pub struct Bot {
   cat: Option<String>,
   // A list of tags for bot, it can be empty list to indicate no tags
   tags: Vec<String>,
-  sp: ServiceModel,
+
+  sp: String,
   // API url for bot's AI service
   url: String,
   // API url header for bot's AI service
@@ -32,8 +31,24 @@ pub struct Bot {
   onboarding: Option<String>,
 }
 
+#[derive(Deserialize, Debug)]
+pub struct PartialBot {
+  id: BotId,
+  name: Option<String>,
+  lang: Option<Vec<Lang>>,
+  desc: Option<String>,
+  avatar: Option<BotAvatar>,
+  cat: Option<String>,
+  tags: Option<Vec<String>>,
+  sp: Option<String>,
+  url: Option<String>,
+  headers: Option<HashMap<String, String>>,
+  params: Option<serde_json::Value>,
+  onboarding: Option<String>,
+}
+
 impl Bot {
-  pub fn id(&self) -> &Uuid { &self.id }
+  pub fn id(&self) -> &BotId { &self.id }
 
   pub fn name(&self) -> &str { &self.name }
 
@@ -47,9 +62,7 @@ impl Bot {
 
   pub fn headers(&self) -> &HashMap<String, String> { &self.headers }
 
-  pub fn sp(&self) -> &ServiceModel { &self.sp }
-
-  pub fn service(&self) -> Box<dyn Service> { get_service(*self.sp()) }
+  pub fn sp(&self) -> &str { &self.sp }
 
   pub fn url(&self) -> &str { &self.url }
 

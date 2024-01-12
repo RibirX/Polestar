@@ -180,34 +180,31 @@ fn gen_handler(app: impl StateWriter<Value = AppGUI>) -> impl for<'a> FnMut(&'a 
     AppEvent::OpenUrl(url) => {
       // TODO: user module need login
       let route = handle_open_url(url);
-      match route {
-        Some(AppRoute::Login { token, uid }) => {
-          let _ = polestar_core::token::encrypt_token(token.as_bytes());
+      if let Some(AppRoute::Login { token, uid }) = route {
+        let _ = polestar_core::token::encrypt_token(token.as_bytes());
 
-          // create uid user folder.
-          let user_data_path = polestar_core::user_data_path(&uid.to_string());
-          polestar_core::create_if_not_exist_dir(user_data_path);
+        // create uid user folder.
+        let user_data_path = polestar_core::user_data_path(&uid.to_string());
+        polestar_core::create_if_not_exist_dir(user_data_path);
 
-          let _ = polestar_core::write_current_user(&uid.to_string());
+        let _ = polestar_core::write_current_user(&uid.to_string());
 
-          // create `User`
-          let mut user = polestar_core::model::UserBuilder::default()
-            .uid(uid)
-            .build()
-            .expect("Failed to build user");
-          user.set_token(Some(token));
-          app.write().data.info_mut().set_user(Some(user.clone()));
+        // create `User`
+        let mut user = polestar_core::model::UserBuilder::default()
+          .uid(uid)
+          .build()
+          .expect("Failed to build user");
+        user.set_token(Some(token));
+        app.write().data.info_mut().set_user(Some(user.clone()));
 
-          app.write().data.login(user);
+        app.write().data.login(user);
 
-          app.write().navigate_to("/home/chat");
+        app.write().navigate_to("/home/chat");
 
-          // active main window
-          if let Some(wnd_info) = WINDOW_MGR.lock().unwrap().main.as_ref() {
-            App::set_active_window(wnd_info.id);
-          }
+        // active main window
+        if let Some(wnd_info) = WINDOW_MGR.lock().unwrap().main.as_ref() {
+          App::set_active_window(wnd_info.id);
         }
-        _ => {}
       }
     }
     AppEvent::Hotkey(hotkey_event) => {

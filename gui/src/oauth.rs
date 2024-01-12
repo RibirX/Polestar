@@ -6,10 +6,10 @@ mod microsoft;
 pub use microsoft::microsoft_login_uri;
 
 #[cfg(test)]
-pub(self) fn generate_state() -> String { String::new() }
+pub(crate) fn generate_state() -> String { String::new() }
 
 #[cfg(not(test))]
-pub(self) fn generate_state() -> String {
+pub(crate) fn generate_state() -> String {
   use crate::GLOBAL_CONFIG;
   use base64::{engine::general_purpose, Engine as _};
   use std::collections::HashMap;

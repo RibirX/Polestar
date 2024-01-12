@@ -1,25 +1,34 @@
 use once_cell::sync::Lazy;
+use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, ptr::NonNull, rc::Rc, sync::Mutex};
 use uuid::Uuid;
 
 use crate::{
   db::{executor::ActionPersist, pool::PersistenceDB},
-  utils, LocalState,
+  utils, BotCfg, LocalState,
 };
+use serde_json::Value as JsonValue;
 
 use super::{
   bot::Bot,
   channel::{Channel, ChannelCfg},
-  ChannelId, User, UserBuilder,
+  BotId, ChannelId, User, UserBuilder,
 };
 
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct ServerProvider {
+  pub name: String,
+  pub base_url: String,
+  pub token: String,
+  pub extend: Option<JsonValue>,
+}
 pub struct AppInfo {
   bots: Rc<Vec<Bot>>,
+  providers: HashMap<String, ServerProvider>,
   user: Option<User>,
   cfg: AppCfg,
   cur_channel_id: Option<Uuid>,
   quick_launcher_id: Option<Uuid>,
-  has_official_server: bool,
 }
 
 #[derive(Clone, Copy, Eq, PartialEq, Hash, Debug)]
@@ -83,13 +92,13 @@ impl AppInfo {
 
   pub fn bots_rc(&self) -> Rc<Vec<Bot>> { self.bots.clone() }
 
-  pub fn bot(&self, bot_id: &Uuid) -> Option<&Bot> {
+  pub fn bot(&self, bot_id: &BotId) -> Option<&Bot> {
     self.bots.iter().find(|bot| bot.id() == bot_id)
   }
 
-  pub fn get_bot_or_default(&self, bot_id: Option<Uuid>) -> &Bot {
+  pub fn get_bot_or_default(&self, bot_id: Option<&BotId>) -> &Bot {
     bot_id
-      .and_then(|bot_id| self.bot(&bot_id))
+      .and_then(|bot_id| self.bot(bot_id))
       .unwrap_or_else(|| self.def_bot())
   }
 
@@ -105,9 +114,9 @@ impl AppInfo {
 
   pub fn cfg_mut(&mut self) -> &mut AppCfg { &mut self.cfg }
 
-  pub fn has_official_server(&self) -> bool { self.has_official_server }
+  pub fn need_login(&self) -> bool { self.user.is_none() }
 
-  pub fn need_login(&self) -> bool { self.has_official_server && self.user.is_none() }
+  pub fn providers(&self) -> &HashMap<String, ServerProvider> { &self.providers }
 }
 
 pub struct AppData {
@@ -116,44 +125,38 @@ pub struct AppData {
   info: Box<AppInfo>,
 }
 
-pub static ANONYMOUS_USER: &'static str = "anonymous";
+pub static ANONYMOUS_USER: &str = "anonymous";
 
 pub fn init_app_data() -> AppData {
   utils::launch::setup_project();
-  // 1. load bots config from local file.
-  let bots = utils::load_bot_cfg_file().expect("Failed to load bot config");
-  // 2. judge bot has official server.
-  let has_official_server = utils::has_official_server(&bots);
-  // TODO: how to set app default bot
-  let cfg = AppCfg::new(None, *bots[0].id());
-  // 3. if has official server, load user info from local file.
+  // 2. load user info from local file.
   let cur_user = utils::read_current_user().unwrap_or(ANONYMOUS_USER.to_owned());
+  let BotCfg { bots, providers } =
+    utils::load_bot_cfg(cur_user.as_str()).expect("Failed to load bot config");
+  // TODO: how to set app default bot
+  let cfg = AppCfg::new(None, bots[0].id().clone());
   let local_state = utils::read_local_state(&cur_user).unwrap_or_default();
-  let (user_data_path, user) = if has_official_server {
-    local_state.uid().map_or_else(
-      || (None, None),
-      |uid| {
-        let user_data_path = utils::user_data_path(&uid.to_string());
-        let token = utils::token::decrypt_token(crate::KEY).ok();
-        let mut user_builder = UserBuilder::default();
-        user_builder = user_builder.uid(uid);
-        if let Some(token) = token {
-          GLOBAL_VARS
-            .try_lock()
-            .unwrap()
-            .insert(GlbVar::PolestarKey, token.to_owned());
-          user_builder = user_builder.token(token);
-        }
-        (
-          Some(user_data_path),
-          Some(user_builder.build().expect("Failed to build user")),
-        )
-      },
-    )
-  } else {
-    let anonymous_data_path = utils::user_data_path(ANONYMOUS_USER);
-    (Some(anonymous_data_path), None)
-  };
+  let (user_data_path, user) = local_state.uid().map_or_else(
+    || (None, None),
+    |uid| {
+      // 1. load bots config from local file.
+      let user_data_path = utils::user_data_path(&uid.to_string());
+      let token = utils::token::decrypt_token(crate::KEY).ok();
+      let mut user_builder = UserBuilder::default();
+      user_builder = user_builder.uid(uid);
+      if let Some(token) = token {
+        GLOBAL_VARS
+          .try_lock()
+          .unwrap()
+          .insert(GlbVar::PolestarKey, token.to_owned());
+        user_builder = user_builder.token(token);
+      }
+      (
+        Some(user_data_path),
+        Some(user_builder.build().expect("Failed to build user")),
+      )
+    },
+  );
 
   let (db, mut channels) = if let Some(user_data_path) = user_data_path {
     utils::create_if_not_exist_dir(user_data_path);
@@ -177,11 +180,11 @@ pub fn init_app_data() -> AppData {
 
   let info = AppInfo {
     bots: Rc::new(bots),
+    providers,
     user,
     cfg,
     cur_channel_id,
     quick_launcher_id: *local_state.quick_launcher_id(),
-    has_official_server,
   };
 
   let info = Box::new(info);
@@ -402,11 +405,11 @@ impl AppData {
 #[derive(Debug, Default)]
 pub struct AppCfg {
   proxy: Option<String>,
-  def_bot_id: Uuid,
+  def_bot_id: String,
 }
 
 impl AppCfg {
-  pub fn new(proxy: Option<String>, def_bot_id: Uuid) -> Self { Self { proxy, def_bot_id } }
+  pub fn new(proxy: Option<String>, def_bot_id: BotId) -> Self { Self { proxy, def_bot_id } }
 
   #[inline]
   pub fn proxy(&self) -> Option<&str> { self.proxy.as_deref() }
@@ -415,5 +418,5 @@ impl AppCfg {
   pub fn set_proxy(&mut self, proxy: Option<String>) { self.proxy = proxy; }
 
   #[inline]
-  pub fn def_bot_id(&self) -> &Uuid { &self.def_bot_id }
+  pub fn def_bot_id(&self) -> &BotId { &self.def_bot_id }
 }

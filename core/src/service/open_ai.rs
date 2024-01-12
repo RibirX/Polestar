@@ -1,11 +1,8 @@
 use futures_util::{Stream, StreamExt};
-use reqwest::{header::HeaderMap, Method};
-use reqwest_eventsource::{Event, EventSource};
+use reqwest_eventsource::Event;
 use serde::{Deserialize, Serialize};
 
 use crate::error::PolestarError;
-
-use super::req::req_stream;
 
 #[derive(Debug, Deserialize, Clone, Serialize)]
 pub struct CreateChatCompletionStreamResponse {
@@ -45,20 +42,6 @@ pub enum Role {
   User,
   Assistant,
   Function,
-}
-
-pub async fn open_ai_stream(
-  url: String,
-  content: String,
-  headers: HeaderMap,
-) -> Result<EventSource, PolestarError> {
-  // TODO: model need to be configurable
-  let body = format!(
-    r#"{{"model":"gpt-3.5-turbo","messages":[{{"role":"user","content":"{}"}}],"stream":true}}"#,
-    content
-  );
-
-  req_stream(&url, Method::POST, headers, Some(body.to_owned())).await
 }
 
 pub async fn deal_open_ai_stream(

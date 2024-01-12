@@ -1,5 +1,5 @@
 use crate::{widgets::{helper::send_msg, common::BotList}, style::WHITE, req::query_feedback};
-use polestar_core::model::{Bot, Channel, Msg, MsgMeta};
+use polestar_core::model::{Bot, Channel, Msg, MsgMeta, BotId};
 use ribir::{core::ticker::FrameMsg, prelude::*};
 use std::ops::Range;
 use std::rc::Rc;
@@ -10,7 +10,7 @@ use crate::{style::CULTURED_F4F4F4_FF, theme::polestar_svg, widgets::common::Ico
 pub fn w_editor(
   channel: impl StateWriter<Value = Channel>,
   bots: Rc<Vec<Bot>>,
-  def_bot_id: Uuid,
+  def_bot_id: BotId,
   quote_id: impl StateWriter<Value = Option<Uuid>>,
 ) -> impl WidgetBuilder {
   fn_widget! {
@@ -22,12 +22,15 @@ pub fn w_editor(
     let quote_id_channel = channel.clone_writer();
     let send_msg_by_char_quote_id = quote_id.clone_writer();
     let send_msg_by_icon_quote_id = quote_id.clone_writer();
+
+    let def_bot_id_2 = def_bot_id.clone();
+
     let send_icon = @IconButton {
       on_tap: move |_| {
         if $channel.is_feedback() {
           send_feedback(&mut $text_area.write(), send_msg_by_icon_channel.clone_writer());
         } else {
-          send_question(&mut $text_area.write(), send_msg_by_icon_channel.clone_writer(), def_bot_id, send_msg_by_icon_quote_id.clone_writer());
+          send_question(&mut $text_area.write(), send_msg_by_icon_channel.clone_writer(), def_bot_id.clone(), send_msg_by_icon_quote_id.clone_writer());
         }
         $text_area.write().reset();
       },
@@ -71,7 +74,7 @@ pub fn w_editor(
             if $channel.is_feedback() {
               send_feedback(&mut $text_area.write(), send_msg_by_char_channel.clone_writer());
             } else {
-              send_question(&mut $text_area.write(), send_msg_by_char_channel.clone_writer(), def_bot_id, send_msg_by_char_quote_id.clone_writer());
+              send_question(&mut $text_area.write(), send_msg_by_char_channel.clone_writer(), def_bot_id_2.clone(), send_msg_by_char_quote_id.clone_writer());
             }
             $text_area.write().reset();
             e.stop_propagation();
@@ -156,7 +159,7 @@ fn submit_feedback(content: String) {
 fn send_question(
   text_area: &mut MessageEditor,
   channel: impl StateWriter<Value = Channel>,
-  def_bot_id: Uuid,
+  def_bot_id: BotId,
   quote_id: impl StateWriter<Value = Option<Uuid>>,
 ) {
   let text = text_area.display_text();
@@ -170,10 +173,10 @@ fn send_question(
   channel.write().add_msg(user_msg);
   
   let bots = text_area.edit_message.related_bot();
-  let bot_id = bots.last().map_or(def_bot_id, |id| *id);
+  let bot_id = bots.last().map_or(def_bot_id, |id| id.clone());
   
-  let msg_quote_id = quote_id.read().clone();
-  let bot_msg = Msg::new_bot_text(bot_id, MsgMeta::new(msg_quote_id, Some(user_msg_id)));
+  let msg_quote_id = *quote_id.read();
+  let bot_msg = Msg::new_bot_text(bot_id.clone(), MsgMeta::new(msg_quote_id, Some(user_msg_id)));
 
   let id = *bot_msg.id();
   let idx = bot_msg.cur_idx();
@@ -187,17 +190,17 @@ fn send_question(
 fn select_bot(text_area: &mut MessageEditor, bots: &BotList) {
   let hint = text_area.bot_hint();
   if let Some(hint) = hint {
-    if let Some((uuid, name)) = bots.selected_bot() {
+    if let Some((bot_id, name)) = bots.selected_bot() {
       let end = text_area.caret.cluster();
       text_area.delete(end - hint.len()..end);
-      text_area.insert_bot(uuid, name)
+      text_area.insert_bot(bot_id, name)
     }
   }
 }
 
 enum MessageFragment {
   Text(String),
-  Bot { uuid: Uuid, name: String },
+  Bot { bot_id: BotId, name: String },
 }
 
 #[derive(Clone, Copy)]
@@ -254,17 +257,17 @@ impl EditedMessage {
     msg
   }
 
-  fn related_bot(&self) -> Vec<Uuid> {
-    let mut uuids = vec![];
+  fn related_bot(&self) -> Vec<BotId> {
+    let mut bot_ids = vec![];
     self
       .fragments
       .iter()
       .filter(|f| matches!(*f, &MessageFragment::Bot { .. }))
       .for_each(|f| match f {
         MessageFragment::Text(_) => unreachable!(),
-        MessageFragment::Bot { uuid, .. } => uuids.push(*uuid),
+        MessageFragment::Bot { bot_id, .. } => bot_ids.push(bot_id.clone()),
       });
-    uuids
+    bot_ids
   }
 
   fn validate_cursor_position(&self, cursor: usize, dir: MoveDirection) -> usize {
@@ -373,7 +376,7 @@ impl EditedMessage {
     cursor + s.len()
   }
 
-  pub fn insert_bot(&mut self, mut cursor: usize, uuid: Uuid, name: String) -> usize {
+  pub fn insert_bot(&mut self, mut cursor: usize, bot_id: BotId, name: String) -> usize {
     let (mut idx, offset) = self.position(cursor);
     match &mut self.fragments[idx] {
       MessageFragment::Text(txt) => {
@@ -390,7 +393,7 @@ impl EditedMessage {
     };
 
     idx += 1;
-    let bot = MessageFragment::Bot { uuid, name };
+    let bot = MessageFragment::Bot { bot_id, name };
     cursor += bot.display_text().len();
     self.fragments.insert(idx, bot);
     cursor
@@ -465,9 +468,9 @@ impl MessageEditor {
 
   pub fn display_text(&self) -> String { self.edit_message.display_message() }
 
-  pub fn insert_bot(&mut self, uuid: Uuid, name: String) {
+  pub fn insert_bot(&mut self, bot_id: BotId, name: String) {
     let mut cursor = self.caret.select_range().start;
-    cursor = self.edit_message.insert_bot(cursor, uuid, name);
+    cursor = self.edit_message.insert_bot(cursor, bot_id, name);
     self.caret = CaretState::Caret(CaretPosition { cluster: cursor, position: None });
   }
 
@@ -692,7 +695,6 @@ fn deal_delete(this: &impl StateWriter<Value = MessageEditor>, e: &KeyboardEvent
 #[cfg(test)]
 mod tests {
   use ribir::widgets::input::{CaretPosition, CaretState};
-  use uuid::Uuid;
 
   use crate::widgets::home::chat::editor::{
     EditedMessage, MessageEditor, MessageFragment, MoveDirection,
@@ -705,7 +707,7 @@ mod tests {
         fragments: vec![
           MessageFragment::Text("Hello ".to_string()),
           MessageFragment::Bot {
-            uuid: Uuid::parse_str("a1a2a3a4-b1b2-c1c2-d1d2-d3d4d5d6d7d8").unwrap(),
+            bot_id: "a1a2a3a4-b1b2-c1c2-d1d2-d3d4d5d6d7d8".to_string(),
             name: "Ribir".to_string(),
           },
           MessageFragment::Text("nice to see you!".to_string()),
@@ -760,7 +762,7 @@ mod tests {
 
     let cursor = messages.insert_bot(
       6,
-      Uuid::parse_str("a1a2a3a4-b1b2-c1c2-d1d2-d3d4d5d6d7d8").unwrap(),
+      "a1a2a3a4-b1b2-c1c2-d1d2-d3d4d5d6d7d8".to_string(),
       "Ribir".to_string(),
     );
 

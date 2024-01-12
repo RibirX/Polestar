@@ -74,7 +74,7 @@ where
           let channel_state = $channel;
           let app_state = $app;
           let channel_def_bot_id = channel_state.cfg().def_bot_id();
-          let bot_id = *(channel_def_bot_id.unwrap_or_else(|| app_state.data.info().cfg().def_bot_id()));
+          let bot_id = (channel_def_bot_id.unwrap_or_else(|| app_state.data.info().cfg().def_bot_id())).clone();
           let avatar = app_state
             .data
             .info()

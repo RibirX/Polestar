@@ -1,4 +1,4 @@
-use polestar_core::model::ChannelMode;
+use polestar_core::model::{ChannelMode, BotId};
 use ribir::prelude::*;
 use uuid::Uuid;
 
@@ -54,7 +54,7 @@ struct ChannelState {
   pub bot_list_visible: bool,
   pub bot_list_top: f32,
   pub channel_mode: ChannelMode,
-  pub selected_bot: Option<Uuid>,
+  pub selected_bot: Option<BotId>,
 }
 
 pub fn w_modify_channel_modal(
@@ -123,7 +123,7 @@ pub fn w_modify_channel_modal(
         let rename = $channel_rename;
         $channel.write().set_name(rename.text().to_string());
 
-        if let Some(bot_id) = $channel_state.selected_bot {
+        if let Some(bot_id) = $channel_state.selected_bot.clone() {
           let mut cfg = $channel.cfg().clone();
           cfg.set_def_bot_id(Some(bot_id));
           $channel.write().set_cfg(cfg);
@@ -167,7 +167,7 @@ pub fn w_modify_channel_modal(
             @ {
               pipe! {
                 let app_ref = $app;
-                let bot = app_ref.data.info().get_bot_or_default($channel_state.selected_bot);
+                let bot = app_ref.data.info().get_bot_or_default($channel_state.selected_bot.as_ref());
                 @ListItem {
                   on_tap: move |e| {
                     if !$channel_state.bot_list_visible {

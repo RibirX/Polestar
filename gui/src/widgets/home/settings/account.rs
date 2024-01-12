@@ -39,7 +39,7 @@ pub(super) fn w_email(app: &impl StateWriter<Value = AppGUI>) -> impl WidgetBuil
         }
         @TextSelectable {
           @Text {
-            text: $app.data.info().user().map(|user| format!("ID: {}", user.uid().to_string())).unwrap_or_default(),
+            text: $app.data.info().user().map(|user| format!("ID: {}", user.uid())).unwrap_or_default(),
             foreground: Palette::of(ctx!()).outline(),
           }
         }

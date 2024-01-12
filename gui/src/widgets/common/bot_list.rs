@@ -1,8 +1,7 @@
 use std::rc::Rc;
 
-use polestar_core::model::Bot;
+use polestar_core::model::{Bot, BotId};
 use ribir::prelude::*;
-use uuid::Uuid;
 
 use crate::widgets::common::{w_avatar, InteractiveList};
 
@@ -10,7 +9,7 @@ use crate::widgets::common::{w_avatar, InteractiveList};
 pub struct BotList {
   bots: Rc<Vec<Bot>>,
   #[declare(default = None)]
-  selected_id: Option<Uuid>,
+  selected_id: Option<BotId>,
   #[declare(default = String::new())]
   filter: String,
 }
@@ -41,9 +40,9 @@ impl BotList {
 
   fn next_selected<'a, I>(
     &'a self,
-    selected_id: &Option<Uuid>,
+    selected_id: &Option<BotId>,
     it_creator: impl Fn(&'a BotList) -> I,
-  ) -> Option<Uuid>
+  ) -> Option<BotId>
   where
     I: Iterator<Item = &'a Bot>,
   {
@@ -57,16 +56,16 @@ impl BotList {
         it.next()
       }
     };
-    bot.map(|bot| *bot.id())
+    bot.map(|bot| bot.id().clone())
   }
 
-  pub fn selected_bot(&self) -> Option<(Uuid, BotName)> {
+  pub fn selected_bot(&self) -> Option<(BotId, BotName)> {
     self.selected_id.as_ref().and_then(|id| {
       self
         .bots
         .iter()
         .find(|bot| bot.id() == id)
-        .map(|bot| (*bot.id(), bot.name().to_string()))
+        .map(|bot| (bot.id().clone(), bot.name().to_string()))
     })
   }
 
@@ -77,13 +76,13 @@ impl BotList {
       .filter(|bot| self.filter.is_empty() || bot.name().contains(&self.filter))
   }
 
-  pub fn set_selected_bot(&mut self, bot_id: Option<Uuid>) { self.selected_id = bot_id; }
+  pub fn set_selected_bot(&mut self, bot_id: Option<BotId>) { self.selected_id = bot_id; }
 
   fn init_select(&mut self, force: bool) {
     if self.selected_id.is_some() && !force {
       return;
     }
-    let selected_id = { self.get_bots().next().map(|bot| *bot.id()) };
+    let selected_id = { self.get_bots().next().map(|bot| bot.id().clone()) };
     self.selected_id = selected_id;
   }
 }
@@ -92,7 +91,7 @@ impl Compose for BotList {
   fn compose(this: impl StateWriter<Value = Self>) -> impl WidgetBuilder {
     fn_widget! {
       let list = @InteractiveList {
-        active: pipe!($this.selected_id).map(move |selected_id| {
+        active: pipe!($this.selected_id.clone()).map(move |selected_id| {
           if let Some(selected_id) = selected_id {
             $this.get_bots().position(|bot| bot.id() == &selected_id).unwrap_or(0)
           } else {
@@ -108,10 +107,10 @@ impl Compose for BotList {
             .value_chain(|s| s.distinct_until_changed().box_it())
             .map(move |_| {
               $this.get_bots().map(|bot| {
-                let bot_id = *bot.id();
+                let bot_id = bot.id().clone();
                 @ListItem {
                   on_tap: move |_| {
-                    $this.write().set_selected_bot(Some(bot_id));
+                    $this.write().set_selected_bot(Some(bot_id.clone()));
                   },
                   @Leading {
                     @ {

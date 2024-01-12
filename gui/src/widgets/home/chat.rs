@@ -1,6 +1,8 @@
 use std::rc::Rc;
 
-use polestar_core::model::{Bot, Channel, FeedbackUserIdForServer, Msg, MsgCont, MsgMeta, MsgRole};
+use polestar_core::model::{
+  Bot, BotId, Channel, FeedbackUserIdForServer, Msg, MsgCont, MsgMeta, MsgRole,
+};
 use ribir::prelude::*;
 
 mod editor;
@@ -19,7 +21,7 @@ use crate::{
 pub fn w_chat(
   channel: impl StateWriter<Value = Channel>,
   bots: Rc<Vec<Bot>>,
-  def_bot_id: Uuid,
+  def_bot_id: BotId,
 ) -> impl WidgetBuilder {
   fn_widget! {
     let quote_id: State<Option<Uuid>> = State::value(None);

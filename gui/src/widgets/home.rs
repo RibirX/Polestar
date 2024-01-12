@@ -18,7 +18,7 @@ use sidebar::w_sidebar;
 pub fn w_home(app: impl StateWriter<Value = AppGUI>) -> impl WidgetBuilder {
   fn_widget! {
     @ {
-      pipe!($app.data.channels().len() > 0).map(move |v| if v {
+      pipe!(!$app.data.channels().is_empty()).map(move |v| if v {
         @Row {
           @ConstrainedBox {
             clamp: BoxClamp::EXPAND_Y.with_fixed_width(APP_SIDEBAR_WIDTH),
@@ -40,7 +40,7 @@ pub fn w_home(app: impl StateWriter<Value = AppGUI>) -> impl WidgetBuilder {
                 @ {
                   pipe! {
                     let _ = || $app.write();
-                    let def_bot_id = *($app.data.info().def_bot().id());
+                    let def_bot_id = ($app.data.info().def_bot().id()).clone();
                     let channel_writer = app.split_writer(
                       |app| { app.data.cur_channel().expect("current channel must be existed") },
                       |app| { app.data.cur_channel_mut().expect("current channel must be existed") },
