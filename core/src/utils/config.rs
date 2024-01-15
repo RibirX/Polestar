@@ -37,8 +37,9 @@ struct UserFileBase {
 }
 
 pub fn load_bot_cfg(uid: &str) -> PolestarResult<BotCfg> {
-  let user_cfg_path = user_cfg_path(uid);
+  write_default_bot_config();
 
+  let user_cfg_path = user_cfg_path(uid);
   fs::File::open(user_cfg_path)
     .and_then(|mut file| {
       let mut content = String::new();
@@ -47,7 +48,6 @@ pub fn load_bot_cfg(uid: &str) -> PolestarResult<BotCfg> {
         .map(|_| parse_user_bot_cfgs(user_data_path(uid), &content))
     })
     .unwrap_or_else(|_| {
-      write_default_bot_config();
       let content = include_str!(concat!(
         env!("CARGO_MANIFEST_DIR"),
         "/..",
