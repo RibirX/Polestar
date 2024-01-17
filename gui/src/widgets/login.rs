@@ -46,33 +46,37 @@ pub(super) fn w_login(app: impl StateWriter<Value = AppGUI>) -> impl WidgetBuild
             item_gap: 8.,
             @LoginBtn {
               url: pipe! {
-                if $app.data.info().need_login() {
-                  microsoft_login_uri()
-                } else {
-                  String::new()
-                }
+
+                $app
+                  .data
+                  .info()
+                  .need_login()
+                  .then(|| microsoft_login_uri())
+                  .unwrap_or_default()
               },
               label: "Log in with Microsoft",
               svg: polestar_svg::MICROSOFT_LOGIN,
             }
             @LoginBtn {
               url: pipe! {
-                if $app.data.info().need_login() {
-                  google_login_uri()
-                } else {
-                  String::new()
-                }
+                $app
+                  .data
+                  .info()
+                  .need_login()
+                  .then(|| google_login_uri())
+                  .unwrap_or_default()
               },
               label: "Log in with Google",
               svg: polestar_svg::GOOGLE_LOGIN,
             }
             @LoginBtn {
               url: pipe! {
-                if $app.data.info().need_login() {
-                  apple_login_uri()
-                } else {
-                  String::new()
-                }
+                $app
+                  .data
+                  .info()
+                  .need_login()
+                  .then(|| apple_login_uri())
+                  .unwrap_or_default()
               },
               label: "Log in with Apple",
               svg: polestar_svg::APPLE_LOGIN,

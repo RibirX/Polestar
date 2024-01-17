@@ -1,5 +1,7 @@
+
 use ribir::prelude::*;
 
+use crate::req::query_quota;
 use crate::style::{BLACK, CHINESE_WHITE, COMMON_RADIUS, ISABELLINE, WHITE};
 use crate::widgets::app::AppGUI;
 use crate::widgets::common::ProgressBar;
@@ -57,8 +59,16 @@ pub(super) fn w_email(app: &impl StateWriter<Value = AppGUI>) -> impl WidgetBuil
   }
 }
 
-pub(super) fn w_subscription() -> impl WidgetBuilder {
+pub(super) fn w_subscription(app: impl StateWriter<Value = AppGUI>) -> impl WidgetBuilder {
   fn_widget! {
+    println!("subscription");
+    let _ = || $app.write();
+    let spawn_app = app.clone_writer();
+    let token = $spawn_app.data.info().user().and_then(|user| user.token().map(|s| s.to_owned()));
+    let _ = AppCtx::spawn_local(async move {
+      let quota = query_quota(token).await.ok();
+      spawn_app.silent().data.info_mut().user_mut().unwrap().set_quota(quota);
+    });
     @ConstrainedBox {
       clamp: BoxClamp {
         min: Size::new(f32::INFINITY, 110.),
@@ -74,7 +84,7 @@ pub(super) fn w_subscription() -> impl WidgetBuilder {
       // TODO: check here why need `Stack`? it's only one child.
       @Stack {
         @Row {
-          @ { w_free_plan() }
+          @ { w_free_plan(app.clone_reader()) }
           @Divider {
             direction: Direction::Vertical,
           }
@@ -85,7 +95,7 @@ pub(super) fn w_subscription() -> impl WidgetBuilder {
   }
 }
 
-fn w_free_plan() -> impl WidgetBuilder {
+fn w_free_plan(app: impl StateReader<Value = AppGUI>) -> impl WidgetBuilder {
   fn_widget! {
     @Row {
       item_gap: 16.,
@@ -103,7 +113,9 @@ fn w_free_plan() -> impl WidgetBuilder {
               Color::from_u32(ISABELLINE),
             )
           }
-          @ { w_quota_usage_amount() }
+          @ {
+            w_quota_usage_amount(app.clone_reader())
+          }
         }
       }
     }
@@ -131,13 +143,29 @@ fn w_quota_usage_progress_bar(total: f32, completed: f32, tip: String) -> impl W
   }
 }
 
-fn w_quota_usage_amount() -> impl WidgetBuilder {
+fn w_quota_usage_amount(app: impl StateReader<Value = AppGUI>) -> impl WidgetBuilder {
+  fn_widget! {
+    @ {
+      if $app.data.info().user().map(|user| user.quota().map(|quota| quota.is_over()).unwrap_or_default()).unwrap_or_default() {
+        w_quota_over().widget_build(ctx!())
+      } else {
+        w_quota_usage(app.clone_reader()).widget_build(ctx!())
+      }
+    }
+  }
+}
+
+fn w_quota_usage(app: impl StateReader<Value = AppGUI>) -> impl WidgetBuilder {
   fn_widget! {
     @Column {
       // text message usage
-      @ { w_quota_usage_progress_bar(100., 20., "messages".to_owned()) }
+      @ {
+        let text_total = $app.data.info().user().map(|user| user.quota().map(|quota| quota.max_texts()).unwrap_or_default()).unwrap_or_default();
+        let text_used = $app.data.info().user().map(|user| user.quota().map(|quota| quota.text_used()).unwrap_or_default()).unwrap_or_default();
+        w_quota_usage_progress_bar(text_total, text_used, "messages".to_owned())
+      }
       // image message usage
-      @ { w_quota_usage_progress_bar(100., 10., "image".to_owned()) }
+      // @ { w_quota_usage_progress_bar(100., 10., "image".to_owned()) }
     }
   }
 }

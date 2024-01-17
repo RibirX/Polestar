@@ -1,9 +1,9 @@
 use polestar_core::{
-  error::PolestarError,
-  model::{BotId, Channel, FeedbackMessageListForServer},
+  error::{PolestarError, PolestarResult},
+  model::{BotId, Channel, FeedbackMessageListForServer, Quota},
   service::{
     open_ai::deal_open_ai_stream,
-    req::{create_text_request, fetch_feedback, req_feedback},
+    req::{create_text_request, fetch_feedback, req_feedback, request_quota},
   },
 };
 
@@ -43,4 +43,8 @@ pub async fn query_fetch_feedback(
   utc_time: Option<i64>,
 ) -> Result<FeedbackMessageListForServer, PolestarError> {
   fetch_feedback(utc_time).to_ribir_future().await
+}
+
+pub async fn query_quota(token: Option<String>) -> PolestarResult<Quota> {
+  request_quota(token).to_ribir_future().await
 }

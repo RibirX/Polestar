@@ -31,7 +31,7 @@ pub fn w_settings(app: impl StateWriter<Value = AppGUI>) -> impl WidgetBuilder {
             }
             @AccountItem {
               name: "Subscription",
-              @ { w_subscription() }
+              @ { w_subscription(app.clone_writer()) }
             }
           }
           @ {

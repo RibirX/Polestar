@@ -69,6 +69,8 @@ impl AppInfo {
 
   pub fn user(&self) -> Option<&User> { self.user.as_ref() }
 
+  pub fn user_mut(&mut self) -> Option<&mut User> { self.user.as_mut() }
+
   pub fn set_user(&mut self, user: Option<User>) {
     self.user = user;
     self.save_local();
