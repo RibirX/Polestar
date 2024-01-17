@@ -1,6 +1,8 @@
 use derive_builder::Builder;
 use serde::Deserialize;
 
+use crate::service::req::request_quota;
+
 use super::GLOBAL_VARS;
 
 #[derive(Builder, Debug, Default, Clone)]
@@ -17,7 +19,7 @@ pub struct User {
 
 impl User {
   #[inline]
-  pub fn token(&self) -> Option<&String> { self.token.as_ref() }
+  pub fn token(&self) -> Option<&str> { self.token.as_deref() }
 
   #[inline]
   pub fn set_token(&mut self, token: Option<String>) {
@@ -45,11 +47,10 @@ impl User {
   #[inline]
   pub fn uid(&self) -> u64 { self.uid }
 
-  #[inline]
-  pub fn quota(&self) -> Option<&Quota> { self.quota.as_ref() }
+  pub fn set_quota(&mut self, quota: Option<Quota>) { self.quota = quota; }
 
   #[inline]
-  pub fn set_quota(&mut self, quota: Option<Quota>) { self.quota = quota; }
+  pub fn quota(&self) -> Option<&Quota> { self.quota.as_ref() }
 }
 
 #[derive(Deserialize, Debug, Clone)]

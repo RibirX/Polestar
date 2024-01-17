@@ -6,13 +6,14 @@ use reqwest::{
   Method, RequestBuilder,
 };
 use reqwest_eventsource::EventSource;
+use serde::{Deserialize, Serialize};
 use serde_json::{json, value::Value as JsonValue};
 use serde_json_path::JsonPath;
 
 use crate::{
-  error::PolestarError,
+  error::{PolestarError, PolestarResult},
   model::{
-    AppInfo, Bot, FeedbackMessageListForServer, FeedbackTimestamp, GlbVar, ServerProvider,
+    AppInfo, Bot, FeedbackMessageListForServer, FeedbackTimestamp, GlbVar, Quota, ServerProvider,
     UserFeedbackMessageForServer, GLOBAL_VARS,
   },
 };
@@ -67,7 +68,7 @@ fn default_polestar_provider(model: &str, info: &AppInfo) -> Option<ServerProvid
       return Some(ServerProvider {
         name: "Polestar".to_string(),
         base_url: POLESTAR_STREAM_URL.to_string(),
-        token: polestar_token.clone(),
+        token: polestar_token.to_owned(),
         extend: None,
       });
     }
@@ -227,6 +228,30 @@ fn to_value_str(val: &JsonValue) -> String {
       warn!("unsupported header value type: {}", val);
       String::default()
     }
+  }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct UserQuota {
+  pub user_id: u64,
+  pub limits: f32,
+  pub used: f32,
+  pub statistics: serde_json::Value,
+}
+
+pub async fn request_quota(token: Option<String>) -> PolestarResult<Quota> {
+  if let Some(token) = token {
+    let client = reqwest::Client::new();
+    let res = client
+      .get("https://api.ribir.org/user_quota")
+      .header(AUTHORIZATION, token)
+      .send()
+      .await?;
+    let user_quota = res.json::<UserQuota>().await?;
+    let quota = serde_json::from_value::<Quota>(user_quota.statistics)?;
+    Ok(quota)
+  } else {
+    Err(PolestarError::TokenNotFound)
   }
 }
 
