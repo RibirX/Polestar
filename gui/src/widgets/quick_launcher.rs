@@ -1,4 +1,3 @@
-use polestar_core::model::ChannelCfg;
 use ribir::prelude::*;
 use uuid::Uuid;
 
@@ -16,17 +15,17 @@ impl QuickLauncher {
 }
 
 pub fn create_quick_launcher(app: impl StateWriter<Value = AppGUI>) {
-  if app.read().quick_launcher.is_none() {
-    let mut app = app.write();
-    let channel_id = app
-      .data
-      .new_channel("Quick Launcher".to_owned(), None, ChannelCfg::default());
-    app.data.info_mut().set_quick_launcher_id(Some(channel_id));
-    let quick_launcher = QuickLauncher::new(channel_id);
-    app.quick_launcher = Some(quick_launcher);
-  }
+  // if app.read().quick_launcher.is_none() {
+  //   let mut app = app.write();
+  //   let channel_id = app
+  //     .data
+  //     .new_channel("Quick Launcher".to_owned(), None, ChannelCfg::default());
+  //   app.data.info_mut().set_quick_launcher_id(Some(channel_id));
+  //   let quick_launcher = QuickLauncher::new(channel_id);
+  //   app.quick_launcher = Some(quick_launcher);
+  // }
 
-  launcher::create_wnd(app.clone_writer());
+  // launcher::create_wnd(app.clone_writer());
 }
 
 #[cfg(target_os = "macos")]

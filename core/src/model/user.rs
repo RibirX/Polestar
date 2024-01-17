@@ -1,8 +1,6 @@
 use derive_builder::Builder;
 use serde::Deserialize;
 
-use crate::service::req::request_quota;
-
 use super::GLOBAL_VARS;
 
 #[derive(Builder, Debug, Default, Clone)]
@@ -46,11 +44,6 @@ impl User {
 
   #[inline]
   pub fn uid(&self) -> u64 { self.uid }
-
-  pub fn set_quota(&mut self, quota: Option<Quota>) { self.quota = quota; }
-
-  #[inline]
-  pub fn quota(&self) -> Option<&Quota> { self.quota.as_ref() }
 }
 
 #[derive(Deserialize, Debug, Clone)]

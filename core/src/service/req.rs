@@ -13,8 +13,8 @@ use serde_json_path::JsonPath;
 use crate::{
   error::{PolestarError, PolestarResult},
   model::{
-    AppInfo, Bot, FeedbackMessageListForServer, FeedbackTimestamp, GlbVar, Quota, ServerProvider,
-    UserFeedbackMessageForServer, GLOBAL_VARS,
+    AppInfo, Bot, BotId, FeedbackMessageListForServer, FeedbackTimestamp, GlbVar, Quota,
+    ServerProvider, UserFeedbackMessageForServer, GLOBAL_VARS,
   },
 };
 
@@ -52,7 +52,8 @@ async fn req_stream(
   Ok(stream)
 }
 
-pub fn create_text_request<'a>(bot: &'a Bot, info: &'a AppInfo) -> TextStreamReq {
+pub fn create_text_request<'a>(info: &'a AppInfo, bot_id: BotId) -> TextStreamReq {
+  let bot = info.bot(&bot_id).unwrap();
   let sp_name = bot.sp();
   let sp = info.providers().get(sp_name);
   if let Some(sp) = sp {

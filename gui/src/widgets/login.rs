@@ -1,6 +1,6 @@
 use ribir::prelude::*;
 
-use super::app::AppGUI;
+use super::app::UserConfig;
 use crate::{
   oauth::{apple_login_uri, google_login_uri, microsoft_login_uri},
   style::WHITE,
@@ -8,7 +8,7 @@ use crate::{
   widgets::common::{Carousel, DoubleColumn, LeftColumn, RightColumn},
 };
 
-pub(super) fn w_login(app: impl StateWriter<Value = AppGUI>) -> impl WidgetBuilder {
+pub(super) fn w_login(account: impl StateWriter<Value = dyn UserConfig>) -> impl WidgetBuilder {
   let logo_png_data = include_bytes!(concat!(
     env!("CARGO_MANIFEST_DIR"),
     "/..",
@@ -46,37 +46,33 @@ pub(super) fn w_login(app: impl StateWriter<Value = AppGUI>) -> impl WidgetBuild
             item_gap: 8.,
             @LoginBtn {
               url: pipe! {
-
-                $app
-                  .data
-                  .info()
-                  .need_login()
-                  .then(|| microsoft_login_uri())
-                  .unwrap_or_default()
+                if $account.need_login() {
+                  microsoft_login_uri()
+                } else {
+                  String::new()
+                }
               },
               label: "Log in with Microsoft",
               svg: polestar_svg::MICROSOFT_LOGIN,
             }
             @LoginBtn {
               url: pipe! {
-                $app
-                  .data
-                  .info()
-                  .need_login()
-                  .then(|| google_login_uri())
-                  .unwrap_or_default()
+                if $account.need_login() {
+                  google_login_uri()
+                } else {
+                  String::new()
+                }
               },
               label: "Log in with Google",
               svg: polestar_svg::GOOGLE_LOGIN,
             }
             @LoginBtn {
               url: pipe! {
-                $app
-                  .data
-                  .info()
-                  .need_login()
-                  .then(|| apple_login_uri())
-                  .unwrap_or_default()
+                if $account.need_login() {
+                  apple_login_uri()
+                } else {
+                  String::new()
+                }
               },
               label: "Log in with Apple",
               svg: polestar_svg::APPLE_LOGIN,

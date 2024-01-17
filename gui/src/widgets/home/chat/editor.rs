@@ -1,5 +1,5 @@
-use crate::{widgets::{helper::send_msg, common::BotList}, style::WHITE, req::query_feedback};
-use polestar_core::model::{Bot, Channel, Msg, MsgMeta, BotId};
+use crate::{widgets::{helper::send_msg, common::BotList, app::Chat}, style::WHITE, req::query_feedback};
+use polestar_core::model::{Bot, Msg, MsgMeta, BotId, ChannelId};
 use ribir::{core::ticker::FrameMsg, prelude::*};
 use std::ops::Range;
 use std::rc::Rc;
@@ -8,7 +8,8 @@ use uuid::Uuid;
 use crate::{style::CULTURED_F4F4F4_FF, theme::polestar_svg, widgets::common::IconButton};
 
 pub fn w_editor(
-  channel: impl StateWriter<Value = Channel>,
+  chat: impl StateWriter<Value = dyn Chat>,
+  channel_id: ChannelId,
   bots: Rc<Vec<Bot>>,
   def_bot_id: BotId,
   quote_id: impl StateWriter<Value = Option<Uuid>>,
@@ -17,27 +18,25 @@ pub fn w_editor(
     let mut bots = @BotList { bots, visible: false };
     let ignore_pointer = @IgnorePointer { ignore: false };
     let mut text_area = @MessageEditor {};
-    let send_msg_by_char_channel = channel.clone_writer();
-    let send_msg_by_icon_channel = channel.clone_writer();
-    let quote_id_channel = channel.clone_writer();
     let send_msg_by_char_quote_id = quote_id.clone_writer();
     let send_msg_by_icon_quote_id = quote_id.clone_writer();
-
+    let is_feedback = $chat.channel(&channel_id).unwrap().is_feedback();
     let def_bot_id_2 = def_bot_id.clone();
 
     let send_icon = @IconButton {
       on_tap: move |_| {
-        if $channel.is_feedback() {
-          send_feedback(&mut $text_area.write(), send_msg_by_icon_channel.clone_writer());
+        let _hint = || $chat.write();
+        if is_feedback {
+          send_feedback(&mut $text_area.write(), chat.clone_writer(), channel_id);
         } else {
-          send_question(&mut $text_area.write(), send_msg_by_icon_channel.clone_writer(), def_bot_id.clone(), send_msg_by_icon_quote_id.clone_writer());
+          send_question(&mut $text_area.write(), chat.clone_writer(), channel_id, def_bot_id.clone(), send_msg_by_icon_quote_id.clone_writer());
         }
         $text_area.write().reset();
       },
       @ { polestar_svg::SEND }
     };
 
-    if !$channel.is_feedback() {
+    if !is_feedback {
       watch!($text_area.bot_hint())
         .distinct_until_changed()
         .subscribe(move |hint| {
@@ -71,10 +70,11 @@ pub fn w_editor(
             select_bot(&mut $text_area.write(), &$bots);
             e.stop_propagation();
           } else if !e.with_shift_key() {
-            if $channel.is_feedback() {
-              send_feedback(&mut $text_area.write(), send_msg_by_char_channel.clone_writer());
+            let _hint = || $chat.write();
+            if is_feedback {
+              send_feedback(&mut $text_area.write(), chat.clone_writer(), channel_id);
             } else {
-              send_question(&mut $text_area.write(), send_msg_by_char_channel.clone_writer(), def_bot_id_2.clone(), send_msg_by_char_quote_id.clone_writer());
+              send_question(&mut $text_area.write(), chat.clone_writer(), channel_id, def_bot_id_2.clone(), send_msg_by_char_quote_id.clone_writer());
             }
             $text_area.write().reset();
             e.stop_propagation();
@@ -96,12 +96,12 @@ pub fn w_editor(
           padding: EdgeInsets::new(0., 11., 11., 11.),
           @Column {
             @ {
-              let quote_id_channel = quote_id_channel.clone_reader();
               pipe! {
                 let _ = || $quote_id.write();
+                let _ = || $chat.write();
                 let non_quote_id = quote_id.clone_writer();
                 (*$quote_id).map(move |id| {
-                  let text = $quote_id_channel.msg(&id).and_then(|msg| msg.cur_cont_ref().text().map(str::to_string)).unwrap_or_default();
+                  let text = $chat.msg(&channel_id, &id).and_then(|msg| msg.cur_cont_ref().text().map(str::to_string)).unwrap_or_default();
                   @Row {
                     background: Color::from_u32(WHITE),
                     @Icon {
@@ -136,7 +136,8 @@ pub fn w_editor(
 
 fn send_feedback(
   text_area: &mut MessageEditor,
-  channel: impl StateWriter<Value = Channel>,
+  chat: impl StateWriter<Value = dyn Chat>,
+  channel_id: ChannelId,
 ) {
   let text = text_area.display_text();
 
@@ -145,7 +146,7 @@ fn send_feedback(
   }
 
   let user_msg = Msg::new_user_text(&text, MsgMeta::default());
-  channel.write().add_msg(user_msg);
+  chat.write().add_msg(&channel_id, user_msg);
 
   submit_feedback(text);
 }
@@ -158,7 +159,8 @@ fn submit_feedback(content: String) {
 
 fn send_question(
   text_area: &mut MessageEditor,
-  channel: impl StateWriter<Value = Channel>,
+  chat: impl StateWriter<Value = dyn Chat>,
+  channel_id: ChannelId,
   def_bot_id: BotId,
   quote_id: impl StateWriter<Value = Option<Uuid>>,
 ) {
@@ -170,7 +172,7 @@ fn send_question(
 
   let user_msg = Msg::new_user_text(&text, MsgMeta::default());
   let user_msg_id = *user_msg.id();
-  channel.write().add_msg(user_msg);
+  chat.write().add_msg(&channel_id, user_msg);
   
   let bots = text_area.edit_message.related_bot();
   let bot_id = bots.last().map_or(def_bot_id, |id| id.clone());
@@ -180,11 +182,11 @@ fn send_question(
 
   let id = *bot_msg.id();
   let idx = bot_msg.cur_idx();
-  channel.write().add_msg(bot_msg);
+  chat.write().add_msg(&channel_id, bot_msg);
 
   *quote_id.write() = None;
 
-  send_msg(channel.clone_writer(), text_area.edit_message.message_content(), idx, id, bot_id);
+  send_msg(chat, channel_id, id,  idx, bot_id, text_area.edit_message.message_content());
 }
 
 fn select_bot(text_area: &mut MessageEditor, bots: &BotList) {

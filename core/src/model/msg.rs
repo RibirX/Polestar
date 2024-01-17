@@ -156,10 +156,9 @@ impl Msg {
   }
 
   #[inline]
-  pub fn add_cont(&mut self, cont: MsgCont) {
-    let last_idx = self.cont_list.len();
+  pub fn add_cont(&mut self, cont: MsgCont) -> usize {
     self.cont_list.push(cont);
-    self.cur_idx = last_idx as _;
+    self.cont_list.len() - 1
   }
 
   #[inline]

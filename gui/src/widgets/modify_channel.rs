@@ -1,11 +1,11 @@
-use polestar_core::model::{ChannelMode, BotId};
+use polestar_core::model::{BotId, ChannelMode};
 use ribir::prelude::*;
 use uuid::Uuid;
 
 use crate::style::{CHINESE_WHITE, COMMON_RADIUS, CULTURED_F7F7F5_FF, WHITE};
 use crate::widgets::common::{w_avatar, BotList, Modal};
 
-use super::app::AppGUI;
+use super::app::{ChannelMgr, UIState, UserConfig};
 
 fn w_mode_options(
   channel: impl StateReader<Value = ChannelState>,
@@ -58,48 +58,29 @@ struct ChannelState {
 }
 
 pub fn w_modify_channel_modal(
-  app: impl StateWriter<Value = AppGUI>,
+  channel_mgr: impl StateWriter<Value = dyn ChannelMgr>,
+  ui_state: impl StateWriter<Value = dyn UIState>,
+  config: impl StateWriter<Value = dyn UserConfig>,
   channel_id: &Uuid,
 ) -> impl WidgetBuilder {
   let channel_id = *channel_id;
-  let channel = app.split_writer(
-    move |app| {
-      app
-        .data
-        .get_channel(&channel_id)
-        .expect("channel not found")
-    },
-    move |app| {
-      app
-        .data
-        .get_channel_mut(&channel_id)
-        .expect("channel not found")
-    },
-  );
-
   fn_widget! {
+    let mgr_ref = $channel_mgr;
+    let channel_ref = mgr_ref.channel(&channel_id).unwrap();
+
     let channel_rename = @Input {};
-    $channel_rename.write().set_text($channel.name());
-
-    watch!($channel.name().to_owned())
-      .distinct_until_changed()
-      .subscribe(move |name| {
-        $channel_rename.write().set_text(&name);
-      });
-
-    let app_writer_cancel_ref = app.clone_writer();
-    let app_writer_confirm_ref = app.clone_writer();
+    $channel_rename.write().set_text(channel_ref.name());
 
     let bot_list = @BotList {
-      bots: $app.data.info().bots_rc(),
-      selected_id: $channel.cfg().def_bot_id().cloned(),
+      bots: $config.bots(),
+      selected_id: channel_ref.cfg().def_bot_id().cloned(),
     };
 
     let mut selected_bot_box = @LayoutBox {};
 
     let channel_state = State::value(ChannelState {
-      channel_mode: $channel.cfg().mode(),
-      selected_bot: $channel.cfg().def_bot_id().cloned(),
+      channel_mode: channel_ref.cfg().mode(),
+      selected_bot: channel_ref.cfg().def_bot_id().cloned(),
       ..Default::default()
     });
 
@@ -120,25 +101,27 @@ pub fn w_modify_channel_modal(
       title: "Channel Settings",
       size: Size::new(480., 530.),
       confirm_cb: Box::new(move || {
+        let _ = || $ui_state.write();
         let rename = $channel_rename;
-        $channel.write().set_name(rename.text().to_string());
+        {
+          let mut mgr = $channel_mgr.write();
+          let mut cfg = mgr.channel(&channel_id).unwrap().cfg().clone();
 
-        if let Some(bot_id) = $channel_state.selected_bot.clone() {
-          let mut cfg = $channel.cfg().clone();
-          cfg.set_def_bot_id(Some(bot_id));
-          $channel.write().set_cfg(cfg);
+          mgr.update_channel_name(&channel_id, rename.text().to_string());
+          if let Some(bot_id) = $channel_state.selected_bot.clone() {
+            cfg.set_def_bot_id(Some(bot_id));
+          }
+
+          if $channel_state.channel_mode != cfg.mode() {
+            cfg.set_mode($channel_state.channel_mode);
+          }
+          mgr.update_channel_cfg(&channel_id, cfg);
         }
-
-        if $channel_state.channel_mode != $channel.cfg().mode() {
-          let mut cfg = $channel.cfg().clone();
-          cfg.set_mode($channel_state.channel_mode);
-          $channel.write().set_cfg(cfg);
-        }
-
-        app_writer_confirm_ref.write().set_modify_channel_id(None);
+        ui_state.write().set_modify_channel_id(None);
       }) as Box<dyn Fn()>,
       cancel_cb: Box::new(move || {
-        app_writer_cancel_ref.write().set_modify_channel_id(None);
+        let _ = || $ui_state.write();
+        ui_state.write().set_modify_channel_id(None);
       }) as Box<dyn Fn()>,
       @Stack {
         @Column {
@@ -166,8 +149,11 @@ pub fn w_modify_channel_modal(
           @$selected_bot_box {
             @ {
               pipe! {
-                let app_ref = $app;
-                let bot = app_ref.data.info().get_bot_or_default($channel_state.selected_bot.as_ref());
+                let bot_id = $channel_state
+                  .selected_bot.as_ref()
+                  .map_or_else(|| $config.default_bot_id(), |id| id.clone());
+                let bots = $config.bots();
+                let bot = bots.iter().find(|b| b.id() == &bot_id).unwrap();
                 @ListItem {
                   on_tap: move |e| {
                     if !$channel_state.bot_list_visible {

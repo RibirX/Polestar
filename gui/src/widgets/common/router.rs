@@ -57,7 +57,10 @@ impl ComposeChild for Router {
             let (route, child) = p.unzip();
             let path = $route.path.clone();
             @Visibility {
-              visible: pipe!(path.is_match($this.cur_path.as_ref())),
+              visible: pipe! {
+                let this = $this;
+                path.is_match(this.cur_path.as_ref())
+              },
               @ { child }
             }
           })

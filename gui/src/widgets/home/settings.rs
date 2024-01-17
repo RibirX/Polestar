@@ -3,7 +3,7 @@ use ribir::prelude::*;
 use crate::{
   platform,
   style::{COMMON_RADIUS, WHITE},
-  widgets::app::AppGUI,
+  widgets::app::{UIState, UserConfig},
 };
 
 mod account;
@@ -13,7 +13,10 @@ use account::{w_email, w_subscription, AccountItem};
 use general::w_general_settings;
 use network::w_network_settings;
 
-pub fn w_settings(app: impl StateWriter<Value = AppGUI>) -> impl WidgetBuilder {
+pub fn w_settings(
+  config: impl StateWriter<Value = dyn UserConfig>,
+  ui_state: impl StateWriter<Value = dyn UIState>,
+) -> impl WidgetBuilder {
   fn_widget! {
     @ConstrainedBox {
       clamp: BoxClamp::EXPAND_BOTH,
@@ -27,11 +30,11 @@ pub fn w_settings(app: impl StateWriter<Value = AppGUI>) -> impl WidgetBuilder {
             name: "Account",
             @AccountItem {
               name: "Email",
-              @ { w_email(&app) }
+              @ { w_email(config.clone_writer(), ui_state) }
             }
             @AccountItem {
               name: "Subscription",
-              @ { w_subscription(app.clone_writer()) }
+              @ { w_subscription(config) }
             }
           }
           @ {

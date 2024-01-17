@@ -311,7 +311,7 @@ impl AppData {
   pub fn new_channel(&mut self, name: String, desc: Option<String>, cfg: ChannelCfg) -> Uuid {
     let channel_id = Uuid::new_v4();
     let db = self.db.as_mut().map(|db| NonNull::from(&**db));
-    let info = &mut self.info;
+    let info = &self.info;
     let app_info = Some(NonNull::from(&**info));
     let channel = Channel::new(channel_id, name, desc, cfg, app_info, db);
 
@@ -373,7 +373,6 @@ impl AppData {
     self.db = db;
 
     let cur_channel_id = local_state.cur_channel_id();
-
     let cur_channel = channels
       .iter()
       .find(|channel| Some(*channel.id()) == cur_channel_id.map(|id| id));
@@ -386,7 +385,6 @@ impl AppData {
     };
 
     self.info.as_mut().set_cur_channel_id(cur_channel_id);
-
     let ptr = NonNull::from(&*self.info);
     channels.iter_mut().for_each(|channel| {
       channel.set_app_info(ptr);

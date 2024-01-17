@@ -1,6 +1,6 @@
 use polestar_core::{
   error::{PolestarError, PolestarResult},
-  model::{BotId, Channel, FeedbackMessageListForServer, Quota},
+  model::{AppInfo, BotId, FeedbackMessageListForServer, Quota},
   service::{
     open_ai::deal_open_ai_stream,
     req::{create_text_request, fetch_feedback, req_feedback, request_quota},
@@ -10,20 +10,12 @@ use polestar_core::{
 use ribir::prelude::*;
 
 pub async fn query_open_ai(
-  channel: impl StateReader<Value = Channel>,
+  info: impl StateReader<Value = AppInfo>,
   bot_id: BotId,
   content: String,
   delta_op: impl FnMut(String),
 ) -> Result<String, PolestarError> {
-  let req = {
-    let channel = channel.read();
-    let bot = channel
-      .bots()
-      .and_then(|bots| bots.iter().find(|bot| bot.id() == &bot_id))
-      .unwrap();
-    let info = channel.app_info().unwrap();
-    create_text_request(bot, info)
-  };
+  let req = { create_text_request(&*info.read(), bot_id) };
 
   let mut stream = req
     .request(content)

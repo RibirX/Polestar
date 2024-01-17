@@ -1,26 +1,34 @@
 use std::{cell::RefCell, rc::Rc};
 
 use crate::req::query_open_ai;
-use polestar_core::model::{BotId, Channel, MsgAction, MsgBody};
+use polestar_core::model::{BotId, ChannelId, MsgAction, MsgBody};
 use ribir::prelude::*;
 use uuid::Uuid;
 
+use super::app::Chat;
+
 pub fn send_msg(
-  channel: impl StateWriter<Value = Channel>,
-  content: String,
-  idx: usize,
+  chat: impl StateWriter<Value = dyn Chat>,
+  channel_id: ChannelId,
   msg_id: Uuid,
+  idx: usize,
   bot_id: BotId,
+  content: String,
 ) {
   let _ = AppCtx::spawn_local(async move {
     let update_msg = |act| {
-      let mut channel = channel.write();
-      channel.update_msg(&msg_id, idx, act);
+      let mut chat = chat.write();
+      chat.update_msg_cont(&channel_id, &msg_id, idx, act);
     };
 
-    let _ = query_open_ai(channel.clone_reader(), bot_id, content, |delta| {
-      update_msg(MsgAction::Receiving(MsgBody::Text(Some(delta))));
-    })
+    let _ = query_open_ai(
+      chat.map_reader(|chat| chat.info()),
+      bot_id,
+      content,
+      |delta| {
+        update_msg(MsgAction::Receiving(MsgBody::Text(Some(delta))));
+      },
+    )
     .await;
 
     update_msg(MsgAction::Fulfilled);
