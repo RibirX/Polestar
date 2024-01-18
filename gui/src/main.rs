@@ -3,16 +3,13 @@ use std::{marker::PhantomData, sync::Mutex, time::Instant};
 use once_cell::sync::Lazy;
 use ribir::prelude::*;
 use serde::Deserialize;
-use window::WindowMgr;
 
-mod hotkey;
 mod oauth;
 mod platform;
 mod req;
 mod style;
 mod theme;
 mod widgets;
-mod window;
 
 #[derive(Deserialize)]
 pub struct UISettings {
@@ -58,7 +55,6 @@ pub struct GlobalConfig {
 pub static GLOBAL_CONFIG: Lazy<Mutex<GlobalConfig>> =
   Lazy::new(|| Mutex::new(GlobalConfig::default()));
 
-pub static WINDOW_MGR: Lazy<Mutex<WindowMgr>> = Lazy::new(|| Mutex::new(WindowMgr::default()));
 pub static TIMER: Lazy<Mutex<Instant>> = Lazy::new(|| Mutex::new(Instant::now()));
 
 fn main() {
@@ -80,7 +76,6 @@ fn main() {
     "../static/app_logo.png"
   )));
 
-  WINDOW_MGR.lock().unwrap().set_main_window(wnd.id());
   *TIMER.lock().unwrap() = Instant::now();
 
   platform::app_run_before_hook();
