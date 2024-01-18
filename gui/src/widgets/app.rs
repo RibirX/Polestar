@@ -14,7 +14,7 @@ use super::{
   login::w_login,
   permission::w_permission,
 };
-use crate::{theme::polestar_theme, widgets::modify_channel::w_modify_channel_modal, WINDOW_MGR};
+use crate::{theme::polestar_theme, widgets::modify_channel::w_modify_channel_modal};
 
 pub trait Chat: 'static {
   fn add_msg(&mut self, channel_id: &ChannelId, msg: Msg);
@@ -308,6 +308,7 @@ impl Compose for AppGUI {
   }
 }
 
+#[derive(Debug)]
 pub enum AppRoute {
   Login { token: String, uid: u64 },
 }
@@ -379,11 +380,6 @@ fn gen_handler(
         let channel_id = config.write().login(user);
         channel_mgr.write().switch_channel(&channel_id);
         ui_state.write().navigate_to("/home/chat");
-
-        // active main window
-        if let Some(wnd_info) = WINDOW_MGR.lock().unwrap().main.as_ref() {
-          App::set_active_window(wnd_info.id);
-        }
       }
     }
   }

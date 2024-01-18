@@ -151,6 +151,7 @@ pub async fn req_feedback(content: String) -> Result<(), PolestarError> {
   }
 }
 
+#[derive(Debug)]
 pub struct TextStreamReq {
   url: String,
   headers: HeaderMap,

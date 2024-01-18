@@ -28,7 +28,6 @@ pub struct AppInfo {
   user: Option<User>,
   cfg: AppCfg,
   cur_channel_id: Option<Uuid>,
-  quick_launcher_id: Option<Uuid>,
 }
 
 #[derive(Clone, Copy, Eq, PartialEq, Hash, Debug)]
@@ -62,7 +61,7 @@ impl AppInfo {
   fn save_local(&self) {
     if let Some(user) = &self.user {
       let uid = user.uid();
-      let local_state = LocalState::new(self.cur_channel_id, self.quick_launcher_id, Some(uid));
+      let local_state = LocalState::new(self.cur_channel_id, Some(uid));
       utils::write_local_state(&uid.to_string(), &local_state).expect("Failed to save local state");
     }
   }
@@ -80,13 +79,6 @@ impl AppInfo {
 
   pub fn set_cur_channel_id(&mut self, cur_channel_id: Option<Uuid>) {
     self.cur_channel_id = cur_channel_id;
-    self.save_local();
-  }
-
-  pub fn quick_launcher_id(&self) -> Option<&Uuid> { self.quick_launcher_id.as_ref() }
-
-  pub fn set_quick_launcher_id(&mut self, quick_launcher_id: Option<Uuid>) {
-    self.quick_launcher_id = quick_launcher_id;
     self.save_local();
   }
 
@@ -186,7 +178,6 @@ pub fn init_app_data() -> AppData {
     user,
     cfg,
     cur_channel_id,
-    quick_launcher_id: *local_state.quick_launcher_id(),
   };
 
   let info = Box::new(info);
@@ -364,10 +355,6 @@ impl AppData {
     let uid = user.uid();
     self.info.as_mut().set_user(Some(user));
     let local_state = utils::read_local_state(&uid.to_string()).unwrap_or_default();
-    self
-      .info
-      .as_mut()
-      .set_quick_launcher_id(*local_state.quick_launcher_id());
 
     let (db, mut channels) = init_db(Some(uid));
     self.db = db;
@@ -395,7 +382,6 @@ impl AppData {
 
   pub fn logout(&mut self) {
     self.info.as_mut().set_user(None);
-    self.info.as_mut().set_quick_launcher_id(None);
     self.db = None;
     utils::del_current_user().expect("Failed to delete current user");
     utils::token::del_token().expect("Failed to delete token");
