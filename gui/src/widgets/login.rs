@@ -100,7 +100,7 @@ impl Compose for LoginBtn {
   fn compose(this: impl StateWriter<Value = Self>) -> impl WidgetBuilder {
     fn_widget! {
       @Link {
-        url: $this.url.to_owned(),
+        url: pipe!($this.url.to_owned()),
         background: Color::from_u32(WHITE),
         @OutlinedButton {
           @ { $this.svg }
