@@ -97,10 +97,17 @@ pub fn w_editor(
           }
         }
       },
-      @$bots {
-        on_tap: move |_| {
-          select_bot(&mut $text_area.write(), &$bots);
-          $text_area.request_focus();
+      @ConstrainedBox {
+        clamp: BoxClamp {
+          min: Size::new(f32::INFINITY, 0.),
+          max: Size::new(f32::INFINITY, 210.),
+        },
+        @$bots {
+          background: Color::from_u32(WHITE),
+          on_tap: move |_| {
+            select_bot(&mut $text_area.write(), &$bots);
+            $text_area.request_focus();
+          }
         }
       }
       @$ignore_pointer {
