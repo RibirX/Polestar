@@ -1,13 +1,11 @@
 use ribir::prelude::*;
 
-use super::app::AppGUI;
-
 use crate::{
   style::BLACK,
   widgets::common::{Carousel, DoubleColumn, LeftColumn, RightColumn},
 };
 
-pub(super) fn w_permission(app: impl StateWriter<Value = AppGUI>) -> impl WidgetBuilder {
+pub(super) fn w_permission() -> impl WidgetBuilder {
   fn_widget! {
     @DoubleColumn {
       fixed_width: 390.,

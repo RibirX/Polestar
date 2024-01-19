@@ -12,7 +12,6 @@ use super::{
   home::w_home,
   login::w_login,
   permission::w_permission,
-  quick_launcher::QuickLauncher,
 };
 use crate::{theme::polestar_theme, widgets::modify_channel::w_modify_channel_modal, WINDOW_MGR};
 
@@ -69,8 +68,6 @@ pub trait UserConfig: 'static {
 
 pub struct AppGUI {
   data: AppData,
-  // XXX: here `QuickLauncher` in `AppData`'s local_state field, here is repeat.
-  quick_launcher: Option<QuickLauncher>,
   cur_router_path: String,
   modify_channel_id: Option<Uuid>,
   tooltip: Option<String>,
@@ -78,11 +75,6 @@ pub struct AppGUI {
 
 impl AppGUI {
   fn new(data: AppData) -> Self {
-    let quick_launcher = data
-      .info()
-      .quick_launcher_id()
-      .and_then(|id| data.get_channel(id).map(|_| QuickLauncher::new(*id)));
-
     let cur_router_path = if data.info().need_login() {
       "/login".to_owned()
     } else {
@@ -91,7 +83,6 @@ impl AppGUI {
 
     Self {
       data,
-      quick_launcher,
       // It can get by open app url, like this: PoleStarChat://ribir.org/home/chat
       cur_router_path,
       modify_channel_id: None,
@@ -276,7 +267,7 @@ impl Compose for AppGUI {
                 }
                 @Route {
                   path: PartialPath::new("/permission", 0),
-                  @ { w_permission(this.clone_writer()) }
+                  @ { w_permission() }
                 }
                 @Route {
                   path: PartialPath::new("/home", 0),
