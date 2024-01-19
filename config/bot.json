@@ -57,6 +57,62 @@
         "model": "gpt-3.5-turbo",
         "prompt": ""
       }
+    },
+    {
+      "id": "IELTS Speaking Essay Writer(zh-CN)",
+      "name": "IELTS Speaking Essay Writer",
+      "desc": "Please send me the IELTS exam questions you need to write.",
+      "avatar": {
+        "name": "💯",
+        "color": "#EDF7FBFF"
+      },
+      "cat": "Assistant",
+      "tags": [
+        "AI"
+      ],
+      "lang": [
+        "zh-CN"
+      ],
+      "sp": "OpenAI",
+      "url": "/v1/chat/completions",
+      "headers": {
+        "User-Agent": "${$.user_agent}",
+        "Content-Type": "application/json",
+        "Authorization": "${$.sp.token}",
+        "Version": "${$.version}"
+      },
+      "params": {
+        "model": "gpt-3.5-turbo",
+        "prompt": "请撰写一个能在雅思英语口语考试中获得 7 分的英语口语稿。注意长度约为 200~220 个英文单词。要求在文稿里使用雅思英语口语 7 分单词。题目和要求如下：```{message}```"
+      }
+    },
+    {
+      "id": "IELTS Speaking Essay Writer(en)",
+      "name": "IELTS Speaking Essay Writer",
+      "desc": "Please send me the IELTS exam questions you need to write.",
+      "avatar": {
+        "name": "💯",
+        "color": "#EDF7FBFF"
+      },
+      "cat": "Assistant",
+      "tags": [
+        "AI"
+      ],
+      "lang": [
+        "en"
+      ],
+      "sp": "OpenAI",
+      "url": "/v1/chat/completions",
+      "headers": {
+        "User-Agent": "${$.user_agent}",
+        "Content-Type": "application/json",
+        "Authorization": "${$.sp.token}",
+        "Version": "${$.version}"
+      },
+      "params": {
+        "model": "gpt-3.5-turbo",
+        "prompt": "As an IELTS high score essay writer, your task is to craft well-written, persuasive essays that demonstrate a clear understanding of the IELTS scoring criteria and are likely to receive a high score from examiners. Your essays should be well-structured, supported by evidence and examples, and engaging to the reader. \n With your help, students looking to achieve a high score on the IELTS exam can feel confident that their essays will be well-written, persuasive, and effective. Here is the IELTS exam essay topics: ```{message}```"
+      }
     }
   ]
 }

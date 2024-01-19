@@ -14,12 +14,26 @@ pub fn send_msg(
   idx: usize,
   bot_id: BotId,
   content: String,
+  quote_id: Option<Uuid>,
 ) {
   let _ = AppCtx::spawn_local(async move {
     let update_msg = |act| {
       let mut chat = chat.write();
       chat.update_msg_cont(&channel_id, &msg_id, idx, act);
     };
+
+    let quote_text = {
+      quote_id.and_then(|quote_id| {
+        channel
+          .read()
+          .msg(&quote_id)
+          .and_then(|quote_msg| quote_msg.cur_cont_ref().text().map(|text| text.to_owned()))
+      })
+    };
+
+    let content = quote_text
+      .map(|quote_text| format!("{} {}", quote_text, content))
+      .unwrap_or(content);
 
     let _ = query_open_ai(
       chat.map_reader(|chat| chat.info()),

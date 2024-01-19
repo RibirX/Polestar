@@ -2,7 +2,7 @@ use futures_util::{Stream, StreamExt};
 use reqwest_eventsource::Event;
 use serde::{Deserialize, Serialize};
 
-use crate::error::PolestarError;
+use crate::{error::PolestarError, model::MsgRole};
 
 #[derive(Debug, Deserialize, Clone, Serialize)]
 pub struct CreateChatCompletionStreamResponse {
@@ -42,6 +42,16 @@ pub enum Role {
   User,
   Assistant,
   Function,
+}
+
+impl From<MsgRole> for Role {
+  fn from(role: MsgRole) -> Self {
+    match role {
+      MsgRole::System(_) => Role::System,
+      MsgRole::User => Role::User,
+      MsgRole::Bot(_) => Role::Assistant,
+    }
+  }
 }
 
 pub async fn deal_open_ai_stream(

@@ -99,7 +99,8 @@ fn w_bot_list(
                         bot_msg_id,
                         0,
                         bot_id_2.clone(),
-                        bot_onboarding.clone()
+                        bot_onboarding.clone(),
+                        None,
                       );
                       channel_mgr.write().switch_channel(&channel_id);
                       ui_state.write().navigate_to("/home/chat");

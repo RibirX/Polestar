@@ -52,6 +52,7 @@ impl Msg {
   #[inline]
   pub fn cont_list(&self) -> &Vec<MsgCont> { &self.cont_list }
 
+  #[inline]
   pub fn create_at(&self) -> &DateTime<Utc> { &self.created_at }
 }
 

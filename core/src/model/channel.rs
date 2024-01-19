@@ -230,3 +230,12 @@ pub enum ChannelMode {
   #[serde(rename = "performance")]
   Performance,
 }
+
+impl ChannelMode {
+  pub fn context_number(&self) -> usize {
+    match self {
+      ChannelMode::Balanced => 6,
+      ChannelMode::Performance => 10,
+    }
+  }
+}

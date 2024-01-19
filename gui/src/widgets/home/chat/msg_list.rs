@@ -234,7 +234,8 @@ fn w_msg(
                             msg_id,
                             idx,
                             bot_id.clone().unwrap(),
-                            source_msg
+                            source_msg,
+                            None,
                           );
                         }) as Box<dyn Fn()>,
                         @IconButton {

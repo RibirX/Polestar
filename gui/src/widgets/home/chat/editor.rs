@@ -191,18 +191,15 @@ fn send_question(
     return;
   }
 
-  let user_msg = Msg::new_user_text(&text, MsgMeta::default());
+  let msg_quote_id = *quote_id.read();
+  let user_msg = Msg::new_user_text(&text, MsgMeta::new(msg_quote_id, None));
   let user_msg_id = *user_msg.id();
   chat.write().add_msg(&channel_id, user_msg);
 
   let bots = text_area.edit_message.related_bot();
   let bot_id = bots.last().map_or(def_bot_id, |id| id.clone());
 
-  let msg_quote_id = *quote_id.read();
-  let bot_msg = Msg::new_bot_text(
-    bot_id.clone(),
-    MsgMeta::new(msg_quote_id, Some(user_msg_id)),
-  );
+  let bot_msg = Msg::new_bot_text(bot_id.clone(), MsgMeta::new(None, Some(user_msg_id)));
 
   let id = *bot_msg.id();
   let idx = bot_msg.cur_idx();
@@ -217,6 +214,7 @@ fn send_question(
     idx,
     bot_id,
     text_area.edit_message.message_content(),
+    msg_quote_id,
   );
 }
 
