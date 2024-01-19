@@ -1,12 +1,19 @@
-use polestar_core::model::{ChannelCfg, MsgMeta, Msg};
+use polestar_core::model::{ChannelCfg, Msg, MsgMeta};
 use ribir::prelude::*;
 
 use crate::{
   style::{ANTI_FLASH_WHITE, COMMON_RADIUS, LIGHT_SILVER_15, SPANISH_GRAY, WHITE},
-  widgets::{app::{Chat, ChannelMgr, UIState}, helper::send_msg},
+  widgets::{
+    app::{ChannelMgr, Chat, UIState},
+    helper::send_msg,
+  },
 };
 
-pub fn w_bot_store(chat: impl StateWriter<Value = dyn Chat>, channel_mgr: impl StateWriter<Value = dyn ChannelMgr>, ui_state: impl StateWriter<Value = dyn UIState>) -> impl WidgetBuilder {
+pub fn w_bot_store(
+  chat: impl StateWriter<Value = dyn Chat>,
+  channel_mgr: impl StateWriter<Value = dyn ChannelMgr>,
+  ui_state: impl StateWriter<Value = dyn UIState>,
+) -> impl WidgetBuilder {
   fn_widget! {
     @ConstrainedBox {
       clamp: BoxClamp::EXPAND_BOTH,
@@ -36,7 +43,11 @@ const CATEGORY_LIST: [&str; 10] = [
   "Interviewer",
 ];
 
-fn w_bot_list(chat: impl StateWriter<Value = dyn Chat>, channel_mgr: impl StateWriter<Value = dyn ChannelMgr>, ui_state: impl StateWriter<Value = dyn UIState>) -> impl WidgetBuilder {
+fn w_bot_list(
+  chat: impl StateWriter<Value = dyn Chat>,
+  channel_mgr: impl StateWriter<Value = dyn ChannelMgr>,
+  ui_state: impl StateWriter<Value = dyn UIState>,
+) -> impl WidgetBuilder {
   fn_widget! {
     @Column {
       margin: EdgeInsets::all(14.),
@@ -64,18 +75,32 @@ fn w_bot_list(chat: impl StateWriter<Value = dyn Chat>, channel_mgr: impl StateW
                     on_tap: move |_| {
                       let _ = || $ui_state.write();
                       let (channel_id, bot_msg_id) = {
-                        let channel_id = $channel_mgr.write().new_channel(bot_name.clone(), None, ChannelCfg::def_bot_id_cfg(bot_id_2.clone()));
+                        let channel_id = $channel_mgr
+                          .write()
+                          .new_channel(
+                            bot_name.clone(),
+                            None,
+                            ChannelCfg::def_bot_id_cfg(bot_id_2.clone())
+                          );
                         let msg = Msg::new_user_text(&bot_onboarding, MsgMeta::default());
                         let user_msg_id = *msg.id();
-                        
                         $chat.write().add_msg(&channel_id, msg);
-                        let bot_msg = Msg::new_bot_text(bot_id_2.clone(), MsgMeta::reply(user_msg_id));
+                        let bot_msg = Msg::new_bot_text(
+                            bot_id_2.clone(),
+                            MsgMeta::reply(user_msg_id)
+                        );
                         let bot_msg_id = *bot_msg.id();
                         $chat.write().add_msg(&channel_id, bot_msg);
-                        
                         (channel_id, bot_msg_id)
                       };
-                      send_msg(chat.clone_writer(), channel_id, bot_msg_id, 0, bot_id_2.clone(), bot_onboarding.clone());
+                      send_msg(
+                        chat.clone_writer(),
+                        channel_id,
+                        bot_msg_id,
+                        0,
+                        bot_id_2.clone(),
+                        bot_onboarding.clone()
+                      );
                       channel_mgr.write().switch_channel(&channel_id);
                       ui_state.write().navigate_to("/home/chat");
                     },

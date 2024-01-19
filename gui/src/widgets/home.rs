@@ -78,7 +78,11 @@ pub fn w_home(
                         $channel_mgr.write();
                         $ui_state.write();
                       };
-                      w_bot_store(chat.clone_writer(), channel_mgr.clone_writer(), ui_state.clone_writer())
+                      w_bot_store(
+                        chat.clone_writer(),
+                        channel_mgr.clone_writer(),
+                        ui_state.clone_writer()
+                      )
                     }
                   }
                 }

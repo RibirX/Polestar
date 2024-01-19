@@ -1,5 +1,9 @@
-use crate::{widgets::{helper::send_msg, common::BotList, app::Chat}, style::WHITE, req::query_feedback};
-use polestar_core::model::{Bot, Msg, MsgMeta, BotId, ChannelId};
+use crate::{
+  req::query_feedback,
+  style::WHITE,
+  widgets::{app::Chat, common::BotList, helper::send_msg},
+};
+use polestar_core::model::{Bot, BotId, ChannelId, Msg, MsgMeta};
 use ribir::{core::ticker::FrameMsg, prelude::*};
 use std::ops::Range;
 use std::rc::Rc;
@@ -29,7 +33,13 @@ pub fn w_editor(
         if is_feedback {
           send_feedback(&mut $text_area.write(), chat.clone_writer(), channel_id);
         } else {
-          send_question(&mut $text_area.write(), chat.clone_writer(), channel_id, def_bot_id.clone(), send_msg_by_icon_quote_id.clone_writer());
+          send_question(
+            &mut $text_area.write(),
+            chat.clone_writer(),
+            channel_id,
+            def_bot_id.clone(),
+            send_msg_by_icon_quote_id.clone_writer()
+          );
         }
         $text_area.write().reset();
       },
@@ -74,7 +84,13 @@ pub fn w_editor(
             if is_feedback {
               send_feedback(&mut $text_area.write(), chat.clone_writer(), channel_id);
             } else {
-              send_question(&mut $text_area.write(), chat.clone_writer(), channel_id, def_bot_id_2.clone(), send_msg_by_char_quote_id.clone_writer());
+              send_question(
+                &mut $text_area.write(),
+                chat.clone_writer(),
+                channel_id,
+                def_bot_id_2.clone(),
+                send_msg_by_char_quote_id.clone_writer()
+              );
             }
             $text_area.write().reset();
             e.stop_propagation();
@@ -97,11 +113,16 @@ pub fn w_editor(
           @Column {
             @ {
               pipe! {
-                let _ = || $quote_id.write();
-                let _ = || $chat.write();
+                let _ = || {
+                  $quote_id.write();
+                  $chat.write();
+                };
                 let non_quote_id = quote_id.clone_writer();
                 (*$quote_id).map(move |id| {
-                  let text = $chat.msg(&channel_id, &id).and_then(|msg| msg.cur_cont_ref().text().map(str::to_string)).unwrap_or_default();
+                  let text = $chat
+                    .msg(&channel_id, &id)
+                    .and_then(|msg| msg.cur_cont_ref().text().map(str::to_string))
+                    .unwrap_or_default();
                   @Row {
                     background: Color::from_u32(WHITE),
                     @Icon {
@@ -173,12 +194,15 @@ fn send_question(
   let user_msg = Msg::new_user_text(&text, MsgMeta::default());
   let user_msg_id = *user_msg.id();
   chat.write().add_msg(&channel_id, user_msg);
-  
+
   let bots = text_area.edit_message.related_bot();
   let bot_id = bots.last().map_or(def_bot_id, |id| id.clone());
-  
+
   let msg_quote_id = *quote_id.read();
-  let bot_msg = Msg::new_bot_text(bot_id.clone(), MsgMeta::new(msg_quote_id, Some(user_msg_id)));
+  let bot_msg = Msg::new_bot_text(
+    bot_id.clone(),
+    MsgMeta::new(msg_quote_id, Some(user_msg_id)),
+  );
 
   let id = *bot_msg.id();
   let idx = bot_msg.cur_idx();
@@ -186,7 +210,14 @@ fn send_question(
 
   *quote_id.write() = None;
 
-  send_msg(chat, channel_id, id,  idx, bot_id, text_area.edit_message.message_content());
+  send_msg(
+    chat,
+    channel_id,
+    id,
+    idx,
+    bot_id,
+    text_area.edit_message.message_content(),
+  );
 }
 
 fn select_bot(text_area: &mut MessageEditor, bots: &BotList) {

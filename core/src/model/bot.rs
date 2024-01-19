@@ -50,7 +50,7 @@ pub struct PartialBot {
 
 impl PartialBot {
   pub fn id(&self) -> &BotId { &self.id }
-  
+
   pub fn to_bot(self) -> Option<Bot> {
     self.is_complete().then(|| Bot {
       id: self.id,

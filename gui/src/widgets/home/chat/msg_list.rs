@@ -173,7 +173,9 @@ fn w_msg(
                     let quote_fn = Box::new(move || {
                       *quote_id.write() = Some(msg_id)
                     }) as Box<dyn Fn()>;
-                    let is_feedback = $chat.channel(&channel_id).map_or(false, |ch| ch.is_feedback());
+                    let is_feedback = $chat
+                      .channel(&channel_id)
+                      .map_or(false, |ch| ch.is_feedback());
                     (!is_feedback).then(move || {
                       @MsgOp {
                         cb: quote_fn,
@@ -218,13 +220,22 @@ fn w_msg(
                             (
                               chat
                                 .msg(&channel_id, &source_id.unwrap())
-                                .and_then(|msg| msg.cur_cont_ref().text().map(|text| text.to_owned()))
+                                .and_then(
+                                  |msg| msg.cur_cont_ref().text().map(|text| text.to_owned())
+                                )
                                 .unwrap_or_default().clone(),
                               chat.add_msg_cont(&channel_id, &msg_id, MsgCont::init_text()).unwrap()
                             )
                           };
                           $chat.write().switch_cont(&channel_id, &msg_id, idx);
-                          send_msg(chat.clone_writer(), channel_id,  msg_id, idx, bot_id.clone().unwrap(), source_msg);
+                          send_msg(
+                            chat.clone_writer(),
+                            channel_id,
+                            msg_id,
+                            idx,
+                            bot_id.clone().unwrap(),
+                            source_msg
+                          );
                         }) as Box<dyn Fn()>,
                         @IconButton {
                           padding: EdgeInsets::all(4.),
@@ -303,10 +314,15 @@ fn w_msg(
   }
 }
 
-fn w_msg_quote(chat: &dyn Chat, channel_id: &ChannelId, quote_id: Option<MsgId>) -> Option<impl WidgetBuilder>
-{
+fn w_msg_quote(
+  chat: &dyn Chat,
+  channel_id: &ChannelId,
+  quote_id: Option<MsgId>,
+) -> Option<impl WidgetBuilder> {
   let quote_text = quote_id.and_then(move |id| {
-    chat.msg(channel_id, &id).and_then(|msg| msg.cur_cont_ref().text().map(|s| s.to_owned()))
+    chat
+      .msg(channel_id, &id)
+      .and_then(|msg| msg.cur_cont_ref().text().map(|s| s.to_owned()))
   });
 
   quote_text.map(|text| {
@@ -321,7 +337,8 @@ fn w_msg_quote(chat: &dyn Chat, channel_id: &ChannelId, quote_id: Option<MsgId>)
 fn w_msg_multi_rst(
   chat: impl StateWriter<Value = dyn Chat>,
   channel_id: ChannelId,
-  msg_id: MsgId) -> impl WidgetBuilder {
+  msg_id: MsgId,
+) -> impl WidgetBuilder {
   fn_widget! {
     let scrollable_widget = @ScrollableWidget {
       scrollable: Scrollable::X,
@@ -336,15 +353,21 @@ fn w_msg_multi_rst(
           @Row {
             item_gap: 8.,
             @ {
-              $chat.msg(&channel_id, &msg_id).unwrap().cont_list().iter().enumerate().map(|(idx, cont)| {
-                let text = cont.text().map(|s| s.to_owned()).unwrap_or_default();
-                let w_thumbnail = w_msg_thumbnail(text);
-                @$w_thumbnail {
-                  on_tap: move |_| {
-                    $chat.write().switch_cont(&channel_id, &msg_id, idx);
+              $chat
+                .msg(&channel_id, &msg_id)
+                .unwrap()
+                .cont_list()
+                .iter()
+                .enumerate()
+                .map(|(idx, cont)| {
+                  let text = cont.text().map(|s| s.to_owned()).unwrap_or_default();
+                  let w_thumbnail = w_msg_thumbnail(text);
+                  @$w_thumbnail {
+                    on_tap: move |_| {
+                      $chat.write().switch_cont(&channel_id, &msg_id, idx);
+                    }
                   }
-                }
-              }).collect::<Vec<_>>()
+                }).collect::<Vec<_>>()
             }
           }
         }

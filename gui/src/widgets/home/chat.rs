@@ -30,10 +30,17 @@ pub fn w_chat(
   fn_widget! {
     let quote_id: State<Option<Uuid>> = State::value(None);
     let mut guard = None;
-    let is_feedback = $chat.channel(&channel_id).map(|channel| channel.is_feedback()).unwrap_or_default();
+    let is_feedback =
+      $chat.channel(&channel_id).map(|channel| channel.is_feedback()).unwrap_or_default();
     if is_feedback {
       let (sx, rx) = new_channel();
-      let mut time_stamp = $chat.channel(&channel_id).unwrap().msgs().last().map(|msg| msg.create_at().timestamp_millis());
+      let mut time_stamp =
+        $chat
+          .channel(&channel_id)
+          .unwrap()
+          .msgs()
+          .last()
+          .map(|msg| msg.create_at().timestamp_millis());
       fetch_feedbacks(sx, time_stamp);
       guard = Some(watch!($rx.take_all()).subscribe(move |feedbacks|{
         feedbacks.into_iter().for_each(|msg| {

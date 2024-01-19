@@ -5,7 +5,7 @@ use uuid::Uuid;
 
 use crate::db::{executor::ActionPersist, pool::PersistenceDB};
 
-use super::{msg::Msg, AppInfo, Bot, MsgAction, BotId};
+use super::{msg::Msg, AppInfo, Bot, BotId, MsgAction};
 
 pub type ChannelId = Uuid;
 

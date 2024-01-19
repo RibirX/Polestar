@@ -1,5 +1,6 @@
 use polestar_core::model::{
-  init_app_data, AppData, AppInfo, Channel, ChannelCfg, ChannelId, Msg, MsgAction, MsgCont, MsgId, User, Bot, BotId, 
+  init_app_data, AppData, AppInfo, Bot, BotId, Channel, ChannelCfg, ChannelId, Msg, MsgAction,
+  MsgCont, MsgId, User,
 };
 use ribir::prelude::*;
 use ribir_algo::Sc;
@@ -14,7 +15,6 @@ use super::{
   permission::w_permission,
 };
 use crate::{theme::polestar_theme, widgets::modify_channel::w_modify_channel_modal, WINDOW_MGR};
-
 
 pub trait Chat: 'static {
   fn add_msg(&mut self, channel_id: &ChannelId, msg: Msg);
@@ -90,7 +90,7 @@ impl AppGUI {
     }
   }
 
-  fn chat(& self) -> &dyn Chat { self }
+  fn chat(&self) -> &dyn Chat { self }
   fn chat_mut(&mut self) -> &mut dyn Chat { self }
 
   fn channel_mgr(&self) -> &dyn ChannelMgr { self }
@@ -149,10 +149,8 @@ impl ChannelMgr for AppGUI {
 
 impl Chat for AppGUI {
   fn add_msg(&mut self, channel_id: &ChannelId, msg: Msg) {
-    if let Some(ch) = self
-      .data
-      .get_channel_mut(channel_id) {
-        ch.add_msg(msg);
+    if let Some(ch) = self.data.get_channel_mut(channel_id) {
+      ch.add_msg(msg);
     }
   }
 
@@ -186,10 +184,8 @@ impl Chat for AppGUI {
     idx: usize,
     act: MsgAction,
   ) {
-    if let Some(ch) = self
-      .data
-      .get_channel_mut(channel_id) {
-        ch.update_msg(msg_id, idx, act);
+    if let Some(ch) = self.data.get_channel_mut(channel_id) {
+      ch.update_msg(msg_id, idx, act);
     }
   }
 
@@ -224,26 +220,20 @@ impl UIState for AppGUI {
 }
 
 impl UserConfig for AppGUI {
-  fn login(&mut self, user: User) -> ChannelId { 
+  fn login(&mut self, user: User) -> ChannelId {
     self.data.login(user);
     self.data.info().cur_channel_id().cloned().unwrap()
   }
 
   fn logout(&mut self) { self.data.logout(); }
 
-  fn need_login(&self) -> bool {
-    self.data.info().need_login() 
-  }
+  fn need_login(&self) -> bool { self.data.info().need_login() }
 
   fn user(&self) -> Option<&User> { self.data.info().user() }
 
-  fn bots(&self) -> Rc<Vec<Bot>> {
-    self.data.info().bots_rc()
-  }
+  fn bots(&self) -> Rc<Vec<Bot>> { self.data.info().bots_rc() }
 
-  fn default_bot_id(&self) -> BotId {
-    self.data.info().cfg().def_bot_id().clone()
-  }
+  fn default_bot_id(&self) -> BotId { self.data.info().cfg().def_bot_id().clone() }
 }
 
 impl Compose for AppGUI {
@@ -253,7 +243,10 @@ impl Compose for AppGUI {
       let channel_mgr = this.split_writer(|app| app.channel_mgr(), |app| app.channel_mgr_mut());
       let ui_state = this.split_writer(|app| app.ui_state(), |app| app.ui_state_mut());
       let config = this.split_writer(|app| app.user_config(), |app| app.user_config_mut());
-      App::events_stream().subscribe(gen_handler(config.clone_writer(), channel_mgr.clone_writer(), ui_state.clone_writer()));
+      App::events_stream()
+        .subscribe(
+          gen_handler(config.clone_writer(), channel_mgr.clone_writer(), ui_state.clone_writer())
+        );
 
       @ThemeWidget {
         // Polestar custom theme.
@@ -273,7 +266,14 @@ impl Compose for AppGUI {
                 }
                 @Route {
                   path: PartialPath::new("/home", 0),
-                  @ { w_home(chat.clone_writer(), channel_mgr.clone_writer(), config.clone_writer(), ui_state.clone_writer()) }
+                  @ {
+                    w_home(
+                      chat.clone_writer(),
+                      channel_mgr.clone_writer(),
+                      config.clone_writer(),
+                      ui_state.clone_writer()
+                    )
+                  }
                 }
               }
               @ {
@@ -291,7 +291,12 @@ impl Compose for AppGUI {
                     };
                     let modify_channel_id = $ui_state.modify_channel_id().cloned();
                     modify_channel_id.map(|modify_channel_id| {
-                      w_modify_channel_modal(channel_mgr.clone_writer(), ui_state.clone_writer(), config.clone_writer(), &modify_channel_id)
+                      w_modify_channel_modal(
+                        channel_mgr.clone_writer(),
+                        ui_state.clone_writer(),
+                        config.clone_writer(),
+                        &modify_channel_id
+                      )
                     })
                   })
               }
@@ -346,7 +351,11 @@ fn handle_open_url(url: &str) -> Option<AppRoute> {
   None
 }
 
-fn gen_handler(config: impl StateWriter<Value = dyn UserConfig>, channel_mgr: impl StateWriter<Value = dyn ChannelMgr>, ui_state: impl StateWriter<Value = dyn UIState>) -> impl for<'a> FnMut(&'a mut AppEvent) {
+fn gen_handler(
+  config: impl StateWriter<Value = dyn UserConfig>,
+  channel_mgr: impl StateWriter<Value = dyn ChannelMgr>,
+  ui_state: impl StateWriter<Value = dyn UIState>,
+) -> impl for<'a> FnMut(&'a mut AppEvent) {
   move |event: &mut AppEvent| {
     if let AppEvent::OpenUrl(url) = event {
       // TODO: user module need login

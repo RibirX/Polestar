@@ -1,18 +1,19 @@
 use crate::theme::polestar_svg;
 
-use crate::widgets::app::{UIState, ChannelMgr};
+use crate::widgets::app::{ChannelMgr, UIState};
 use crate::widgets::common::{w_avatar, IconButton, InteractiveList};
 use polestar_core::model::Channel;
 use ribir::prelude::*;
 
 pub fn w_channel_thumbnail_list(
-  channel_mgr: impl StateWriter<Value = dyn ChannelMgr>, 
-  ui_state: impl StateWriter<Value = dyn UIState>) -> impl WidgetBuilder {
+  channel_mgr: impl StateWriter<Value = dyn ChannelMgr>,
+  ui_state: impl StateWriter<Value = dyn UIState>,
+) -> impl WidgetBuilder {
   fn_widget! {
     @InteractiveList {
       active: pipe! {
         let channels = $channel_mgr.channel_ids();
-        let last_idx = if !channels.is_empty() { 
+        let last_idx = if !channels.is_empty() {
           channels.len() - 1
         } else {
           0
@@ -37,8 +38,9 @@ pub fn w_channel_thumbnail_list(
             let channel = channel_mgr.map_reader(
               move |channels| { channels.channel(&id).expect("channel must be existed") },
             );
-            let w_channel_thumbnail = w_channel_thumbnail(channel, channel_mgr.clone_writer(), ui_state.clone_writer());
-            let w_channel_thumbnail = @ $w_channel_thumbnail {
+            let channel_thumbnail =
+              w_channel_thumbnail(channel, channel_mgr.clone_writer(),ui_state.clone_writer());
+            let channel_thumbnail = @ $channel_thumbnail {
               on_tap: move |_| {
                 let _ = || $channel_mgr.write();
                 let channel_mgr = channel_mgr.clone_writer();
@@ -47,7 +49,7 @@ pub fn w_channel_thumbnail_list(
                 });
               },
             };
-            rst.push(w_channel_thumbnail);
+            rst.push(channel_thumbnail);
           }
           rst
         }
@@ -56,8 +58,11 @@ pub fn w_channel_thumbnail_list(
   }
 }
 
-fn w_channel_thumbnail(channel: impl StateReader<Value = Channel>, channel_mgr: impl StateWriter<Value = dyn ChannelMgr>, gui_helper: impl StateWriter<Value = dyn UIState>) -> impl WidgetBuilder
-{
+fn w_channel_thumbnail(
+  channel: impl StateReader<Value = Channel>,
+  channel_mgr: impl StateWriter<Value = dyn ChannelMgr>,
+  gui_helper: impl StateWriter<Value = dyn UIState>,
+) -> impl WidgetBuilder {
   fn_widget! {
     let mut item = @ListItem {};
     // let support_text = $channel.desc().map(|desc| {
@@ -69,7 +74,10 @@ fn w_channel_thumbnail(channel: impl StateReader<Value = Channel>, channel_mgr: 
         @ {
           let channel_state = $channel;
           let channel_def_bot_id = channel_state.cfg().def_bot_id().cloned();
-          let bot_id = channel_def_bot_id.unwrap_or_else(|| $channel.app_info().unwrap().cfg().def_bot_id().clone());
+          let bot_id = channel_def_bot_id
+            .unwrap_or_else(
+              || $channel.app_info().unwrap().cfg().def_bot_id().clone()
+            );
           let avatar = channel_state
             .app_info()
             .unwrap()
