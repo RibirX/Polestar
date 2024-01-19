@@ -149,10 +149,11 @@ impl ChannelMgr for AppGUI {
 
 impl Chat for AppGUI {
   fn add_msg(&mut self, channel_id: &ChannelId, msg: Msg) {
-    self
+    if let Some(ch) = self
       .data
-      .get_channel_mut(&channel_id)
-      .map(|ch| ch.add_msg(msg));
+      .get_channel_mut(channel_id) {
+        ch.add_msg(msg);
+    }
   }
 
   fn add_msg_cont(
@@ -163,7 +164,7 @@ impl Chat for AppGUI {
   ) -> Option<usize> {
     self
       .data
-      .get_channel_mut(&channel_id)
+      .get_channel_mut(channel_id)
       .and_then(|ch| ch.msg_mut(msg_id))
       .map(|msg| msg.add_cont(cont))
   }
@@ -185,10 +186,11 @@ impl Chat for AppGUI {
     idx: usize,
     act: MsgAction,
   ) {
-    self
+    if let Some(ch) = self
       .data
-      .get_channel_mut(channel_id)
-      .map(|ch| ch.update_msg(&msg_id, idx, act));
+      .get_channel_mut(channel_id) {
+        ch.update_msg(msg_id, idx, act);
+    }
   }
 
   fn channel(&self, channel_id: &ChannelId) -> Option<&Channel> {
@@ -282,7 +284,7 @@ impl Compose for AppGUI {
               @ {
                 pipe!($ui_state;)
                   .map(move |_| {
-                    let _ = {
+                    let _ = || {
                       $channel_mgr.write();
                       $ui_state.write();
                       $config.write();
@@ -345,8 +347,8 @@ fn handle_open_url(url: &str) -> Option<AppRoute> {
 }
 
 fn gen_handler(config: impl StateWriter<Value = dyn UserConfig>, channel_mgr: impl StateWriter<Value = dyn ChannelMgr>, ui_state: impl StateWriter<Value = dyn UIState>) -> impl for<'a> FnMut(&'a mut AppEvent) {
-  move |event: &mut AppEvent| match event {
-    AppEvent::OpenUrl(url) => {
+  move |event: &mut AppEvent| {
+    if let AppEvent::OpenUrl(url) = event {
       // TODO: user module need login
       let route = handle_open_url(url);
       if let Some(AppRoute::Login { token, uid }) = route {
@@ -365,8 +367,6 @@ fn gen_handler(config: impl StateWriter<Value = dyn UserConfig>, channel_mgr: im
           .expect("Failed to build user");
         user.set_token(Some(token));
 
-        
-
         let channel_id = config.write().login(user);
         channel_mgr.write().switch_channel(&channel_id);
         ui_state.write().navigate_to("/home/chat");
@@ -377,7 +377,6 @@ fn gen_handler(config: impl StateWriter<Value = dyn UserConfig>, channel_mgr: im
         }
       }
     }
-    _ => {}
   }
 }
 

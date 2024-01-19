@@ -5,7 +5,7 @@ use crate::style::CULTURED_F7F7F5_FF;
 #[derive(PartialEq, Eq)]
 pub enum FixedSide {
   Left,
-  Right,
+  // Right,
 }
 
 #[derive(Declare)]

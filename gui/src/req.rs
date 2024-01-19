@@ -15,7 +15,7 @@ pub async fn query_open_ai(
   content: String,
   delta_op: impl FnMut(String),
 ) -> Result<String, PolestarError> {
-  let req = { create_text_request(&*info.read(), bot_id) };
+  let req = { create_text_request(&info.read(), bot_id) };
 
   let mut stream = req
     .request(content)

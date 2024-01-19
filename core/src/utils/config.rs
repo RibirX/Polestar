@@ -134,19 +134,15 @@ fn parse_user_bot_cfgs(user_data_path: PathBuf, file: &str) -> PolestarResult<Bo
 
   for idx in remove_idx.into_iter().rev() {
     let bot = user_partial_bots.remove(idx);
-    official_bots
-      .iter_mut()
-      .find(|b| b.id() == bot.id())
-      .map(|b| b.merge(&bot));
+    if let Some(b) = official_bots.iter_mut().find(|b| b.id() == bot.id()) {
+      b.merge(&bot);
+    }
   }
 
   user_bots.extend(user_partial_bots.into_iter().filter_map(|bot| bot.to_bot()));
 
   Ok(BotCfg {
-    bots: official_bots
-      .into_iter()
-      .chain(user_bots.into_iter())
-      .collect(),
+    bots: official_bots.into_iter().chain(user_bots).collect(),
     providers: user_sp,
   })
 }

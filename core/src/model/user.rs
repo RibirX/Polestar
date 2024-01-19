@@ -78,8 +78,8 @@ impl Quota {
 
 #[derive(Deserialize, Debug)]
 pub struct QuotaInfo {
-  user_id: u64,
-  limits: f32,
-  used: f32,
+  // user_id: u64,
+  // limits: f32,
+  // used: f32,
   pub statistics: serde_json::Value,
 }

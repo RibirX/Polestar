@@ -90,7 +90,7 @@ fn w_sidebar_others(
           });
 
           if let Some(feedback_id) = feedback_id {
-            $chat_mgr.write().switch_channel(&feedback_id);
+            $chat_mgr.write().switch_channel(feedback_id);
           } else {
             let id = $chat_mgr.write().new_channel("Feedback".to_owned(), None, ChannelCfg::feedback_cfg());
             $chat_mgr.write().switch_channel(&id);

@@ -62,11 +62,11 @@ pub fn w_msg_list(
               pipe! {
                 let _ = || $chat.write();
                 let quote_id = quote_id.clone_writer();
-                let channel_id = $channel.id().clone();
+                let channel_id = *$channel.id();
                 let chat = chat.clone_writer();
                 $channel.msgs().iter().map(move |m| {
                   let id = *m.id();
-                  @ { w_msg(chat.clone_writer(), channel_id.clone(), id, quote_id.clone_writer()) }
+                  @ { w_msg(chat.clone_writer(), channel_id, id, quote_id.clone_writer()) }
                 }).collect::<Vec<_>>()
               }
             }
@@ -170,7 +170,6 @@ fn w_msg(
                 @MsgOps {
                   @ {
                     let quote_id = quote_id.clone_writer();
-                    let msg_id = msg_id.clone();
                     let quote_fn = Box::new(move || {
                       *quote_id.write() = Some(msg_id)
                     }) as Box<dyn Fn()>;
@@ -205,8 +204,7 @@ fn w_msg(
                   @ {
                     let source_id = msg.meta().source_id().cloned();
                     let bot_id = msg.role().bot().cloned();
-                    let msg_id = msg.id().clone();
-                    let channel_id = channel_id.clone();
+                    let msg_id = *msg.id();
                     let chat = chat.clone_writer();
                     let role = msg.role().clone();
                     (role.is_bot()).then(move || {
@@ -226,7 +224,7 @@ fn w_msg(
                             )
                           };
                           $chat.write().switch_cont(&channel_id, &msg_id, idx);
-                          send_msg(chat.clone_writer(), channel_id.clone(),  msg_id.clone(), idx, bot_id.clone().unwrap(), source_msg);
+                          send_msg(chat.clone_writer(), channel_id,  msg_id, idx, bot_id.clone().unwrap(), source_msg);
                         }) as Box<dyn Fn()>,
                         @IconButton {
                           padding: EdgeInsets::all(4.),
@@ -281,7 +279,7 @@ fn w_msg(
                           @ {
                             let chat = chat.clone_writer();
                             (msg.cont_list().len() > 1).then(move || {
-                              w_msg_multi_rst(chat, channel_id.clone(), msg_id.clone())
+                              w_msg_multi_rst(chat, channel_id, msg_id)
                             })
                           }
                           @TextSelectable {
@@ -308,7 +306,7 @@ fn w_msg(
 fn w_msg_quote(chat: &dyn Chat, channel_id: &ChannelId, quote_id: Option<MsgId>) -> Option<impl WidgetBuilder>
 {
   let quote_text = quote_id.and_then(move |id| {
-    chat.msg(&channel_id, &id).and_then(|msg| msg.cur_cont_ref().text().map(|s| s.to_owned()))
+    chat.msg(channel_id, &id).and_then(|msg| msg.cur_cont_ref().text().map(|s| s.to_owned()))
   });
 
   quote_text.map(|text| {

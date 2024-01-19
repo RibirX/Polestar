@@ -8,20 +8,6 @@ pub struct GraphicIntro {
   desc: Option<CowArc<str>>,
 }
 
-impl GraphicIntro {
-  pub fn new(
-    image: ShareResource<PixelImage>,
-    title: Option<impl Into<CowArc<str>>>,
-    desc: Option<impl Into<CowArc<str>>>,
-  ) -> Self {
-    Self {
-      image,
-      title: title.map(Into::into),
-      desc: desc.map(Into::into),
-    }
-  }
-}
-
 #[derive(Declare)]
 pub struct Carousel {
   contents: Vec<GraphicIntro>,

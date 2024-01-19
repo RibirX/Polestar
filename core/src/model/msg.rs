@@ -94,13 +94,10 @@ impl Msg {
       cur_idx: 0,
       cont_list,
       meta,
-      created_at: created_at.map_or_else(
-        || Utc::now(),
-        |t| {
-          let dt = NaiveDateTime::from_timestamp_millis(t).unwrap();
-          DateTime::from_naive_utc_and_offset(dt, Utc)
-        },
-      ),
+      created_at: created_at.map_or_else(Utc::now, |t| {
+        let dt = NaiveDateTime::from_timestamp_millis(t).unwrap();
+        DateTime::from_naive_utc_and_offset(dt, Utc)
+      }),
     }
   }
 
