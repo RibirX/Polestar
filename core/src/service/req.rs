@@ -13,10 +13,12 @@ use serde_json_path::JsonPath;
 use crate::{
   error::{PolestarError, PolestarResult},
   model::{
-    AppInfo, Bot, BotId, FeedbackMessageListForServer, FeedbackTimestamp, GlbVar, Quota,
+    AppInfo, Bot, BotId, Channel, FeedbackMessageListForServer, FeedbackTimestamp, GlbVar, Quota,
     ServerProvider, UserFeedbackMessageForServer, GLOBAL_VARS,
   },
 };
+
+use super::open_ai::{ChatCompletionResponseStreamMessage, Role};
 
 const POLESTAR_STREAM_URL: &str = "https://api.ribir.org/stream/open_ai";
 
@@ -61,6 +63,51 @@ pub fn create_text_request(info: &AppInfo, bot_id: BotId) -> TextStreamReq {
   } else {
     create_req_from_bot(bot, default_polestar_provider(sp_name, info).as_ref())
   }
+}
+
+pub fn open_ai_request_content<'a>(bot: &'a Bot, channel: &'a Channel, content: String) -> String {
+  let mut messages = vec![];
+  if let Some(prompt) = bot.params().get("prompt").and_then(|v| v.as_str()) {
+    messages.push(ChatCompletionResponseStreamMessage {
+      content: Some(prompt.to_string()),
+      role: Some(super::open_ai::Role::System),
+    });
+  }
+  let context_numbers = channel.cfg().mode().context_number();
+  let content_with_context = channel
+    .msgs()
+    .iter()
+    .rev()
+    .skip(2)
+    .take(context_numbers)
+    .rev()
+    .map(|m| {
+      let quote_text = m.meta().quote_id().and_then(|id| {
+        channel
+          .msg(id)
+          .and_then(|m| m.cur_cont_ref().text().map(|s| s.to_owned()))
+      });
+      let cont_text = m.cur_cont_ref().text().map(|s| s.to_owned());
+      ChatCompletionResponseStreamMessage {
+        content: Some(quote_text.unwrap_or_default() + &cont_text.unwrap_or_default()),
+        role: Some(Role::from(m.role().clone())),
+      }
+    })
+    .collect::<Vec<_>>();
+  messages.extend(content_with_context);
+  messages.push(ChatCompletionResponseStreamMessage {
+    content: Some(content),
+    role: Some(Role::User),
+  });
+
+  // TODO:
+  let params = json!({
+    "model": "gpt-3.5-turbo",
+    "messages": messages,
+    "stream": true,
+  });
+
+  serde_json::to_string(&params).unwrap_or_default()
 }
 
 fn default_polestar_provider(model: &str, info: &AppInfo) -> Option<ServerProvider> {
@@ -159,10 +206,6 @@ pub struct TextStreamReq {
 
 impl TextStreamReq {
   pub async fn request(self, body: String) -> Result<EventSource, PolestarError> {
-    let body = format!(
-      r#"{{"model":"gpt-3.5-turbo","messages":[{{"role":"user","content":"{}"}}],"stream":true}}"#,
-      body
-    );
     req_stream(
       self.url.clone(),
       Method::POST,
