@@ -3,7 +3,10 @@ use std::rc::Rc;
 use polestar_core::model::{Bot, BotId};
 use ribir::prelude::*;
 
-use crate::widgets::common::{w_avatar, InteractiveList};
+use crate::{
+  style::WHITE,
+  widgets::common::{w_avatar, InteractiveList},
+};
 
 #[derive(Declare)]
 pub struct BotList {
