@@ -1,7 +1,10 @@
 use std::{cell::RefCell, rc::Rc};
 
 use crate::req::query_open_ai;
-use polestar_core::model::{BotId, ChannelId, MsgAction, MsgBody};
+use polestar_core::{
+  model::{BotId, ChannelId, MsgAction, MsgBody},
+  service::req::open_ai_request_content,
+};
 use ribir::prelude::*;
 use uuid::Uuid;
 
@@ -24,10 +27,11 @@ pub fn send_msg(
 
     let quote_text = {
       quote_id.and_then(|quote_id| {
-        channel
-          .read()
-          .msg(&quote_id)
-          .and_then(|quote_msg| quote_msg.cur_cont_ref().text().map(|text| text.to_owned()))
+        chat.read().channel(&channel_id).and_then(|channel| {
+          channel
+            .msg(&quote_id)
+            .and_then(|quote_msg| quote_msg.cur_cont_ref().text().map(|text| text.to_owned()))
+        })
       })
     };
 
@@ -35,14 +39,21 @@ pub fn send_msg(
       .map(|quote_text| format!("{} {}", quote_text, content))
       .unwrap_or(content);
 
-    let _ = query_open_ai(
-      chat.map_reader(|chat| chat.info()),
-      bot_id,
-      content,
-      |delta| {
-        update_msg(MsgAction::Receiving(MsgBody::Text(Some(delta))));
-      },
-    )
+    let text = chat
+      .read()
+      .channel(&channel_id)
+      .map(|channel| {
+        let bot = channel
+          .bots()
+          .and_then(|bots| bots.iter().find(|bot| bot.id() == &bot_id))
+          .unwrap();
+        open_ai_request_content(bot, channel, &content)
+      })
+      .unwrap_or(content);
+
+    let _ = query_open_ai(chat.map_reader(|chat| chat.info()), bot_id, text, |delta| {
+      update_msg(MsgAction::Receiving(MsgBody::Text(Some(delta))));
+    })
     .await;
 
     update_msg(MsgAction::Fulfilled);
