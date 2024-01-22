@@ -17,6 +17,7 @@ uuid.workspace = true
 reqwest.workspace = true
 reqwest-eventsource.workspace = true
 once_cell.workspace = true
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 
 ahash = "0.8.3"
 tiny_http = "0.12"
@@ -24,7 +25,7 @@ url = "2.4.1"
 base64 = "0.21.5"
 url-escape = "0.1.1"
 rand = "0.8.5"
-tokio = { version = "1.20.0", features = ["macros", "rt-multi-thread"] }
+fs4 = "0.7.0"
 
 [target.'cfg(windows)'.dependencies]
 winapi = { version = "0.3.9", features = ["namedpipeapi"] }
