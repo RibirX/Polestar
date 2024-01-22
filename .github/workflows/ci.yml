@@ -30,3 +30,15 @@ jobs:
         run: cargo clippy --all-targets --all-features -- -D warnings
       - name: cargo check
         run: cargo check
+  tests:
+    name: rust tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: nightly-2023-10-15
+      - uses: Swatinem/rust-cache@v2
+      - name: cargo test
+        run: cargo test --all --all-features

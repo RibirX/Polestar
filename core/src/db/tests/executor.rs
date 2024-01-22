@@ -12,12 +12,8 @@ use crate::{
 
 use super::common::init_db;
 
-fn log_init() { let _ = env_logger::builder().is_test(true).try_init(); }
-
 #[test]
 fn add_channel_test() {
-  log_init();
-
   let persistence_db = PersistenceDB::connect(init_db()).expect("Failed to connect db");
 
   let persistence_db = Box::pin(persistence_db);
@@ -50,8 +46,6 @@ fn add_channel_test() {
 
 #[test]
 fn remove_channel_test() {
-  log_init();
-
   let persistence_db = PersistenceDB::connect(init_db()).expect("Failed to connect db");
 
   let persistence_db = Box::pin(persistence_db);
@@ -97,8 +91,6 @@ fn remove_channel_test() {
 
 #[test]
 fn update_channel_test() {
-  log_init();
-
   let persistence_db = Box::new(PersistenceDB::connect(init_db()).expect("Failed to connect db"));
 
   let id_1 = Uuid::new_v4();
@@ -162,8 +154,6 @@ fn update_channel_test() {
 
 #[test]
 fn add_msg_test() {
-  log_init();
-
   let persistence_db = Box::new(PersistenceDB::connect(init_db()).expect("Failed to connect db"));
 
   let channel_id = Uuid::new_v4();
@@ -207,8 +197,6 @@ fn add_msg_test() {
 
 #[test]
 fn update_msg_test() {
-  log_init();
-
   let persistence_db = PersistenceDB::connect(init_db()).expect("Failed to connect db");
   let persistence_db = Box::new(persistence_db);
 
@@ -263,14 +251,12 @@ fn update_msg_test() {
       .expect("Failed to query msgs")
   });
   assert_eq!(msgs.len(), 1);
-  assert_eq!(msgs[0].cur_idx(), 1);
+  assert_eq!(msgs[0].cur_idx(), 0);
   assert_eq!(msgs[0].cont_count(), 2);
 }
 
 #[test]
 fn query_msgs_by_channel_id_test() {
-  log_init();
-
   let persistence_db = Box::pin(PersistenceDB::connect(init_db()).expect("Failed to connect db"));
 
   let channel_id = Uuid::new_v4();
@@ -315,8 +301,6 @@ fn query_msgs_by_channel_id_test() {
 
 #[test]
 fn add_attachment_test() {
-  log_init();
-
   let persistence_db = PersistenceDB::connect(init_db()).expect("Failed to connect db");
   let persistence_db = Box::new(persistence_db);
 

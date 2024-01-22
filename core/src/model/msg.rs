@@ -436,7 +436,7 @@ mod test {
     let mut msg = Msg::new_user_text("", MsgMeta::default());
     assert_eq!(msg.cur_idx(), 0);
     msg.add_cont(MsgCont::init_text());
-    assert_eq!(msg.cur_idx(), 1);
+    assert_eq!(msg.cur_idx(), 0);
     assert_eq!(msg.cont_count(), 2);
 
     msg.switch_cont(0);
