@@ -65,7 +65,7 @@ pub fn create_text_request(info: &AppInfo, bot_id: BotId) -> TextStreamReq {
   }
 }
 
-pub fn open_ai_request_content<'a>(bot: &'a Bot, channel: &'a Channel, content: String) -> String {
+pub fn open_ai_request_content<'a>(bot: &'a Bot, channel: &'a Channel, content: &'a str) -> String {
   let mut messages = vec![];
   if let Some(prompt) = bot.params().get("prompt").and_then(|v| v.as_str()) {
     messages.push(ChatCompletionResponseStreamMessage {
@@ -96,7 +96,7 @@ pub fn open_ai_request_content<'a>(bot: &'a Bot, channel: &'a Channel, content: 
     .collect::<Vec<_>>();
   messages.extend(content_with_context);
   messages.push(ChatCompletionResponseStreamMessage {
-    content: Some(content),
+    content: Some(content.to_owned()),
     role: Some(Role::User),
   });
 
