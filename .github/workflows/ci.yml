@@ -1,0 +1,32 @@
+on:
+  merge_group:
+  pull_request:
+  push:
+    branches:
+      - master
+
+env:
+  CARGO_INCREMENTAL: false
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: full
+  RUSTDOCFLAGS: -Dwarnings
+
+name: CI
+jobs:
+  lint:
+    name: rust code lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: nightly-2023-10-15
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+      - name: format style check
+        run: cargo fmt --all -- --check
+      - name: cargo clippy check
+        run: cargo clippy --all-targets --all-features -- -D warnings
+      - name: cargo check
+        run: cargo check

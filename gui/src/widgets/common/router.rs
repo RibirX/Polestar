@@ -26,6 +26,7 @@ impl PartialPath {
     false
   }
 
+  #[allow(dead_code)]
   pub fn get_param(&self, path: &str) -> Option<String> {
     if path.chars().nth(0) == Some('/') && self.partial.chars().nth(1) == Some(':') {
       return path[1..].split('/').nth(self.level).map(|s| s.to_owned());
@@ -57,7 +58,10 @@ impl ComposeChild for Router {
             let (route, child) = p.unzip();
             let path = $route.path.clone();
             @Visibility {
-              visible: pipe!(path.is_match($this.cur_path.as_ref())),
+              visible: pipe! {
+                let this = $this;
+                path.is_match(this.cur_path.as_ref())
+              },
               @ { child }
             }
           })

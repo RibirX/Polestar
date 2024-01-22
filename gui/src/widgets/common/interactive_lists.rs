@@ -14,10 +14,6 @@ pub struct InteractiveList {
   highlight_rect_list: Vec<Rect>,
 }
 
-impl InteractiveList {
-  fn derain(&mut self, count: usize) { self.highlight_rect_list.drain(count..); }
-}
-
 impl ComposeChild for InteractiveList {
   type Child = BoxPipe<Vec<Widget>>;
   fn compose_child(this: impl StateWriter<Value = Self>, child: Self::Child) -> impl WidgetBuilder {

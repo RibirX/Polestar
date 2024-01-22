@@ -1,53 +1,55 @@
 use crate::theme::polestar_svg;
 
-use crate::widgets::{
-  app::AppGUI,
-  common::{w_avatar, IconButton, InteractiveList},
-};
+use crate::widgets::app::{ChannelMgr, UIState};
+use crate::widgets::common::{w_avatar, IconButton, InteractiveList};
 use polestar_core::model::Channel;
 use ribir::prelude::*;
 
-pub fn w_channel_thumbnail_list(app: impl StateWriter<Value = AppGUI>) -> impl WidgetBuilder {
+pub fn w_channel_thumbnail_list(
+  channel_mgr: impl StateWriter<Value = dyn ChannelMgr>,
+  ui_state: impl StateWriter<Value = dyn UIState>,
+) -> impl WidgetBuilder {
   fn_widget! {
     @InteractiveList {
       active: pipe! {
-        let last_idx = if !$app.data.channels().is_empty() { 
-          $app.data.channels().len() - 1
+        let channels = $channel_mgr.channel_ids();
+        let last_idx = if !channels.is_empty() {
+          channels.len() - 1
         } else {
           0
         };
-        $app.data.cur_channel().map(|channel| *channel.id()).and_then(|id| {
-          $app.data.channels().iter().position(|channel| *channel.id() == id).map(|idx| last_idx - idx)
+        $channel_mgr.cur_channel_id().and_then(|id| {
+          channels.iter().position(|ch| ch == id).map(|idx| last_idx - idx)
         }).unwrap_or(last_idx)
       },
       on_tap: move |_| {
-        if $app.cur_router_path() != "/home/chat" {
-          $app.write().navigate_to("/home/chat");
+        if $ui_state.cur_path() != "/home/chat" {
+          $ui_state.write().navigate_to("/home/chat");
         }
       },
       highlight_visible: pipe! {
-        let app = $app;
-        matches!(app.cur_router_path(), "/home/chat")
+        let path = $ui_state.cur_path();
+        matches!(path.as_str(), "/home/chat")
       },
       @ {
         pipe! {
-          let app2 = app.clone_writer();
           let mut rst = vec![];
-          for idx in (0..$app.data.channels().len()).rev() {
-            let channel = app2.split_writer(
-              move |app| { app.data.channels().iter().nth(idx).expect("channel must be existed") },
-              move |app| { app.data.channels_mut().iter_mut().nth(idx).expect("channel must be existed") },
+          for id in $channel_mgr.channel_ids().into_iter().rev() {
+            let channel = channel_mgr.map_reader(
+              move |channels| { channels.channel(&id).expect("channel must be existed") },
             );
-            let channel2 = channel.clone_writer();
-
-            let w_channel_thumbnail = w_channel_thumbnail(channel);
-            let w_channel_thumbnail = @ $w_channel_thumbnail {
+            let channel_thumbnail =
+              w_channel_thumbnail(channel, channel_mgr.clone_writer(),ui_state.clone_writer());
+            let channel_thumbnail = @ $channel_thumbnail {
               on_tap: move |_| {
-                let id = *$channel2.id();
-                $app.write().data.switch_channel(&id);
+                let _ = || $channel_mgr.write();
+                let channel_mgr = channel_mgr.clone_writer();
+                let _ = AppCtx::spawn_local(async move {
+                  channel_mgr.write().switch_channel(&id);
+                });
               },
             };
-            rst.push(w_channel_thumbnail);
+            rst.push(channel_thumbnail);
           }
           rst
         }
@@ -56,12 +58,11 @@ pub fn w_channel_thumbnail_list(app: impl StateWriter<Value = AppGUI>) -> impl W
   }
 }
 
-fn w_channel_thumbnail<S>(channel: S) -> impl WidgetBuilder
-where
-  S: StateWriter<Value = Channel> + 'static,
-  S::OriginWriter: StateWriter<Value = AppGUI>,
-{
-  let app = channel.origin_writer().clone_writer();
+fn w_channel_thumbnail(
+  channel: impl StateReader<Value = Channel>,
+  channel_mgr: impl StateWriter<Value = dyn ChannelMgr>,
+  gui_helper: impl StateWriter<Value = dyn UIState>,
+) -> impl WidgetBuilder {
   fn_widget! {
     let mut item = @ListItem {};
     // let support_text = $channel.desc().map(|desc| {
@@ -72,12 +73,14 @@ where
       @Leading {
         @ {
           let channel_state = $channel;
-          let app_state = $app;
-          let channel_def_bot_id = channel_state.cfg().def_bot_id();
-          let bot_id = (channel_def_bot_id.unwrap_or_else(|| app_state.data.info().cfg().def_bot_id())).clone();
-          let avatar = app_state
-            .data
-            .info()
+          let channel_def_bot_id = channel_state.cfg().def_bot_id().cloned();
+          let bot_id = channel_def_bot_id
+            .unwrap_or_else(
+              || $channel.app_info().unwrap().cfg().def_bot_id().clone()
+            );
+          let avatar = channel_state
+            .app_info()
+            .unwrap()
             .bots()
             .iter()
             .find(|bot| *bot.id() == bot_id)
@@ -99,7 +102,7 @@ where
             @IconButton {
               on_tap: move |e| {
                 let id = *$channel.id();
-                $app.write().set_modify_channel_id(Some(id));
+                $gui_helper.write().set_modify_channel_id(Some(id));
                 e.stop_propagation();
               },
               @ { polestar_svg::EDIT }
@@ -107,7 +110,7 @@ where
             @IconButton {
               on_tap: move |e| {
                 let id = *$channel.id();
-                $app.write().data.remove_channel(&id);
+                $channel_mgr.write().remove_channel(&id);
                 e.stop_propagation();
               },
               @ { polestar_svg::TRASH }

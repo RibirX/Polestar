@@ -13,8 +13,8 @@ use serde_json_path::JsonPath;
 use crate::{
   error::{PolestarError, PolestarResult},
   model::{
-    AppInfo, Bot, FeedbackMessageListForServer, FeedbackTimestamp, GlbVar, Quota, ServerProvider,
-    UserFeedbackMessageForServer, GLOBAL_VARS,
+    AppInfo, Bot, BotId, FeedbackMessageListForServer, FeedbackTimestamp, GlbVar, Quota,
+    ServerProvider, UserFeedbackMessageForServer, GLOBAL_VARS,
   },
 };
 
@@ -52,11 +52,12 @@ async fn req_stream(
   Ok(stream)
 }
 
-pub fn create_text_request<'a>(bot: &'a Bot, info: &'a AppInfo) -> TextStreamReq {
+pub fn create_text_request(info: &AppInfo, bot_id: BotId) -> TextStreamReq {
+  let bot = info.bot(&bot_id).unwrap();
   let sp_name = bot.sp();
   let sp = info.providers().get(sp_name);
   if let Some(sp) = sp {
-    create_req_from_bot(bot, Some(&sp))
+    create_req_from_bot(bot, Some(sp))
   } else {
     create_req_from_bot(bot, default_polestar_provider(sp_name, info).as_ref())
   }
@@ -187,7 +188,7 @@ fn create_req_from_bot(bot: &Bot, sp: Option<&ServerProvider>) -> TextStreamReq 
   if let Some(base_url) = JsonPath::parse("$.sp.base_url")
     .ok()
     .and_then(|path| path.query(&env).exactly_one().ok())
-    .map(|val| to_value_str(val))
+    .map(to_value_str)
   {
     url = format!("{}{}", base_url, url);
   }
@@ -206,7 +207,7 @@ fn replace_val(src: &str, path_rex: &Regex, env: &JsonValue) -> String {
     val.push_str(&src[pos..rg.start]);
     pos = rg.end;
 
-    if let Some(replaced) = JsonPath::parse(&cap[1].to_string())
+    if let Some(replaced) = JsonPath::parse(&cap[1])
       .ok()
       .and_then(|path| path.query(env).exactly_one().ok())
     {

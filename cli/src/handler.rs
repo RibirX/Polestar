@@ -94,10 +94,10 @@ pub fn msg_handler(args: ArgMatches, app_data: &mut AppData) -> ReplResult<Optio
       }
 
       let mut ret_msg = String::new();
-      let bot = app_data.info().def_bot();
+      let bot_id = app_data.info().def_bot().id().clone();
       let runtime = tokio::runtime::Runtime::new().unwrap();
       runtime.block_on(async {
-        if let Ok(mut stream) = create_text_request(bot, app_data.info())
+        if let Ok(mut stream) = create_text_request(app_data.info(), bot_id)
           .request(content.expect("content is required").clone())
           .await
         {

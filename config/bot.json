@@ -1,12 +1,6 @@
 {
   "vars": {},
-  "providers": [
-    {
-      "name": "OpenAI",
-      "base_url": "https://api.ribir.org/stream/open_ai",
-      "token": "v1.eyJ1c2VyX2lkIjoxMDAxMTgsImV4cCI6MTcwNTQ2NDI4MSwidmVyIjoidjEifQ.-64yece5gSrdUwjY7sTnwoQ858kX-YyzRM7EuKCTI10"
-    }
-  ],
+  "providers": [],
   "bots": [
     {
       "id": "PoleStar Assistant",

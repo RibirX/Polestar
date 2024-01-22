@@ -130,9 +130,3 @@ pub fn w_msg_onboarding() -> impl WidgetBuilder {
     }
   }
 }
-
-pub fn w_feedback_onboarding() -> impl WidgetBuilder {
-  fn_widget! {
-    @Void {}
-  }
-}

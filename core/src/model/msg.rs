@@ -94,13 +94,10 @@ impl Msg {
       cur_idx: 0,
       cont_list,
       meta,
-      created_at: created_at.map_or_else(
-        || Utc::now(),
-        |t| {
-          let dt = NaiveDateTime::from_timestamp_millis(t).unwrap();
-          DateTime::from_naive_utc_and_offset(dt, Utc)
-        },
-      ),
+      created_at: created_at.map_or_else(Utc::now, |t| {
+        let dt = NaiveDateTime::from_timestamp_millis(t).unwrap();
+        DateTime::from_naive_utc_and_offset(dt, Utc)
+      }),
     }
   }
 
@@ -156,10 +153,9 @@ impl Msg {
   }
 
   #[inline]
-  pub fn add_cont(&mut self, cont: MsgCont) {
-    let last_idx = self.cont_list.len();
+  pub fn add_cont(&mut self, cont: MsgCont) -> usize {
     self.cont_list.push(cont);
-    self.cur_idx = last_idx as _;
+    self.cont_list.len() - 1
   }
 
   #[inline]

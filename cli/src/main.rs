@@ -38,5 +38,6 @@ fn main() -> ReplResult<()> {
         .about("Send message")]),
       msg_handler,
     );
+
   repl.run()
 }

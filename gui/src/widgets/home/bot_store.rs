@@ -1,12 +1,19 @@
-use polestar_core::model::{ChannelCfg, MsgMeta, Msg};
+use polestar_core::model::{ChannelCfg, Msg, MsgMeta};
 use ribir::prelude::*;
 
 use crate::{
   style::{ANTI_FLASH_WHITE, COMMON_RADIUS, LIGHT_SILVER_15, SPANISH_GRAY, WHITE},
-  widgets::{app::AppGUI, helper::send_msg},
+  widgets::{
+    app::{ChannelMgr, Chat, UIState},
+    helper::send_msg,
+  },
 };
 
-pub fn w_bot_store(app: impl StateWriter<Value = AppGUI>) -> impl WidgetBuilder {
+pub fn w_bot_store(
+  chat: impl StateWriter<Value = dyn Chat>,
+  channel_mgr: impl StateWriter<Value = dyn ChannelMgr>,
+  ui_state: impl StateWriter<Value = dyn UIState>,
+) -> impl WidgetBuilder {
   fn_widget! {
     @ConstrainedBox {
       clamp: BoxClamp::EXPAND_BOTH,
@@ -16,7 +23,7 @@ pub fn w_bot_store(app: impl StateWriter<Value = AppGUI>) -> impl WidgetBuilder 
         align_items: Align::Stretch,
         h_align: HAlign::Center,
         @VScrollBar {
-          @ { w_bot_list(app.clone_writer()) }
+          @ { w_bot_list(chat, channel_mgr, ui_state) }
         }
       }
     }
@@ -36,12 +43,16 @@ const CATEGORY_LIST: [&str; 10] = [
   "Interviewer",
 ];
 
-fn w_bot_list(app: impl StateWriter<Value = AppGUI>) -> impl WidgetBuilder {
+fn w_bot_list(
+  chat: impl StateWriter<Value = dyn Chat>,
+  channel_mgr: impl StateWriter<Value = dyn ChannelMgr>,
+  ui_state: impl StateWriter<Value = dyn UIState>,
+) -> impl WidgetBuilder {
   fn_widget! {
     @Column {
       margin: EdgeInsets::all(14.),
       @ {
-        CATEGORY_LIST.iter().map(|cat| {
+        CATEGORY_LIST.iter().map(move |cat| {
           @Column {
             @Text {
               margin: EdgeInsets::new(24., 0., 14., 0.),
@@ -53,7 +64,7 @@ fn w_bot_list(app: impl StateWriter<Value = AppGUI>) -> impl WidgetBuilder {
               item_gap: 8.,
               line_gap: 8.,
               @ {
-                $app.data.info().bots().iter().filter(|bot| bot.cat() == Some(cat)).map(move |bot| {
+                  $chat.info().bots().iter().filter(|bot| bot.cat() == Some(cat)).map(move |bot| {
                   let bot_name = bot.name().to_owned();
                   let bot_id = bot.id().clone();
                   let bot_id_2 = bot_id.clone();
@@ -62,27 +73,36 @@ fn w_bot_list(app: impl StateWriter<Value = AppGUI>) -> impl WidgetBuilder {
                   });
                   @Clip {
                     on_tap: move |_| {
+                      let _ = || $ui_state.write();
                       let (channel_id, bot_msg_id) = {
-                        let mut app_write = $app.write();
-                        let channel_id = app_write.data.new_channel(bot_name.clone(), None, ChannelCfg::def_bot_id_cfg(bot_id_2.clone()));
-                        let channel = app_write.data.get_channel_mut(&channel_id).unwrap();
+                        let channel_id = $channel_mgr
+                          .write()
+                          .new_channel(
+                            bot_name.clone(),
+                            None,
+                            ChannelCfg::def_bot_id_cfg(bot_id_2.clone())
+                          );
                         let msg = Msg::new_user_text(&bot_onboarding, MsgMeta::default());
                         let user_msg_id = *msg.id();
-                        channel.add_msg(msg);
-                        let bot_msg = Msg::new_bot_text(bot_id_2.clone(), MsgMeta::reply(user_msg_id));
+                        $chat.write().add_msg(&channel_id, msg);
+                        let bot_msg = Msg::new_bot_text(
+                            bot_id_2.clone(),
+                            MsgMeta::reply(user_msg_id)
+                        );
                         let bot_msg_id = *bot_msg.id();
-                        channel.add_msg(bot_msg);
-                        app_write.data.switch_channel(&channel_id);
-                        app_write.navigate_to("/home/chat");
+                        $chat.write().add_msg(&channel_id, bot_msg);
                         (channel_id, bot_msg_id)
                       };
-
-                      let channel_writer = app.map_writer(
-                        move |app| { app.data.get_channel(&channel_id).unwrap() },
-                        move |app| { app.data.get_channel_mut(&channel_id).unwrap() },
+                      send_msg(
+                        chat.clone_writer(),
+                        channel_id,
+                        bot_msg_id,
+                        0,
+                        bot_id_2.clone(),
+                        bot_onboarding.clone()
                       );
-
-                      send_msg(channel_writer, bot_onboarding.clone(), 0, bot_msg_id, bot_id_2.clone());
+                      channel_mgr.write().switch_channel(&channel_id);
+                      ui_state.write().navigate_to("/home/chat");
                     },
                     @SizedBox {
                       size: Size::new(200., 110.),

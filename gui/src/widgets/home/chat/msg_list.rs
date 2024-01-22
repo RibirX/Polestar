@@ -1,23 +1,23 @@
-use polestar_core::model::{Channel, Msg, MsgCont, MsgRole};
+use polestar_core::model::{ChannelId, MsgCont, MsgId, MsgRole};
 use ribir::prelude::*;
 use uuid::Uuid;
 
 use crate::style::decorator::channel::message_style;
 use crate::style::{GAINSBORO, WHITE};
 use crate::theme::polestar_svg;
+use crate::widgets::app::Chat;
 use crate::widgets::common::IconButton;
 use crate::widgets::helper::send_msg;
 
 use super::onboarding::w_msg_onboarding;
 
-pub fn w_msg_list<S>(
-  channel: S,
+pub fn w_msg_list(
+  chat: impl StateWriter<Value = dyn Chat>,
+  channel_id: ChannelId,
   quote_id: impl StateWriter<Value = Option<Uuid>>,
-) -> impl WidgetBuilder
-where
-  S: StateWriter<Value = Channel>,
-{
+) -> impl WidgetBuilder {
   fn_widget! {
+    let channel = chat.map_reader(move |chat| chat.channel(&channel_id).unwrap());
     let scrollable_container = @VScrollBar {};
 
     let mut content_constrained_box = @ConstrainedBox {
@@ -60,21 +60,13 @@ where
             @ { w_msg_onboarding() }
             @ {
               pipe! {
-                let _ = || $channel.write();
-                let channel_cloned = channel.clone_writer();
+                let _ = || $chat.write();
                 let quote_id = quote_id.clone_writer();
-
+                let channel_id = *$channel.id();
+                let chat = chat.clone_writer();
                 $channel.msgs().iter().map(move |m| {
                   let id = *m.id();
-                  let msg = channel_cloned.split_writer(
-                    move |channel| {
-                      channel.msg(&id).expect("msg must be existed")
-                    },
-                    move |channel| {
-                      channel.msg_mut(&id).expect("msg must be existed")
-                    },
-                  );
-                  @ { w_msg(msg, quote_id.clone_writer()) }
+                  @ { w_msg(chat.clone_writer(), channel_id, id, quote_id.clone_writer()) }
                 }).collect::<Vec<_>>()
               }
             }
@@ -138,25 +130,18 @@ impl ComposeChild for MsgOps {
   }
 }
 
-fn w_msg<S, R, W>(msg: S, quote_id: impl StateWriter<Value = Option<Uuid>>) -> impl WidgetBuilder
-where
-  S: StateWriter<Value = Msg>,
-  S::Writer: StateWriter<Value = Msg, OriginReader = R, OriginWriter = W>,
-  S::OriginWriter: StateWriter<Value = Channel>,
-  S::OriginReader: StateReader<Value = Channel>,
-  R: StateReader<Value = Channel>,
-  W: StateWriter<Value = Channel>,
-  <S::Writer as StateWriter>::OriginWriter: StateWriter<Value = Channel>,
-  <<S::Writer as StateWriter>::Writer as StateWriter>::OriginWriter: StateWriter<Value = Channel>,
-  <<<S::Writer as StateWriter>::Writer as StateWriter>::Writer as StateWriter>::OriginWriter:
-    StateWriter<Value = Channel>,
-{
+fn w_msg(
+  chat: impl StateWriter<Value = dyn Chat>,
+  channel_id: ChannelId,
+  msg_id: MsgId,
+  quote_id: impl StateWriter<Value = Option<Uuid>>,
+) -> impl WidgetBuilder {
   fn_widget! {
     @ {
-      pipe!($msg;).map(move |_| {
         let mut stack = @Stack {};
-
-        let role = $msg.role().clone();
+        let chat_ref = $chat;
+        let msg = chat_ref.msg(&channel_id, &msg_id).unwrap();
+        let role = msg.role().clone();
         let mut row = @Row {
           item_gap: 8.,
           reverse: matches!(role, MsgRole::User)
@@ -173,8 +158,6 @@ where
           }
         };
 
-        let retry_msg = msg.clone_writer();
-
         let role_2 = role.clone();
         let role_3 = role.clone();
         let msg_ops = @$msg_ops_anchor {
@@ -184,15 +167,18 @@ where
           @ {
             match role_3.clone() {
               MsgRole::User | MsgRole::Bot(_) => {
-                let channel = msg.origin_writer();
                 @MsgOps {
                   @ {
                     let quote_id = quote_id.clone_writer();
-                    (!$channel.is_feedback()).then(move || {
+                    let quote_fn = Box::new(move || {
+                      *quote_id.write() = Some(msg_id)
+                    }) as Box<dyn Fn()>;
+                    let is_feedback = $chat
+                      .channel(&channel_id)
+                      .map_or(false, |ch| ch.is_feedback());
+                    (!is_feedback).then(move || {
                       @MsgOp {
-                        cb: Box::new(move || {
-                          *quote_id.write() = Some(*$msg.id())
-                        }) as Box<dyn Fn()>,
+                        cb: quote_fn,
                         @IconButton {
                           padding: EdgeInsets::all(4.),
                           size: IconSize::of(ctx!()).tiny,
@@ -203,7 +189,9 @@ where
                   }
                   @MsgOp {
                     cb: Box::new(move || {
-                      if let Some(text) = $msg.cur_cont_ref().text() {
+                      let chat = $chat;
+                      let msg = chat.msg(&channel_id, &msg_id).unwrap();
+                      if let Some(text) = msg.cur_cont_ref().text() {
                         let clipboard = AppCtx::clipboard();
                         let _ = clipboard.borrow_mut().clear();
                         let _ = clipboard.borrow_mut().write_text(text);
@@ -216,32 +204,38 @@ where
                     }
                   }
                   @ {
-                    let retry_msg = retry_msg.clone_writer();
-                    let channel = msg.origin_writer().clone_writer();
-                    ($msg.role().is_bot()).then(move || {
+                    let source_id = msg.meta().source_id().cloned();
+                    let bot_id = msg.role().bot().cloned();
+                    let msg_id = *msg.id();
+                    let chat = chat.clone_writer();
+                    let role = msg.role().clone();
+                    (role.is_bot()).then(move || {
+                      let _hint = || $chat.write();
                       @MsgOp {
                         // TODO: cb code is messy, need to refactor.
                         cb: Box::new(move || {
-                          let _ = || $retry_msg.write();
-                          let _ = || $channel.write();
-                          let source_id = {
-                            let retry_msg_write = $retry_msg.write();
-                            *retry_msg_write.meta().source_id().unwrap()
+                          let _hint = || $chat.write();
+                          let (source_msg, idx) = {
+                            let mut chat = $chat.write();
+                            (
+                              chat
+                                .msg(&channel_id, &source_id.unwrap())
+                                .and_then(
+                                  |msg| msg.cur_cont_ref().text().map(|text| text.to_owned())
+                                )
+                                .unwrap_or_default().clone(),
+                              chat.add_msg_cont(&channel_id, &msg_id, MsgCont::init_text()).unwrap()
+                            )
                           };
-                          let msg_id = *$retry_msg.id();
-                          let source_msg_text = $channel
-                            .msg(&source_id)
-                            .and_then(|msg| msg.cur_cont_ref().text().map(|text| text.to_owned()))
-                            .unwrap_or_default().clone();
-                          let (cur_idx, bot_id) = {
-                            let mut retry_msg_write = $retry_msg.write();
-                            let cont = MsgCont::init_text();
-                            retry_msg_write.add_cont(cont);
-                            let cur_idx = retry_msg_write.cur_idx();
-                            let bot_id = retry_msg_write.role().bot().unwrap().clone();
-                            (cur_idx, bot_id)
-                          };
-                          send_msg(channel.clone_writer(), source_msg_text, cur_idx, msg_id, bot_id);
+                          $chat.write().switch_cont(&channel_id, &msg_id, idx);
+                          send_msg(
+                            chat.clone_writer(),
+                            channel_id,
+                            msg_id,
+                            idx,
+                            bot_id.clone().unwrap(),
+                            source_msg
+                          );
                         }) as Box<dyn Fn()>,
                         @IconButton {
                           padding: EdgeInsets::all(4.),
@@ -261,7 +255,7 @@ where
         };
         @$stack {
           @Row {
-            h_align: match $msg.role() {
+            h_align: match msg.role() {
               MsgRole::User => HAlign::Right,
               _ => HAlign::Left,
             },
@@ -271,12 +265,10 @@ where
               }
               @Column {
                 @ {
-                  let channel = msg.origin_writer().clone_writer();
-                  $msg.role().bot().and_then(move |bot_id| {
-                    $channel.app_info().map(|info| {
-                      let bot = info.get_bot_or_default(Some(bot_id));
-                      @Text { text: bot.name().to_owned() }
-                    })
+                  msg.role().bot().map(move |bot_id| {
+                    let chat = $chat;
+                    let bot = chat.info().get_bot_or_default(Some(bot_id));
+                    @Text { text: bot.name().to_owned() }
                   })
                 }
                 @ConstrainedBox {
@@ -285,25 +277,21 @@ where
                     max: Size::new(560., f32::INFINITY),
                   },
                   @ {
-                    pipe!($msg.cur_idx()).map(move |_| {
-                      let _msg_capture = || $msg.write();
                       let default_txt = String::new();
                       // TODO: support Image Type.
-                      let text = $msg
+                      let text = msg
                         .cur_cont_ref()
                         .text()
                         .unwrap_or_else(|| &default_txt).to_owned();
-                      let msg2 = msg.clone_writer();
+                      let quote_id = msg.meta().quote_id().cloned();
                       message_style(
                         @Column {
-                          @ { w_msg_quote(msg2) }
+                          @ { w_msg_quote(&*$chat, &channel_id, quote_id) }
                           @ {
-                            let msg2 = msg.clone_writer();
-                            pipe! {
-                              ($msg.cont_list().len() > 1).then(|| {
-                                w_msg_multi_rst(msg2.clone_writer())
-                              })
-                            }
+                            let chat = chat.clone_writer();
+                            (msg.cont_list().len() > 1).then(move || {
+                              w_msg_multi_rst(chat, channel_id, msg_id)
+                            })
                           }
                           @TextSelectable {
                             @Text {
@@ -313,9 +301,8 @@ where
                             }
                           }
                         }.widget_build(ctx!()),
-                        $msg.role().clone()
+                        msg.role().clone()
                       )
-                    })
                   }
                 }
               }
@@ -323,24 +310,19 @@ where
           }
           @ { msg_ops }
         }
-      })
     }
   }
 }
 
-fn w_msg_quote<S>(msg: S) -> Option<impl WidgetBuilder>
-where
-  S: StateWriter<Value = Msg>,
-  S::OriginWriter: StateWriter<Value = Channel>,
-{
-  let channel = msg.origin_writer().clone_writer();
-  let msg_state = msg.read();
-  let quote_id = msg_state.meta().quote_id();
-
+fn w_msg_quote(
+  chat: &dyn Chat,
+  channel_id: &ChannelId,
+  quote_id: Option<MsgId>,
+) -> Option<impl WidgetBuilder> {
   let quote_text = quote_id.and_then(move |id| {
-    let channel_state = channel.read();
-    let msg = channel_state.msgs().iter().find(|msg| msg.id() == id);
-    msg.and_then(|msg| msg.cur_cont_ref().text().map(|s| s.to_owned()))
+    chat
+      .msg(channel_id, &id)
+      .and_then(|msg| msg.cur_cont_ref().text().map(|s| s.to_owned()))
   });
 
   quote_text.map(|text| {
@@ -352,12 +334,15 @@ where
   })
 }
 
-fn w_msg_multi_rst(msg: impl StateWriter<Value = Msg>) -> impl WidgetBuilder {
+fn w_msg_multi_rst(
+  chat: impl StateWriter<Value = dyn Chat>,
+  channel_id: ChannelId,
+  msg_id: MsgId,
+) -> impl WidgetBuilder {
   fn_widget! {
     let scrollable_widget = @ScrollableWidget {
       scrollable: Scrollable::X,
     };
-    let thumbnail_msg = msg.clone_writer();
     @Row {
       @Visibility {
         @Void {}
@@ -368,16 +353,21 @@ fn w_msg_multi_rst(msg: impl StateWriter<Value = Msg>) -> impl WidgetBuilder {
           @Row {
             item_gap: 8.,
             @ {
-              $msg.cont_list().iter().enumerate().map(|(idx, cont)| {
-                let text = cont.text().map(|s| s.to_owned()).unwrap_or_default();
-                let w_thumbnail = w_msg_thumbnail(text);
-                @$w_thumbnail {
-                  on_tap: move |_| {
-                    let mut msg_write = $thumbnail_msg.write();
-                    msg_write.switch_cont(idx);
+              $chat
+                .msg(&channel_id, &msg_id)
+                .unwrap()
+                .cont_list()
+                .iter()
+                .enumerate()
+                .map(|(idx, cont)| {
+                  let text = cont.text().map(|s| s.to_owned()).unwrap_or_default();
+                  let w_thumbnail = w_msg_thumbnail(text);
+                  @$w_thumbnail {
+                    on_tap: move |_| {
+                      $chat.write().switch_cont(&channel_id, &msg_id, idx);
+                    }
                   }
-                }
-              }).collect::<Vec<_>>()
+                }).collect::<Vec<_>>()
             }
           }
         }
