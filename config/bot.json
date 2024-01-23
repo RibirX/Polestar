@@ -7,8 +7,7 @@
       "name": "Polestar Assistant",
       "desc": "AI Assistant powered by OpenAI.",
       "avatar": {
-        "name": "🌉",
-        "color": "#EDF7FBFF"
+        "url": "outlined_logo.png"
       },
       "cat": "Assistant",
       "tags": [

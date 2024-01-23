@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use home::home_dir;
 
@@ -15,6 +15,7 @@ static CURRENT_USER: &str = "current_user";
 static NONCE_FILE: &str = "nonce";
 static TOKEN_FILE: &str = "token";
 static LOCAL_STATE: &str = "local_state";
+static POLESTAR_STATIC: &str = "static";
 
 pub fn project_home_path() -> PathBuf {
   home_dir()
@@ -103,6 +104,14 @@ pub fn create_if_not_exist_dir(path: PathBuf) {
   }
 }
 
+pub fn get_static_file(file: &str) -> PolestarResult<Vec<u8>> {
+  let mut path = project_home_path();
+  path.push(POLESTAR_STATIC);
+  path.push(file);
+  let content = std::fs::read(&path)?;
+  Ok(content)
+}
+
 pub mod encrypt {
   use std::{fs::File, io::Write};
 
@@ -156,18 +165,18 @@ pub mod encrypt {
 }
 
 pub mod launch {
-  use std::{fs, io::Write};
+  use std::{fs, io::Write, path::PathBuf};
 
   use super::{
-    create_if_not_exist_dir, project_bot_config_path, project_config_path, project_home_path,
-    project_user_path,
+    copy_dir_all, create_if_not_exist_dir, project_bot_config_path, project_config_path,
+    project_home_path, project_user_path, POLESTAR_STATIC,
   };
 
   pub fn setup_project() {
     create_if_not_exist_dir(project_home_path());
     create_if_not_exist_dir(project_user_path());
     create_if_not_exist_dir(project_config_path());
-    write_default_bot_config();
+    copy_static_files_to_user_data();
   }
 
   pub fn write_default_bot_config() {
@@ -183,4 +192,28 @@ pub mod launch {
       .write_all(content.as_bytes())
       .expect("can't write bot.json");
   }
+
+  pub fn copy_static_files_to_user_data() {
+    let mut src = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    src.push("../gui/static");
+    let mut dst = project_home_path();
+    dst.push(POLESTAR_STATIC);
+    copy_dir_all(src, dst).expect("Failed to copy static files");
+  }
+}
+
+use std::{fs, io};
+
+fn copy_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> io::Result<()> {
+  fs::create_dir_all(&dst)?;
+  for entry in fs::read_dir(src)? {
+    let entry = entry?;
+    let ty = entry.file_type()?;
+    if ty.is_dir() {
+      copy_dir_all(entry.path(), dst.as_ref().join(entry.file_name()))?;
+    } else {
+      fs::copy(entry.path(), dst.as_ref().join(entry.file_name()))?;
+    }
+  }
+  Ok(())
 }

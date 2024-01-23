@@ -1,4 +1,4 @@
-use polestar_core::model::{ChannelId, MsgCont, MsgId, MsgRole};
+use polestar_core::model::{BotAvatar, ChannelId, MsgCont, MsgId, MsgRole};
 use ribir::prelude::*;
 use uuid::Uuid;
 
@@ -6,7 +6,7 @@ use crate::style::decorator::channel::message_style;
 use crate::style::{GAINSBORO, WHITE};
 use crate::theme::polestar_svg;
 use crate::widgets::app::Chat;
-use crate::widgets::common::IconButton;
+use crate::widgets::common::{w_avatar, IconButton};
 use crate::widgets::helper::send_msg;
 
 use super::onboarding::w_msg_onboarding;
@@ -254,6 +254,24 @@ fn w_msg(
             }
           }
         };
+        let avatar = match role {
+          MsgRole::User => {
+            BotAvatar::Image {
+              url: "user_avatar.png".to_owned(),
+            }
+          }
+          MsgRole::Bot(bot_id) => {
+            let chat = $chat;
+            chat.info().bot(&bot_id).map(|bot| bot.avatar().clone()).unwrap_or(BotAvatar::Image {
+              url: "outlined_logo.png".to_owned(),
+            })
+          }
+          MsgRole::System(_) => {
+            BotAvatar::Image {
+              url: "outlined_logo.png".to_owned(),
+            }
+          }
+        };
         @$stack {
           @Row {
             h_align: match msg.role() {
@@ -261,8 +279,8 @@ fn w_msg(
               _ => HAlign::Left,
             },
             @$row {
-              @Avatar {
-                @ { Label::new("A") }
+              @ {
+                w_avatar(avatar.clone())
               }
               @Column {
                 @ {
