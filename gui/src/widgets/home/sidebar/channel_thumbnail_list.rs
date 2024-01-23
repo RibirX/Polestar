@@ -13,11 +13,7 @@ pub fn w_channel_thumbnail_list(
     @InteractiveList {
       active: pipe! {
         let channels = $channel_mgr.channel_ids();
-        let last_idx = if !channels.is_empty() {
-          channels.len() - 1
-        } else {
-          0
-        };
+        let last_idx = (channels.len() - 1).min(0);
         $channel_mgr.cur_channel_id().and_then(|id| {
           channels.iter().position(|ch| ch == id).map(|idx| last_idx - idx)
         }).unwrap_or(last_idx)

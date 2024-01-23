@@ -1,15 +1,19 @@
-use polestar_core::model::BotAvatar;
+use polestar_core::{get_static_file, model::BotAvatar};
 use ribir::prelude::*;
 
 pub fn w_avatar(avatar: BotAvatar) -> impl WidgetBuilder {
   fn_widget! {
     @ {
       match avatar {
-        BotAvatar::Image { url: _ } => {
-          let data = vec![0];
-          @Avatar {
-            @ { ShareResource::new(PixelImage::from_png(&data)) }
-          }.widget_build(ctx!())
+        BotAvatar::Image { url } => {
+          let data = get_static_file(&url);
+          if let Ok(data) = data {
+            @Avatar {
+              @ { ShareResource::new(PixelImage::from_png(&data)) }
+            }.widget_build(ctx!())
+          } else {
+            @Void {}.widget_build(ctx!())
+          }
         }
         BotAvatar::Text { name, color } => {
           @Avatar {
