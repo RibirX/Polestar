@@ -8,8 +8,8 @@ description.workspace = true
 
 [dependencies]
 polestar-core = { path = "../core", features = ["persistence"] }
-ribir = { git = "https://github.com/RibirX/Ribir", features = ["png", "tokio-async"] }
-ribir_algo = { git = "https://github.com/RibirX/Ribir" }
+ribir = { version= "0.1.0-alpha.0", features = ["png", "tokio-async"] }
+ribir_algo =  "0.1.0-alpha.0"
 
 serde.workspace = true
 serde_json.workspace = true
