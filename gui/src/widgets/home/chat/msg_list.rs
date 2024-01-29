@@ -41,17 +41,23 @@ pub fn w_msg_list(
 
     scroll_to_bottom();
 
-    watch!((
+    // TODO: use `guard` to unsubscribe when widget is disposed.
+    // Related to Ribir #507, should be auto unsubscribe_when_dropped when unvalid
+    let mut guard = Some(watch!((
       $channel.msgs().len(),
       $channel.last_msg().map_or(0, |msg| msg.cont_size())
     ))
       .distinct_until_changed()
       .subscribe(move |_| {
         scroll_to_bottom();
-      });
+      })
+      .unsubscribe_when_dropped());
 
     @ConstrainedBox {
       clamp: BoxClamp::EXPAND_BOTH,
+      on_disposed: move |_| {
+        guard.take();
+      },
       @$scrollable_container {
         @$content_constrained_box {
           @Column {
