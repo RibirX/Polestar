@@ -189,7 +189,7 @@ fn send_question(
   text_area: &mut MessageEditor,
   chat: impl StateWriter<Value = dyn Chat>,
   channel_id: ChannelId,
-  def_bot_id: BotId,
+  app_def_bot: BotId,
   quote_id: impl StateWriter<Value = Option<Uuid>>,
 ) {
   let text = text_area.display_text();
@@ -199,30 +199,37 @@ fn send_question(
   }
 
   let msg_quote_id = *quote_id.read();
+  *quote_id.write() = None;
   let user_msg = Msg::new_user_text(&text, MsgMeta::new(msg_quote_id, None));
   let user_msg_id = *user_msg.id();
   chat.write().add_msg(&channel_id, user_msg);
 
-  let bots = text_area.edit_message.related_bot();
-  let bot_id = bots.last().map_or(def_bot_id, |id| id.clone());
+  let mut bots = text_area.edit_message.related_bot();
+  let def_bot = chat
+    .read()
+    .channel(&channel_id)
+    .and_then(|channel| channel.cfg().def_bot_id())
+    .cloned()
+    .unwrap_or(app_def_bot);
+  if bots.is_empty() {
+    bots.push(def_bot);
+  }
+  for bot_id in bots.into_iter() {
+    let bot_msg = Msg::new_bot_text(bot_id.clone(), MsgMeta::new(None, Some(user_msg_id)));
+    let id = *bot_msg.id();
+    let idx = bot_msg.cur_idx();
+    chat.write().add_msg(&channel_id, bot_msg);
 
-  let bot_msg = Msg::new_bot_text(bot_id.clone(), MsgMeta::new(None, Some(user_msg_id)));
-
-  let id = *bot_msg.id();
-  let idx = bot_msg.cur_idx();
-  chat.write().add_msg(&channel_id, bot_msg);
-
-  *quote_id.write() = None;
-
-  send_msg(
-    chat,
-    channel_id,
-    id,
-    idx,
-    bot_id,
-    text_area.edit_message.message_content(),
-    msg_quote_id,
-  );
+    send_msg(
+      chat.clone_writer(),
+      channel_id,
+      id,
+      idx,
+      bot_id,
+      text_area.edit_message.message_content(),
+      msg_quote_id,
+    );
+  }
 }
 
 fn select_bot(text_area: &mut MessageEditor, bots: &BotList) {
