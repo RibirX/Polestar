@@ -16,10 +16,12 @@ pub use linux::{app_init_hook, app_run_before_hook, has_permission, permission_p
 fn singleton_guard() -> bool {
   use fs4::FileExt;
   use once_cell::sync::Lazy;
+  use polestar_core::create_if_not_exist_dir;
   use polestar_core::project_home_path;
   use ribir::prelude::log::warn;
   use std::fs::OpenOptions;
 
+  create_if_not_exist_dir(project_home_path());
   static GUARD_FILE: Lazy<(Result<std::fs::File, std::io::Error>, bool)> = Lazy::new(|| {
     let file_path = format!("{}/{}", project_home_path().display(), "/singleton_guard");
     let file = OpenOptions::new().create(true).write(true).open(file_path);
