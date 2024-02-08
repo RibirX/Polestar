@@ -1,17 +1,17 @@
-use futures_util::StreamExt;
+use eventsource_stream::{Event, Eventsource};
+use futures_util::{Stream, TryStreamExt};
 use log::warn;
 use regex::Regex;
 use reqwest::{
   header::{HeaderMap, HeaderName, HeaderValue, AUTHORIZATION, CONTENT_TYPE, USER_AGENT},
-  Method, RequestBuilder,
+  Method, RequestBuilder, StatusCode,
 };
-use reqwest_eventsource::EventSource;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, value::Value as JsonValue};
 use serde_json_path::JsonPath;
 
 use crate::{
-  error::{PolestarError, PolestarResult},
+  error::{PolestarError, PolestarResult, PolestarServerError},
   model::{
     AppInfo, Bot, BotId, Channel, FeedbackMessageListForServer, FeedbackTimestamp, GlbVar, Quota,
     ServerProvider, UserFeedbackMessageForServer, GLOBAL_VARS,
@@ -44,14 +44,20 @@ async fn req_stream(
   method: Method,
   headers: HeaderMap,
   body: Option<String>,
-) -> Result<EventSource, PolestarError> {
+) -> Result<impl Stream<Item = Result<Event, PolestarError>>, PolestarError> {
   let req_builder = req_builder(&url, method, headers, body);
-  let mut stream = EventSource::new(req_builder).unwrap();
-  let stream_resp = stream.next().await;
-  if let Some(Err(err)) = stream_resp {
-    return Err(PolestarError::EventSource(err));
+  let resp = req_builder.send().await?;
+  let content = resp.headers().get("content-type");
+  let stream_content = "text/event-stream";
+  let content_type = content.and_then(|t| t.to_str().ok());
+  if resp.status() == StatusCode::OK && content_type == Some(stream_content) {
+    let eventsource = resp.bytes_stream().eventsource();
+    Ok(eventsource.map_err(|e| e.into()))
+  } else {
+    Err(PolestarError::PolestarServerError(
+      resp.json::<PolestarServerError>().await?,
+    ))
   }
-  Ok(stream)
 }
 
 pub fn create_text_request(info: &AppInfo, bot_id: BotId) -> TextStreamReq {
@@ -205,7 +211,10 @@ pub struct TextStreamReq {
 }
 
 impl TextStreamReq {
-  pub async fn request(self, body: String) -> Result<EventSource, PolestarError> {
+  pub async fn request(
+    self,
+    body: String,
+  ) -> Result<impl Stream<Item = Result<Event, PolestarError>>, PolestarError> {
     req_stream(
       self.url.clone(),
       Method::POST,
@@ -278,9 +287,7 @@ fn to_value_str(val: &JsonValue) -> String {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct UserQuota {
-  pub user_id: u64,
-  pub limits: f32,
-  pub used: f32,
+  // pub user_id: u64,
   pub statistics: serde_json::Value,
 }
 
