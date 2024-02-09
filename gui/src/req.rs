@@ -19,12 +19,7 @@ pub async fn query_open_ai(
 
   println!("request content: {}", content);
 
-  let mut stream = req
-    .request(content)
-    .to_ribir_future()
-    .await
-    .unwrap()
-    .to_ribir_stream();
+  let mut stream = req.request(content).to_ribir_future().await?;
 
   deal_open_ai_stream(&mut stream, delta_op).await
 }

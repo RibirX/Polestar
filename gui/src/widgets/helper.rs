@@ -51,11 +51,17 @@ pub fn send_msg(
       })
       .unwrap_or(content);
 
-    let _ = query_open_ai(chat.map_reader(|chat| chat.info()), bot_id, text, |delta| {
+    let res = query_open_ai(chat.map_reader(|chat| chat.info()), bot_id, text, |delta| {
       update_msg(MsgAction::Receiving(MsgBody::Text(Some(delta))));
     })
     .await;
 
+    if let Err(e) = res {
+      update_msg(MsgAction::Receiving(MsgBody::Text(Some(format!(
+        "Error: {}",
+        e
+      )))));
+    }
     update_msg(MsgAction::Fulfilled);
   });
 }

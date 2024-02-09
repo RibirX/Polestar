@@ -1,5 +1,5 @@
+use eventsource_stream::Event;
 use futures_util::{Stream, StreamExt};
-use reqwest_eventsource::Event;
 use serde::{Deserialize, Serialize};
 
 use crate::{error::PolestarError, model::MsgRole};
@@ -55,7 +55,7 @@ impl From<MsgRole> for Role {
 }
 
 pub async fn deal_open_ai_stream(
-  stream: &mut (impl Stream<Item = Result<Event, reqwest_eventsource::Error>> + Unpin),
+  stream: &mut (impl Stream<Item = Result<Event, PolestarError>> + Unpin),
   mut delta_op: impl FnMut(String),
 ) -> Result<String, PolestarError> {
   let mut answer = String::default();
@@ -91,7 +91,7 @@ pub fn mock_stream_string(_content: &str, mut delta_op: impl FnMut(String)) {
 }
 
 async fn stream_event_source_handler(
-  stream: &mut (impl Stream<Item = Result<Event, reqwest_eventsource::Error>> + Unpin),
+  stream: &mut (impl Stream<Item = Result<Event, PolestarError>> + Unpin),
 ) -> Result<Option<String>, PolestarError> {
   let terminated = "[DONE]";
   let chunk_size = 256;
@@ -101,30 +101,18 @@ async fn stream_event_source_handler(
 
   let mut delta = String::default();
   for item in items {
-    match item {
-      Ok(event) => {
-        if let Event::Message(event) = event {
-          if event.data == terminated {
-            break;
-          }
-          let obj =
-            serde_json::from_str::<CreateChatCompletionStreamResponse>(&event.data).unwrap();
-          let choices = obj.choices;
-          assert!(choices.len() == 1);
+    let data = item?.data;
+    if data == terminated {
+      break;
+    }
+    let obj = serde_json::from_str::<CreateChatCompletionStreamResponse>(&data).unwrap();
+    let choices = obj.choices;
+    assert!(choices.len() == 1);
 
-          if let Some(content) = &choices[0].delta.content {
-            delta.push_str(content);
-          }
-        }
-      }
-      Err(reqwest_eventsource::Error::StreamEnded) => match delta.is_empty() {
-        true => return Ok(None),
-        false => return Ok(Some(delta)),
-      },
-      Err(e) => {
-        return Err(PolestarError::EventSource(e));
-      }
+    if let Some(content) = &choices[0].delta.content {
+      delta.push_str(content);
     }
   }
+
   Ok(Some(delta))
 }
