@@ -5,7 +5,7 @@
         <strong>A Rust open source cross-platform ChatGPT/Gemini UI (Linux / Win / MacOS).</strong>
     </p>
     <p>
-        <strong>You can get 50 free request quota every month</strong>
+        <strong>You can get free request quota every month</strong>
     </p>
 </div>
 
